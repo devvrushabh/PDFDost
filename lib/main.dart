@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,35 +17,108 @@ void main() {
   runApp(const Img2PdfApp());
 }
 
-class Img2PdfApp extends StatelessWidget {
+class Img2PdfApp extends StatefulWidget {
   const Img2PdfApp({super.key});
 
   @override
+  State<Img2PdfApp> createState() => _Img2PdfAppState();
+}
+
+class _Img2PdfAppState extends State<Img2PdfApp> {
+  ThemeMode _themeMode = ThemeMode.light;
+  static const String _themePrefKey = 'img2pdf_theme_mode';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isDark = prefs.getBool(_themePrefKey) ?? false;
+      setState(() {
+        _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+      });
+    } catch (e) {
+      debugPrint('Error loading theme: $e');
+    }
+  }
+
+  Future<void> _toggleTheme() async {
+    final nextMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    setState(() {
+      _themeMode = nextMode;
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_themePrefKey, nextMode == ThemeMode.dark);
+    } catch (e) {
+      debugPrint('Error saving theme: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    const primaryRed = Color(0xFFE5322D);
+
+    final lightTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryRed,
+        brightness: Brightness.light,
+        primary: primaryRed,
+        surface: Colors.white,
+      ),
+      scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        iconTheme: IconThemeData(color: Color(0xFF1E293B)),
+        titleTextStyle: TextStyle(
+          color: Color(0xFF1E293B),
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+
+    final darkTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryRed,
+        brightness: Brightness.dark,
+        primary: primaryRed,
+        surface: const Color(0xFF1E293B),
+      ),
+      scaffoldBackgroundColor: const Color(0xFF0F172A),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF1E293B),
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        iconTheme: IconThemeData(color: Color(0xFFF8FAFC)),
+        titleTextStyle: TextStyle(
+          color: Color(0xFFF8FAFC),
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+
     return MaterialApp(
       title: 'Img2PDF',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFE5322D),
-          primary: const Color(0xFFE5322D),
-          surface: Colors.white,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          scrolledUnderElevation: 1,
-          iconTheme: IconThemeData(color: Color(0xFF1E293B)),
-          titleTextStyle: TextStyle(
-            color: Color(0xFF1E293B),
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: _themeMode,
+      home: HomeScreen(
+        isDarkMode: _themeMode == ThemeMode.dark,
+        onToggleTheme: _toggleTheme,
       ),
-      home: const HomeScreen(),
     );
   }
 }
@@ -105,7 +180,14 @@ class HistoryItem {
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final bool isDarkMode;
+  final VoidCallback onToggleTheme;
+
+  const HomeScreen({
+    super.key,
+    required this.isDarkMode,
+    required this.onToggleTheme,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -119,6 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final ImagePicker _picker = ImagePicker();
   static const String _historyKey = 'img2pdf_history_list';
+  static const MethodChannel _storageChannel = MethodChannel('com.devvrushabh.img2pdf/storage');
 
   @override
   void initState() {
@@ -193,9 +276,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _clearSelectedImages() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         title: const Text('Clear Selection?'),
         content: const Text('Are you sure you want to remove all selected images?'),
         actions: [
@@ -234,10 +319,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final defaultName = 'Document_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}';
     final controller = TextEditingController(text: defaultName);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Name Your PDF',
@@ -247,16 +334,21 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Enter a custom name before converting your images:',
-              style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              style: TextStyle(
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFCBD5E1)),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                ),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
@@ -265,6 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: TextField(
                       controller: controller,
                       autofocus: true,
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         hintText: 'Enter document name',
@@ -286,7 +379,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+            child: Text('Cancel', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -374,135 +467,224 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showExportBottomSheet(String pdfPath, String docName, int pages, String sizeStr) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    bool hasSaved = false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 5,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                color: Color(0xFFDCFCE7),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 36),
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'PDF Created Successfully!',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F172A),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              docName,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFFE5322D),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '$pages Pages  •  $sizeStr',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-            ),
-            const SizedBox(height: 24),
-            // 1. Share Option (WhatsApp, Social Media, etc.)
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE5322D),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 0,
-                ),
-                onPressed: () async {
-                  await Share.shareXFiles(
-                    [XFile(pdfPath, mimeType: 'application/pdf')],
-                    text: 'Converted PDF: $docName',
-                  );
-                },
-                icon: const Icon(Icons.share_rounded),
-                label: const Text(
-                  'Share (WhatsApp, Apps...)',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            // 2. Save to Device (Downloads)
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF1E293B),
-                  side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              const SizedBox(height: 20),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFDCFCE7),
+                  shape: BoxShape.circle,
                 ),
-                onPressed: () async {
-                  await _savePdfToDevice(pdfPath, docName);
-                },
-                icon: const Icon(Icons.download_rounded, color: Color(0xFFE5322D)),
-                label: const Text('Save to Device (Downloads)', style: TextStyle(fontWeight: FontWeight.w600)),
+                child: const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 36),
               ),
-            ),
-            const SizedBox(height: 12),
-            // 3. Open / View PDF
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF1E293B),
-                  side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              const SizedBox(height: 14),
+              Text(
+                'PDF Created Successfully!',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
                 ),
-                onPressed: () async {
-                  await OpenFilex.open(pdfPath);
-                },
-                icon: const Icon(Icons.visibility_rounded, color: Color(0xFF2563EB)),
-                label: const Text('Open / View PDF', style: TextStyle(fontWeight: FontWeight.w600)),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Done', style: TextStyle(color: Color(0xFF64748B), fontSize: 14)),
-            ),
-            const SizedBox(height: 8),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                docName,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFE5322D),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$pages Pages  •  $sizeStr',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // 1. Share Option (WhatsApp, Social Media, etc.)
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE5322D),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                  onPressed: () async {
+                    await Share.shareXFiles(
+                      [XFile(pdfPath, mimeType: 'application/pdf')],
+                      text: 'Converted PDF: $docName',
+                    );
+                  },
+                  icon: const Icon(Icons.share_rounded),
+                  label: const Text(
+                    'Share (WhatsApp, Apps...)',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // 2. Print Document (Option right after Share)
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF1E293B),
+                    side: BorderSide(
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                      width: 1.2,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () async {
+                    await _printPdf(pdfPath, docName);
+                  },
+                  icon: const Icon(Icons.print_rounded, color: Color(0xFF0284C7)),
+                  label: const Text('Print Document', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // 3. Save to Device (Downloads)
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: hasSaved
+                        ? const Color(0xFF16A34A)
+                        : (isDark ? const Color(0xFFF8FAFC) : const Color(0xFF1E293B)),
+                    side: BorderSide(
+                      color: hasSaved
+                          ? const Color(0xFF16A34A)
+                          : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+                      width: 1.2,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () async {
+                    final success = await _savePdfToDevice(pdfPath, docName);
+                    if (success) {
+                      setSheetState(() {
+                        hasSaved = true;
+                      });
+                    }
+                  },
+                  icon: Icon(
+                    hasSaved ? Icons.check_circle_rounded : Icons.download_rounded,
+                    color: hasSaved ? const Color(0xFF16A34A) : const Color(0xFFE5322D),
+                  ),
+                  label: Text(
+                    hasSaved ? '✓ Saved to Downloads!' : 'Save to Device (Downloads)',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // 3. Open / View PDF
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF1E293B),
+                    side: BorderSide(
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                      width: 1.2,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () async {
+                    await OpenFilex.open(pdfPath);
+                  },
+                  icon: const Icon(Icons.visibility_rounded, color: Color(0xFF2563EB)),
+                  label: const Text('Open / View PDF', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  'Done',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Future<void> _savePdfToDevice(String sourcePath, String fileName) async {
+  Future<void> _printPdf(String pdfPath, String docName) async {
     try {
+      final file = File(pdfPath);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        await Printing.layoutPdf(
+          onLayout: (PdfPageFormat format) async => bytes,
+          name: docName,
+        );
+      } else {
+        _showSnackbar('File not found for printing.', isError: true);
+      }
+    } catch (e) {
+      _showSnackbar('Print error: $e', isError: true);
+    }
+  }
+
+  Future<bool> _savePdfToDevice(String sourcePath, String fileName) async {
+    try {
+      if (Platform.isAndroid) {
+        try {
+          final String? savedLocation = await _storageChannel.invokeMethod<String>(
+            'saveToDownloads',
+            {'sourcePath': sourcePath, 'fileName': fileName},
+          );
+          if (savedLocation != null) {
+            _showSnackbar('✓ Saved to Downloads folder: $fileName');
+            return true;
+          }
+        } on PlatformException catch (pe) {
+          debugPrint('MethodChannel saveToDownloads error: $pe');
+        }
+      }
+
+      // Fallback path resolution for non-Android or legacy storage
       Directory? targetDir;
       if (Platform.isAndroid) {
         final downloadDir = Directory('/storage/emulated/0/Download');
@@ -512,25 +694,30 @@ class _HomeScreenState extends State<HomeScreen> {
           targetDir = await getExternalStorageDirectory();
         }
       } else {
-        targetDir = await getApplicationDocumentsDirectory();
+        targetDir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
       }
 
       if (targetDir != null) {
         final destPath = '${targetDir.path}/$fileName';
         await File(sourcePath).copy(destPath);
-        _showSnackbar('Saved successfully to ${targetDir.path}/$fileName');
+        _showSnackbar('✓ Saved successfully to ${targetDir.path}/$fileName');
+        return true;
       } else {
         _showSnackbar('Could not locate public storage folder.', isError: true);
+        return false;
       }
     } catch (e) {
       _showSnackbar('Save error: $e', isError: true);
+      return false;
     }
   }
 
   void _deleteHistoryItem(HistoryItem item) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         title: const Text('Delete PDF?'),
         content: Text('Delete "${item.name}" from your saved history?'),
         actions: [
@@ -563,9 +750,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _clearAllHistory() {
     if (_historyItems.isEmpty) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         title: const Text('Clear All History?'),
         content: const Text('This will clear all records of converted PDFs.'),
         actions: [
@@ -610,6 +799,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -633,12 +824,24 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text('Img2PDF'),
           ],
         ),
+        actions: [
+          // Theme Switcher Button (Top Right)
+          IconButton(
+            tooltip: widget.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            icon: Icon(
+              widget.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+              color: widget.isDarkMode ? const Color(0xFFFBBF24) : const Color(0xFF1E293B),
+            ),
+            onPressed: widget.onToggleTheme,
+          ),
+          const SizedBox(width: 8),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(54),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(24),
             ),
             padding: const EdgeInsets.all(4),
@@ -657,7 +860,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Text(
                         'Convert',
                         style: TextStyle(
-                          color: _activeTabIndex == 0 ? Colors.white : const Color(0xFF64748B),
+                          color: _activeTabIndex == 0
+                              ? Colors.white
+                              : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -678,7 +883,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Text(
                         'History (${_historyItems.length})',
                         style: TextStyle(
-                          color: _activeTabIndex == 1 ? Colors.white : const Color(0xFF64748B),
+                          color: _activeTabIndex == 1
+                              ? Colors.white
+                              : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -696,33 +903,40 @@ class _HomeScreenState extends State<HomeScreen> {
           IndexedStack(
             index: _activeTabIndex,
             children: [
-              _buildConvertTab(),
-              _buildHistoryTab(),
+              _buildConvertTab(isDark),
+              _buildHistoryTab(isDark),
             ],
           ),
           if (_isConverting)
             Container(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withOpacity(0.55),
               child: Center(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(color: Color(0xFFE5322D)),
-                      SizedBox(height: 18),
+                      const CircularProgressIndicator(color: Color(0xFFE5322D)),
+                      const SizedBox(height: 18),
                       Text(
                         'Converting Images to PDF...',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        ),
                       ),
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Text(
                         'Optimizing pages, please wait',
-                        style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -734,7 +948,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildConvertTab() {
+  Widget _buildConvertTab(bool isDark) {
     if (_selectedImages.isEmpty) {
       return Center(
         child: SingleChildScrollView(
@@ -746,12 +960,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Colors.black.withOpacity(0.04),
                       blurRadius: 15,
                       offset: const Offset(0, 4),
                     ),
@@ -762,8 +978,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Container(
                       width: 72,
                       height: 72,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFEE2E2),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -773,19 +989,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Select Images to Convert',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Choose multiple pictures from your gallery\nto create an optimized PDF document',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        height: 1.4,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
@@ -808,9 +1028,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Supports JPG • PNG • WEBP • JPEG',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                      ),
                     ),
                   ],
                 ),
@@ -831,10 +1054,10 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 '${_selectedImages.length} Image${_selectedImages.length > 1 ? 's' : ''} Selected',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
                 ),
               ),
               Row(
@@ -876,9 +1099,11 @@ class _HomeScreenState extends State<HomeScreen> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.02),
@@ -901,7 +1126,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         errorBuilder: (_, __, ___) => Container(
                           width: 68,
                           height: 68,
-                          color: const Color(0xFFF1F5F9),
+                          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                           child: const Icon(Icons.broken_image, color: Colors.grey),
                         ),
                       ),
@@ -915,12 +1140,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFEE2E2),
+                              color: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Text(
-                              'Page ${index + 1}',
-                              style: const TextStyle(
+                            child: const Text(
+                              'Page',
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFFE5322D),
@@ -930,10 +1155,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 4),
                           Text(
                             img.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
+                              color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -941,7 +1166,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 2),
                           Text(
                             img.formattedSize,
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            ),
                           ),
                         ],
                       ),
@@ -952,23 +1180,35 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (index > 0)
                           GestureDetector(
                             onTap: () => _moveImage(index, index - 1),
-                            child: const Padding(
-                              padding: EdgeInsets.all(4),
-                              child: Icon(Icons.arrow_upward_rounded, size: 18, color: Color(0xFF64748B)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.arrow_upward_rounded,
+                                size: 18,
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                              ),
                             ),
                           ),
                         if (index < _selectedImages.length - 1)
                           GestureDetector(
                             onTap: () => _moveImage(index, index + 1),
-                            child: const Padding(
-                              padding: EdgeInsets.all(4),
-                              child: Icon(Icons.arrow_downward_rounded, size: 18, color: Color(0xFF64748B)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.arrow_downward_rounded,
+                                size: 18,
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                              ),
                             ),
                           ),
                       ],
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8), size: 20),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                        size: 20,
+                      ),
                       onPressed: () => _removeImage(index),
                     ),
                   ],
@@ -980,9 +1220,9 @@ class _HomeScreenState extends State<HomeScreen> {
         // Sticky Bottom Convert Button
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            boxShadow: const [
               BoxShadow(
                 color: Color(0x0D000000),
                 blurRadius: 10,
@@ -1015,7 +1255,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHistoryTab() {
+  Widget _buildHistoryTab(bool isDark) {
     if (_historyItems.isEmpty) {
       return Center(
         child: Padding(
@@ -1026,29 +1266,33 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 width: 80,
                 height: 80,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F5F9),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.history_rounded,
-                  color: Color(0xFF94A3B8),
+                  color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
                   size: 40,
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'No Converted PDFs Yet',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Your generated PDF files will appear here so you can view, share, or save them anytime.',
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  height: 1.4,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
@@ -1077,10 +1321,10 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 'Stored Files (${_historyItems.length})',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
                 ),
               ),
               TextButton(
@@ -1105,9 +1349,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.02),
@@ -1124,7 +1370,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFEE2E2),
+                            color: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
@@ -1140,10 +1386,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Text(
                                 item.name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A),
+                                  color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -1151,13 +1397,20 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 '${item.date}  •  ${item.pages} pgs  •  ${item.size}',
-                                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                ),
                               ),
                             ],
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF94A3B8), size: 22),
+                          icon: Icon(
+                            Icons.delete_outline_rounded,
+                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                            size: 22,
+                          ),
                           onPressed: () => _deleteHistoryItem(item),
                         ),
                       ],
@@ -1170,7 +1423,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFFE5322D),
                               side: const BorderSide(color: Color(0xFFFCA5A5)),
-                              backgroundColor: const Color(0xFFFEF2F2),
+                              backgroundColor: isDark ? const Color(0xFF3B0707) : const Color(0xFFFEF2F2),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
@@ -1180,38 +1433,53 @@ class _HomeScreenState extends State<HomeScreen> {
                                 text: item.name,
                               );
                             },
-                            icon: const Icon(Icons.share_rounded, size: 16),
-                            label: const Text('Share', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            icon: const Icon(Icons.share_rounded, size: 14),
+                            label: const Text('Share', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Expanded(
                           child: OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF1E293B),
-                              side: const BorderSide(color: Color(0xFFE2E8F0)),
-                              backgroundColor: const Color(0xFFF8FAFC),
+                              foregroundColor: const Color(0xFF0284C7),
+                              side: const BorderSide(color: Color(0xFFBAE6FD)),
+                              backgroundColor: isDark ? const Color(0xFF082F49) : const Color(0xFFF0F9FF),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            onPressed: () => _printPdf(item.path, item.name),
+                            icon: const Icon(Icons.print_rounded, size: 14),
+                            label: const Text('Print', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF1E293B),
+                              side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                              backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
                             onPressed: () => _savePdfToDevice(item.path, item.name),
-                            icon: const Icon(Icons.download_rounded, size: 16),
-                            label: const Text('Save', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            icon: const Icon(Icons.download_rounded, size: 14),
+                            label: const Text('Save', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Expanded(
                           child: OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF2563EB),
                               side: const BorderSide(color: Color(0xFFBFDBFE)),
-                              backgroundColor: const Color(0xFFEFF6FF),
+                              backgroundColor: isDark ? const Color(0xFF172554) : const Color(0xFFEFF6FF),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
                             onPressed: () => OpenFilex.open(item.path),
-                            icon: const Icon(Icons.visibility_rounded, size: 16),
-                            label: const Text('Open', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            icon: const Icon(Icons.visibility_rounded, size: 14),
+                            label: const Text('Open', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ],
