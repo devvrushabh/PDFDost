@@ -110,7 +110,7 @@ class _Img2PdfAppState extends State<Img2PdfApp> {
     );
 
     return MaterialApp(
-      title: 'Img2PDF',
+      title: 'PDFDost',
       debugShowCheckedModeBanner: false,
       theme: lightTheme,
       darkTheme: darkTheme,
@@ -894,7 +894,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            const Text('Img2PDF'),
+            const Text('PDFDost'),
           ],
         ),
         actions: [

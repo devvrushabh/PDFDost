@@ -1,5 +1,5 @@
 [app]
-title = Img2PDF
+title = PDFDost
 package.name = img2pdf
 package.domain = org.example
 source.dir = .

@@ -339,7 +339,7 @@ KV_DESIGN = """
                 color: (1, 1, 1, 1)
 
         Label:
-            text: "Img2PDF"
+            text: "PDFDost"
             bold: True
             font_size: '18sp'
             color: (0.12, 0.16, 0.22, 1)
