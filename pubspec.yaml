@@ -1,0 +1,27 @@
+name: img2pdf
+description: "High quality Image to PDF converter app with visual preview, rename modal, local history, and share sheet"
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  image_picker: ^1.1.2
+  pdf: ^3.11.1
+  path_provider: ^2.1.4
+  share_plus: ^10.1.2
+  open_filex: ^4.5.0
+  shared_preferences: ^2.3.2
+  intl: ^0.19.0
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

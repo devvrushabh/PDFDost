@@ -4,3 +4,13 @@ __pycache__/
 *.pyc
 *.zip
 .DS_Store
+
+# Flutter / Dart
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+*.lock
+android/local.properties
+android/.gradle/

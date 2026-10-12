@@ -1042,9 +1042,17 @@ class MainScreen(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.chooser = None
+        self.user_dir = None
         Clock.schedule_once(self._init_app, 0.3)
 
     def _init_app(self, *args):
+        try:
+            app = App.get_running_app()
+            self.user_dir = app.user_data_dir
+            os.makedirs(self.user_dir, exist_ok=True)
+        except Exception as e:
+            print(f"Error initializing user dir: {e}")
+            self.user_dir = "."
         self._request_permissions()
         self._load_history_from_disk()
 
@@ -1075,6 +1083,7 @@ class MainScreen(BoxLayout):
                 from androidstorage4kivy import Chooser
 
                 self.chooser = Chooser(self.on_picked)
+                self.chooser.multiple = True
                 self.chooser.choose_content("image/*")
             except Exception as e:
                 self.show_alert("Picker Error", f"Unable to open gallery: {e}")
@@ -1189,9 +1198,10 @@ class MainScreen(BoxLayout):
     def _conversion_worker(self, custom_name, paths_to_convert):
         """Background worker for PIL PDF compilation."""
         try:
-            app = App.get_running_app()
+            target_dir = self.user_dir or "."
+            os.makedirs(target_dir, exist_ok=True)
             out_filename = f"{custom_name}.pdf"
-            local_out = os.path.join(app.user_data_dir, out_filename)
+            local_out = os.path.join(target_dir, out_filename)
 
             # Compile into app's private sandbox
             convert_images_to_pdf(paths_to_convert, local_out)
@@ -1293,8 +1303,8 @@ class MainScreen(BoxLayout):
 
     # --- History Management ---
     def _get_history_file_path(self):
-        app = App.get_running_app()
-        return os.path.join(app.user_data_dir, HISTORY_FILE)
+        target_dir = self.user_dir or "."
+        return os.path.join(target_dir, HISTORY_FILE)
 
     def _load_history_from_disk(self):
         hpath = self._get_history_file_path()
