@@ -27,17 +27,19 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Scaffold Android Wrapper if needed
+      - name: Scaffold Native Android Project
         run: |
-          if [ ! -f "android/gradlew" ]; then
-            flutter create . --org com.devvrushabh --project-name img2pdf --platforms android
-          fi
+          rm -rf android
+          flutter create . --org com.devvrushabh --project-name img2pdf --platforms android
+          # Inject storage permissions and legacy storage into AndroidManifest.xml
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>' android/app/src/main/AndroidManifest.xml
+          sed -i 's/<application/<application android:requestLegacyExternalStorage="true"/' android/app/src/main/AndroidManifest.xml
 
       - name: Get Dependencies
         run: flutter pub get
 
       - name: Build Android APK
-        run: flutter build apk --release
+        run: flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
