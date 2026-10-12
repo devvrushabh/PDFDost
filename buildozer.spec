@@ -5,15 +5,14 @@ package.domain = org.example
 source.dir = .
 source.include_exts = py
 version = 0.1
-requirements = python3,kivy==2.3.0,pillow,android,androidstorage4kivy
+requirements = python3,kivy,pillow,android,androidstorage4kivy
 orientation = portrait
 fullscreen = 0
-android.archs = arm64-v8a, armeabi-v7a
+android.archs = arm64-v8a
 android.api = 33
 android.minapi = 24
 android.accept_sdk_license = True
 android.enable_androidx = True
-android.gradle_dependencies = androidx.core:core-ktx:1.12.0
 
 [buildozer]
 log_level = 2
