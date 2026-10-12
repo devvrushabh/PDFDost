@@ -311,6 +311,79 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _changeImagePosition(int currentIndex) {
+    final controller = TextEditingController(text: '${currentIndex + 1}');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Change Position', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Move this image to a new page position (1 to ${_selectedImages.length}):',
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Enter page number',
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE5322D),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              final target = int.tryParse(controller.text.trim());
+              Navigator.pop(ctx);
+              if (target != null && target >= 1 && target <= _selectedImages.length) {
+                _moveImage(currentIndex, target - 1);
+              } else {
+                _showSnackbar('Please enter a valid position between 1 and ${_selectedImages.length}', isError: true);
+              }
+            },
+            child: const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showRenameDialog() async {
     if (_selectedImages.isEmpty) {
       _showSnackbar('Please select at least one image first.', isError: true);
@@ -1114,41 +1187,77 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 padding: const EdgeInsets.all(10),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Visual Thumbnail
+                    // 1. Prominent Position Number Badge (Tap to quickly change position)
+                    GestureDetector(
+                      onTap: () => _changeImagePosition(index),
+                      child: Tooltip(
+                        message: 'Tap to change page position',
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE5322D),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFE5322D).withOpacity(0.35),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // 2. Visual Thumbnail
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: Image.file(
                         File(img.path),
-                        width: 68,
-                        height: 68,
+                        width: 66,
+                        height: 66,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
-                          width: 68,
-                          height: 68,
+                          width: 66,
+                          height: 66,
                           color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                           child: const Icon(Icons.broken_image, color: Colors.grey),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    // Details
+                    const SizedBox(width: 10),
+                    // 3. Details
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'Page',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFE5322D),
+                          GestureDetector(
+                            onTap: () => _changeImagePosition(index),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'Page ${index + 1} of ${_selectedImages.length}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFE5322D),
+                                ),
                               ),
                             ),
                           ),
@@ -1174,42 +1283,80 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-                    // Reorder & Delete Actions
-                    Column(
+                    // 4. BIG, CLEARLY VISIBLE POSITIONING ARROWS
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (index > 0)
-                          GestureDetector(
-                            onTap: () => _moveImage(index, index - 1),
-                            child: Padding(
-                              padding: const EdgeInsets.all(4),
-                              child: Icon(
-                                Icons.arrow_upward_rounded,
-                                size: 18,
-                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        // BIG MOVE UP BUTTON
+                        InkWell(
+                          onTap: index > 0 ? () => _moveImage(index, index - 1) : null,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: index > 0
+                                  ? (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9))
+                                  : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC)),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: index > 0
+                                    ? (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1))
+                                    : (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                                width: 1.2,
                               ),
                             ),
-                          ),
-                        if (index < _selectedImages.length - 1)
-                          GestureDetector(
-                            onTap: () => _moveImage(index, index + 1),
-                            child: Padding(
-                              padding: const EdgeInsets.all(4),
-                              child: Icon(
-                                Icons.arrow_downward_rounded,
-                                size: 18,
-                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                              ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.arrow_upward_rounded,
+                              size: 22,
+                              color: index > 0
+                                  ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                                  : (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1)),
                             ),
                           ),
+                        ),
+                        const SizedBox(width: 6),
+                        // BIG MOVE DOWN BUTTON
+                        InkWell(
+                          onTap: index < _selectedImages.length - 1 ? () => _moveImage(index, index + 1) : null,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: index < _selectedImages.length - 1
+                                  ? (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9))
+                                  : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC)),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: index < _selectedImages.length - 1
+                                    ? (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1))
+                                    : (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                                width: 1.2,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.arrow_downward_rounded,
+                              size: 22,
+                              color: index < _selectedImages.length - 1
+                                  ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                                  : (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // DELETE BUTTON
+                        IconButton(
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                            size: 20,
+                          ),
+                          onPressed: () => _removeImage(index),
+                        ),
                       ],
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
-                        size: 20,
-                      ),
-                      onPressed: () => _removeImage(index),
                     ),
                   ],
                 ),
