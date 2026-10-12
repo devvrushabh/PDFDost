@@ -5,6 +5,7 @@ package.domain = org.example
 source.dir = .
 source.include_exts = py
 version = 0.2
+icon.filename = %(source.dir)s/PDFDost-icon.png
 requirements = python3,kivy,pillow,android,androidstorage4kivy,charset-normalizer==2.1.1
 orientation = portrait
 fullscreen = 0
