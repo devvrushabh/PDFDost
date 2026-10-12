@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import threading
 import time
 from kivy.app import App
@@ -63,21 +64,6 @@ KV_DESIGN = """
             rounded_rectangle: (self.x, self.y, self.width, self.height, dp(10))
             width: dp(1.3)
 
-<MiniActionButton@Button>:
-    background_normal: ''
-    background_down: ''
-    background_color: (0, 0, 0, 0)
-    font_size: '12sp'
-    bold: True
-    color: (0.2, 0.25, 0.3, 1)
-    canvas.before:
-        Color:
-            rgba: (0.93, 0.94, 0.96, 1) if self.state != 'down' else (0.88, 0.89, 0.92, 1)
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: [dp(8), dp(8), dp(8), dp(8)]
-
 <HeaderBar@BoxLayout>:
     size_hint_y: None
     height: dp(60)
@@ -111,6 +97,46 @@ KV_DESIGN = """
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, dp(20))
             width: dp(1.8)
+
+<AlertModal>:
+    size_hint: (0.88, None)
+    height: dp(230)
+    auto_dismiss: False
+    background_color: (0, 0, 0, 0.5)
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(12)
+        canvas.before:
+            Color:
+                rgba: (1, 1, 1, 1)
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [dp(18), dp(18), dp(18), dp(18)]
+
+        Label:
+            text: "⚠️ " + root.title_text
+            bold: True
+            font_size: '17sp'
+            color: (0.85, 0.18, 0.15, 1)
+            size_hint_y: None
+            height: dp(24)
+            halign: 'center'
+
+        Label:
+            text: root.message_text
+            font_size: '13sp'
+            color: (0.25, 0.28, 0.33, 1)
+            halign: 'center'
+            valign: 'middle'
+            text_size: (self.width - dp(20), None)
+
+        PrimaryButton:
+            text: "OK"
+            size_hint_y: None
+            height: dp(42)
+            on_release: root.dismiss()
 
 <RenameModal>:
     size_hint: (0.92, None)
@@ -628,30 +654,50 @@ KV_DESIGN = """
 def convert_images_to_pdf(paths, out_path):
     """Compile selected images into an optimized PDF."""
     if not paths:
-        return None
+        raise ValueError("No images provided.")
+
     pages = []
+    max_dimension = 2400
+
     for p in paths:
+        if not os.path.exists(p):
+            print(f"File not found: {p}")
+            continue
+
         try:
-            raw = PILImage.open(p)
-            transposed = ImageOps.exif_transpose(raw)
-            img = transposed.convert("RGBA")
-            bg = PILImage.new("RGB", img.size, "white")
-            bg.paste(img, mask=img)
-            pages.append(bg)
+            with PILImage.open(p) as raw:
+                transposed = ImageOps.exif_transpose(raw)
+
+                # Downsample overly massive camera photos to avoid memory exhaustion
+                if max(transposed.size) > max_dimension:
+                    transposed.thumbnail(
+                        (max_dimension, max_dimension),
+                        PILImage.Resampling.LANCZOS,
+                    )
+
+                # Flatten transparency onto white background
+                if transposed.mode in ("RGBA", "LA", "P"):
+                    rgba = transposed.convert("RGBA")
+                    bg = PILImage.new("RGB", rgba.size, (255, 255, 255))
+                    alpha_mask = rgba.split()[-1]
+                    bg.paste(rgba, mask=alpha_mask)
+                    pages.append(bg)
+                else:
+                    pages.append(transposed.convert("RGB"))
         except Exception as e:
             print(f"Skipping bad image {p}: {e}")
             continue
 
     if not pages:
-        raise ValueError("Could not load any valid images from selection.")
+        raise ValueError("Could not read any valid images from selection.")
 
+    # Save all pages to PDF
     pages[0].save(
         out_path,
         "PDF",
         save_all=True,
         append_images=pages[1:],
         resolution=150.0,
-        quality=92,
     )
     return out_path
 
@@ -666,25 +712,42 @@ def format_bytes(size_bytes):
         return f"{size_bytes / (1024 * 1024):.1f} MB"
 
 
+class AlertModal(ModalView):
+    """Alert dialog for warnings and error feedback."""
+
+    title_text = StringProperty("Notice")
+    message_text = StringProperty("")
+
+    def __init__(self, title, message, **kwargs):
+        self.title_text = title
+        self.message_text = message
+        super().__init__(**kwargs)
+
+
 class RenameModal(ModalView):
     """Popup modal requesting custom filename before conversion."""
 
     default_name = StringProperty("Document")
 
     def __init__(self, default_name, on_confirm_callback, **kwargs):
+        super().__init__(**kwargs)
         self.default_name = default_name
         self.on_confirm_callback = on_confirm_callback
-        super().__init__(**kwargs)
+        if hasattr(self, "ids") and "name_input" in self.ids:
+            self.ids.name_input.text = default_name
 
     def on_confirm(self):
         entered = self.ids.name_input.text.strip()
         if not entered:
             entered = self.default_name
-        # Remove trailing .pdf if user typed it
         if entered.lower().endswith(".pdf"):
             entered = entered[:-4]
+        # Sanitize filename
+        clean_name = re.sub(r'[\\/*?:"<>|]', "_", entered).strip()
+        if not clean_name:
+            clean_name = self.default_name
         self.dismiss()
-        self.on_confirm_callback(entered)
+        self.on_confirm_callback(clean_name)
 
 
 class ExportModal(ModalView):
@@ -704,13 +767,13 @@ class ExportModal(ModalView):
         on_view_cb,
         **kwargs,
     ):
+        super().__init__(**kwargs)
         self.local_path = local_path
         self.doc_name = doc_name
         self.doc_info = doc_info
         self.on_share_cb = on_share_cb
         self.on_save_cb = on_save_cb
         self.on_view_cb = on_view_cb
-        super().__init__(**kwargs)
 
     def on_share(self):
         self.on_share_cb(self.local_path)
@@ -756,6 +819,7 @@ class VisualThumbCard(BoxLayout):
             width=dp(72),
             allow_stretch=True,
             keep_ratio=True,
+            nocache=True,
         )
         self.add_widget(thumb)
 
@@ -901,7 +965,6 @@ class HistoryCard(BoxLayout):
         meta_box.add_widget(date_lbl)
         top_row.add_widget(meta_box)
 
-        # Delete icon
         del_btn = Button(
             text="🗑️",
             font_size="14sp",
@@ -1008,10 +1071,13 @@ class MainScreen(BoxLayout):
     def pick_images(self, *_):
         """Pick multiple images from Android gallery or desktop dialog."""
         if platform == "android":
-            from androidstorage4kivy import Chooser
+            try:
+                from androidstorage4kivy import Chooser
 
-            self.chooser = Chooser(self.on_picked)
-            self.chooser.choose_content("image/*", multiple=True)
+                self.chooser = Chooser(self.on_picked)
+                self.chooser.choose_content("image/*")
+            except Exception as e:
+                self.show_alert("Picker Error", f"Unable to open gallery: {e}")
         else:
             try:
                 import tkinter as tk
@@ -1030,33 +1096,47 @@ class MainScreen(BoxLayout):
                 )
                 if files:
                     self.on_picked(list(files))
-            except Exception:
-                pass
+            except Exception as e:
+                self.show_alert("Desktop Picker", f"File dialog error: {e}")
 
     def on_picked(self, uris):
-        """Handle images selected from picker."""
+        """Callback from Chooser (scheduled to run safely on Kivy main thread)."""
+        Clock.schedule_once(lambda dt: self._handle_picked_uris(uris), 0)
+
+    def _handle_picked_uris(self, uris):
+        """Process URIs and populate image_paths safely on the main thread."""
         new_paths = []
         if platform == "android":
-            from androidstorage4kivy import SharedStorage
+            try:
+                from androidstorage4kivy import SharedStorage
 
-            ss = SharedStorage()
-            for u in uris or []:
-                p = ss.copy_from_shared(u)
-                if p:
-                    new_paths.append(p)
+                ss = SharedStorage()
+                for u in uris or []:
+                    try:
+                        p = ss.copy_from_shared(u)
+                        if p and os.path.exists(p):
+                            new_paths.append(p)
+                    except Exception as e:
+                        print(f"Error copying {u}: {e}")
+            except Exception as e:
+                print(f"SharedStorage error: {e}")
         else:
-            new_paths = uris or []
+            new_paths = [u for u in (uris or []) if os.path.exists(u)]
 
+        current = list(self.image_paths)
         for p in new_paths:
-            if p not in self.image_paths:
-                self.image_paths.append(p)
+            if p not in current:
+                current.append(p)
 
+        self.image_paths = current
         self._refresh_gallery()
 
     def remove_image(self, path):
         """Remove a single image."""
-        if path in self.image_paths:
-            self.image_paths.remove(path)
+        current = list(self.image_paths)
+        if path in current:
+            current.remove(path)
+            self.image_paths = current
             self._refresh_gallery()
 
     def clear_images(self, *_):
@@ -1065,7 +1145,7 @@ class MainScreen(BoxLayout):
         self._refresh_gallery()
 
     def _refresh_gallery(self):
-        """Update the visual thumbnail list."""
+        """Update the visual thumbnail list and button state."""
         self.has_images = bool(self.image_paths)
         thumbs_box = self.ids.thumbs_list
         thumbs_box.clear_widgets()
@@ -1097,13 +1177,16 @@ class MainScreen(BoxLayout):
         """Initiate background thread to build PDF."""
         self.is_converting = True
         self.convert_button_text = "CONVERTING... PLEASE WAIT"
+
+        # Pass a snapshot of image_paths to avoid thread mutation
+        paths_snapshot = list(self.image_paths)
         threading.Thread(
             target=self._conversion_worker,
-            args=(custom_name,),
+            args=(custom_name, paths_snapshot),
             daemon=True,
         ).start()
 
-    def _conversion_worker(self, custom_name):
+    def _conversion_worker(self, custom_name, paths_to_convert):
         """Background worker for PIL PDF compilation."""
         try:
             app = App.get_running_app()
@@ -1111,36 +1194,37 @@ class MainScreen(BoxLayout):
             local_out = os.path.join(app.user_data_dir, out_filename)
 
             # Compile into app's private sandbox
-            convert_images_to_pdf(self.image_paths, local_out)
+            convert_images_to_pdf(paths_to_convert, local_out)
 
             file_size_str = format_bytes(os.path.getsize(local_out))
-            doc_info = f"{len(self.image_paths)} Pages  •  {file_size_str}"
+            doc_info = f"{len(paths_to_convert)} Pages  •  {file_size_str}"
 
-            # Save to local persistent history
             history_entry = {
                 "id": str(int(time.time())),
                 "name": out_filename,
                 "path": local_out,
-                "pages": len(self.image_paths),
+                "pages": len(paths_to_convert),
                 "size": file_size_str,
                 "date": time.strftime("%d %b %Y, %I:%M %p"),
             }
-            self._add_to_history(history_entry)
 
             Clock.schedule_once(
                 lambda dt: self._on_conversion_finished(
-                    local_out, out_filename, doc_info
+                    local_out, out_filename, doc_info, history_entry
                 ),
                 0,
             )
         except Exception as e:
-            Clock.schedule_once(lambda dt: self._on_conversion_error(str(e)), 0)
+            err_msg = str(e)
+            Clock.schedule_once(lambda dt: self._on_conversion_error(err_msg), 0)
 
-    def _on_conversion_finished(self, local_path, doc_name, doc_info):
+    def _on_conversion_finished(self, local_path, doc_name, doc_info, history_entry):
+        """Called on main UI thread upon successful PDF generation."""
         self.is_converting = False
+        self._add_to_history(history_entry)
         self._refresh_gallery()
 
-        # Open the Success & Options sheet (Share, Save to Device, View)
+        # Open the Success & Export Sheet
         modal = ExportModal(
             local_path=local_path,
             doc_name=doc_name,
@@ -1152,9 +1236,14 @@ class MainScreen(BoxLayout):
         modal.open()
 
     def _on_conversion_error(self, err_msg):
+        """Called on main UI thread if PDF generation failed."""
         self.is_converting = False
         self._refresh_gallery()
-        print(f"Conversion error: {err_msg}")
+        self.show_alert("Conversion Error", f"Failed to create PDF:\n{err_msg}")
+
+    def show_alert(self, title, message):
+        """Display alert modal."""
+        AlertModal(title=title, message=message).open()
 
     # --- Sharing & Device Actions ---
     def share_pdf(self, local_path):
@@ -1167,7 +1256,7 @@ class MainScreen(BoxLayout):
                 shared_uri = ss.copy_to_shared(local_path)
                 ShareSheet().share_file(shared_uri)
             except Exception as e:
-                print(f"Share error: {e}")
+                self.show_alert("Share Error", f"Unable to open ShareSheet: {e}")
         else:
             import webbrowser
 
@@ -1182,7 +1271,7 @@ class MainScreen(BoxLayout):
                 SharedStorage().copy_to_shared(local_path)
                 return True
             except Exception as e:
-                print(f"Save error: {e}")
+                self.show_alert("Save Error", f"Could not save file: {e}")
                 return False
         return True
 
@@ -1196,7 +1285,7 @@ class MainScreen(BoxLayout):
                 shared_uri = ss.copy_to_shared(local_path)
                 ShareSheet().view_file(shared_uri)
             except Exception as e:
-                print(f"View error: {e}")
+                self.show_alert("View Error", f"Unable to open PDF viewer: {e}")
         else:
             import webbrowser
 
@@ -1227,7 +1316,6 @@ class MainScreen(BoxLayout):
             print(f"Error saving history: {e}")
 
     def _add_to_history(self, entry):
-        # Insert at beginning
         updated = [entry] + [h for h in self.history_list if h.get("path") != entry["path"]]
         self.history_list = updated
         self._save_history_to_disk()
