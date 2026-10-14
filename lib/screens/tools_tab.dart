@@ -988,16 +988,16 @@ class _ToolsTabState extends State<ToolsTab> {
               child: Container(
                 decoration: BoxDecoration(
                   color: widget.isDark ? const Color(0xFF1E2026) : Colors.white,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: widget.isDark ? const Color(0xFF282A33) : const Color(0xFFE2E8F0),
-                    width: 1,
+                    color: widget.isDark ? const Color(0xFF2C2F3A) : const Color(0xFFE2E8F0),
+                    width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withOpacity(widget.isDark ? 0.22 : 0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
@@ -1005,7 +1005,7 @@ class _ToolsTabState extends State<ToolsTab> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ToolBadgeIcon(type: tool.type, size: 44),
+                    ToolBadgeIcon(type: tool.type, size: 50),
                     const SizedBox(height: 10),
                     Text(
                       tool.title,
@@ -1013,10 +1013,10 @@ class _ToolsTabState extends State<ToolsTab> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
                         color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
-                        height: 1.15,
+                        height: 1.2,
                       ),
                     ),
                   ],
