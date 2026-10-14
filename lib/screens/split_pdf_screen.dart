@@ -81,7 +81,7 @@ class _SplitPdfScreenState extends State<SplitPdfScreen> with SingleTickerProvid
   Future<void> _pickPdfFromDevice() async {
     _closeSpeedDial();
     try {
-      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
         allowMultiple: true,
