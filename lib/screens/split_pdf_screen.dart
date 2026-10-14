@@ -129,6 +129,7 @@ class _SplitPdfScreenState extends State<SplitPdfScreen> with SingleTickerProvid
               SnackBar(
                 content: Text('Added ${newItems.length} PDF(s) to split list'),
                 backgroundColor: const Color(0xFF10B981),
+                duration: const Duration(seconds: 1),
               ),
             );
           }
