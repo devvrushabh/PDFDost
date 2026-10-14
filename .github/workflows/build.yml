@@ -36,6 +36,9 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
+      - name: Patch Plugin SDKs
+        run: bash android_custom/patch_plugins.sh
+
       - name: Build Android APK
         run: flutter build apk --release --android-skip-build-dependency-validation
 

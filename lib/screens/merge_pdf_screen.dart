@@ -81,7 +81,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
   Future<void> _pickPdfFromDevice() async {
     _closeSpeedDial();
     try {
-      final FilePickerResult? result = await FilePicker.pickFiles(
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
         allowMultiple: true,

@@ -26,6 +26,27 @@ sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/' android/app/bui
 sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle.kts 2>/dev/null || true
 sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 36/' android/app/build.gradle 2>/dev/null || true
 
+# 4b. Ensure subprojects compile against SDK 36
+if [ -f "android/build.gradle.kts" ]; then
+  cat << 'SUB_EOF' >> android/build.gradle.kts
+
+subprojects {
+    if (project.name != "app") {
+        afterEvaluate {
+            try {
+                val android = project.extensions.findByName("android")
+                if (android != null) {
+                    val method = android.javaClass.getMethod("compileSdkVersion", Int::class.javaPrimitiveType)
+                    method.invoke(android, 36)
+                }
+            } catch (e: Exception) {
+            }
+        }
+    }
+}
+SUB_EOF
+fi
+
 # 5. Use pre-installed runner NDK instead of triggering failed sdkmanager downloads
 NDK_DIR=""
 if [ -d "$ANDROID_HOME/ndk" ] && [ -n "$(ls -A "$ANDROID_HOME/ndk" 2>/dev/null)" ]; then
