@@ -292,11 +292,11 @@ class _SplitPdfScreenState extends State<SplitPdfScreen> with SingleTickerProvid
                   ),
                 ],
               ),
-            );
-          },
-        ),
-      );
-    }
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _removeSelectedPdf(int index) {

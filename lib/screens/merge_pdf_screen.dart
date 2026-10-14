@@ -289,11 +289,11 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
                   ),
                 ],
               ),
-            );
-          },
-        ),
-      );
-    }
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _removeSelectedPdf(int index) {

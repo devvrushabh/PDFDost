@@ -41,6 +41,29 @@ jobs:
           sed -i 's/<application/<application android:requestLegacyExternalStorage="true"/' android/app/src/main/AndroidManifest.xml
           sed -i 's/android:label="[^"]*"/android:label="PDFDost"/' android/app/src/main/AndroidManifest.xml
 
+          # Configure minSdkVersion 21 for modern plugins like file_picker
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 21/' android/app/build.gradle.kts 2>/dev/null || true
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/' android/app/build.gradle 2>/dev/null || true
+
+          # Use pre-installed runner NDK instead of triggering failed sdkmanager downloads
+          NDK_DIR=""
+          if [ -d "$ANDROID_HOME/ndk" ] && [ -n "$(ls -A "$ANDROID_HOME/ndk" 2>/dev/null)" ]; then
+            NDK_DIR="$ANDROID_HOME/ndk"
+          elif [ -d "/usr/local/lib/android/sdk/ndk" ] && [ -n "$(ls -A "/usr/local/lib/android/sdk/ndk" 2>/dev/null)" ]; then
+            NDK_DIR="/usr/local/lib/android/sdk/ndk"
+          fi
+
+          if [ -n "$NDK_DIR" ]; then
+            INSTALLED_NDK=$(ls -1 "$NDK_DIR" | sort -V | tail -n 1)
+            echo "Using preinstalled Android NDK: $INSTALLED_NDK from $NDK_DIR"
+            sed -i "s/ndkVersion = flutter.ndkVersion/ndkVersion = \"$INSTALLED_NDK\"/" android/app/build.gradle.kts 2>/dev/null || true
+            sed -i "s/ndkVersion flutter.ndkVersion/ndkVersion \"$INSTALLED_NDK\"/" android/app/build.gradle 2>/dev/null || true
+          else
+            echo "No preinstalled NDK found; removing ndkVersion declaration"
+            sed -i '/ndkVersion/d' android/app/build.gradle.kts 2>/dev/null || true
+            sed -i '/ndkVersion/d' android/app/build.gradle 2>/dev/null || true
+          fi
+
       - name: Get Dependencies
         run: flutter pub get
 

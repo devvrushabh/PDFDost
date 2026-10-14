@@ -85,7 +85,7 @@ class PdfEngine {
       final file = File(path);
       if (await file.exists()) {
         final bytes = await file.readAsBytes();
-        final loadedDoc = sf.PdfLoadedDocument(bytes);
+        final loadedDoc = sf.PdfDocument(inputBytes: bytes);
         final count = loadedDoc.pages.count;
         loadedDoc.dispose();
         return count;
@@ -107,21 +107,18 @@ class PdfEngine {
         final file = File(path);
         if (await file.exists()) {
           final Uint8List bytes = await file.readAsBytes();
-          final sf.PdfLoadedDocument loadedDoc = sf.PdfLoadedDocument(bytes);
+          final sf.PdfDocument loadedDoc = sf.PdfDocument(inputBytes: bytes);
 
           for (int i = 0; i < loadedDoc.pages.count; i++) {
-            final sf.PdfLoadedPage loadedPage = loadedDoc.pages[i] as sf.PdfLoadedPage;
-            final sf.SizeF pageSize = loadedPage.size;
-            final sf.PdfPageOrientation orientation = loadedPage.orientation;
+            final sf.PdfPage loadedPage = loadedDoc.pages[i];
+            final sf.PdfTemplate template = loadedPage.createTemplate();
 
             final sf.PdfSection section = newDocument.sections!.add();
-            section.pageSettings.size = pageSize;
-            section.pageSettings.orientation = orientation;
+            section.pageSettings.size = template.size;
             section.pageSettings.margins.all = 0;
 
             final sf.PdfPage newPage = section.pages.add();
-            final sf.PdfTemplate template = loadedPage.createTemplate();
-            newPage.graphics.drawPdfTemplate(template, Offset.zero, pageSize);
+            newPage.graphics.drawPdfTemplate(template, Offset.zero);
             totalPages++;
           }
 
@@ -172,7 +169,7 @@ class PdfEngine {
     }
 
     final Uint8List sourceBytes = await file.readAsBytes();
-    final sf.PdfLoadedDocument loadedDoc = sf.PdfLoadedDocument(sourceBytes);
+    final sf.PdfDocument loadedDoc = sf.PdfDocument(inputBytes: sourceBytes);
     final int totalSourcePages = loadedDoc.pages.count;
 
     final int from = startPage.clamp(1, totalSourcePages);
@@ -184,18 +181,15 @@ class PdfEngine {
     try {
       for (int pageNum = from; pageNum <= to; pageNum++) {
         final int pageIndex = pageNum - 1;
-        final sf.PdfLoadedPage loadedPage = loadedDoc.pages[pageIndex] as sf.PdfLoadedPage;
-        final sf.SizeF pageSize = loadedPage.size;
-        final sf.PdfPageOrientation orientation = loadedPage.orientation;
+        final sf.PdfPage loadedPage = loadedDoc.pages[pageIndex];
+        final sf.PdfTemplate template = loadedPage.createTemplate();
 
         final sf.PdfSection section = newDocument.sections!.add();
-        section.pageSettings.size = pageSize;
-        section.pageSettings.orientation = orientation;
+        section.pageSettings.size = template.size;
         section.pageSettings.margins.all = 0;
 
         final sf.PdfPage newPage = section.pages.add();
-        final sf.PdfTemplate template = loadedPage.createTemplate();
-        newPage.graphics.drawPdfTemplate(template, Offset.zero, pageSize);
+        newPage.graphics.drawPdfTemplate(template, Offset.zero);
         totalExtracted++;
       }
 
