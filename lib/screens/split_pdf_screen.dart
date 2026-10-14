@@ -683,8 +683,10 @@ class _SplitPdfScreenState extends State<SplitPdfScreen> with SingleTickerProvid
               ),
 
             // 4. Expandable Speed Dial (Coral FAB)
-            Positioned(
-              bottom: 24,
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              bottom: (_selectedPdfs.isNotEmpty && _activeChip == 0) ? 92 : 24,
               right: 20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -889,7 +891,7 @@ class _SplitPdfScreenState extends State<SplitPdfScreen> with SingleTickerProvid
 
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
             itemCount: _selectedPdfs.length,
             itemBuilder: (ctx, idx) {
               final pdf = _selectedPdfs[idx];

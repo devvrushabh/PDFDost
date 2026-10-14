@@ -728,8 +728,10 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
               ),
 
             // 4. Expandable Speed Dial (Matching Screenshot coral style)
-            Positioned(
-              bottom: 24,
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              bottom: (_selectedPdfs.isNotEmpty && _activeChip == 0) ? 92 : 24,
               right: 20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -939,7 +941,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
         // List of PDFs in order
         Expanded(
           child: ReorderableListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
             itemCount: _selectedPdfs.length,
             onReorder: (int oldIndex, int newIndex) {
               setState(() {

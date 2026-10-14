@@ -848,9 +848,11 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
 
           // Speed Dial Buttons
           if (_isSpeedDialOpen)
-            Positioned(
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
               right: 20,
-              bottom: 96,
+              bottom: (_selectedPdfs.isNotEmpty && _activeChip == 0) ? 92 + 66 : 24 + 66,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -872,9 +874,11 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
             ),
 
           // Main Floating Action Button
-          Positioned(
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
             right: 20,
-            bottom: 24,
+            bottom: (_selectedPdfs.isNotEmpty && _activeChip == 0) ? 92 : 24,
             child: FloatingActionButton(
               heroTag: 'generic_pdf_fab',
               backgroundColor: const Color(0xFFFF4B4B),
@@ -894,10 +898,10 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
           if (_selectedPdfs.isNotEmpty && _activeChip == 0)
             Positioned(
               left: 16,
-              right: 88,
+              right: 16,
               bottom: 24,
               child: Container(
-                height: 56,
+                height: 52,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFFFF3366), Color(0xFFFF5E36)],
@@ -1119,6 +1123,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
     }
 
     return ReorderableListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
       header: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

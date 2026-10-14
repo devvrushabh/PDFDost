@@ -646,9 +646,11 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
 
           // Speed Dial Options
           if (_isSpeedDialOpen)
-            Positioned(
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
               right: 20,
-              bottom: 96,
+              bottom: (_selectedPdfs.isNotEmpty && _activeChip == 0) ? 92 + 66 : 24 + 66,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -668,9 +670,11 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
             ),
 
           // Floating Action Button
-          Positioned(
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
             right: 20,
-            bottom: 24,
+            bottom: (_selectedPdfs.isNotEmpty && _activeChip == 0) ? 92 : 24,
             child: FloatingActionButton(
               heroTag: 'compress_fab',
               backgroundColor: const Color(0xFF10B981),
@@ -912,7 +916,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
         // Selected PDF List
         Expanded(
           child: ReorderableListView.builder(
-            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 90),
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 120),
             itemCount: _selectedPdfs.length,
             onReorder: (int oldIndex, int newIndex) {
               setState(() {
@@ -1012,42 +1016,29 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
         ),
 
         // Bottom Sticky Action Bar
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          decoration: BoxDecoration(
-            color: widget.isDark ? const Color(0xFF1E2026) : Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, -3),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 4,
               ),
-            ],
-          ),
-          child: SafeArea(
-            top: false,
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF10B981),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 2,
+              icon: const Icon(Icons.compress_rounded, color: Colors.white, size: 22),
+              label: Text(
+                _selectedPdfs.length == 1
+                    ? 'COMPRESS PDF'
+                    : 'COMPRESS ${_selectedPdfs.length} PDFS',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
-                icon: const Icon(Icons.compress_rounded, color: Colors.white, size: 22),
-                label: Text(
-                  _selectedPdfs.length == 1
-                      ? 'Compress PDF'
-                      : 'Compress ${_selectedPdfs.length} PDFs',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                onPressed: _startCompression,
               ),
+              onPressed: _startCompression,
             ),
           ),
         ),

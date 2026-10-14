@@ -351,8 +351,10 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
             ),
 
           // 4. Expandable Speed Dial (Matching Screenshot 1)
-          Positioned(
-            bottom: 24,
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            bottom: (widget.selectedImages.isNotEmpty && widget.activeChip == 0) ? 92 : 24,
             right: 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -553,7 +555,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
         ),
         Expanded(
           child: ReorderableListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
             itemCount: widget.selectedImages.length,
             onReorder: (int oldIndex, int newIndex) {
               if (oldIndex < newIndex) {
@@ -652,7 +654,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
         ),
         // Convert to PDF Floating Bottom Bar
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           child: SizedBox(
             width: double.infinity,
             height: 52,
