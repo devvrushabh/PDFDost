@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/models.dart';
 import '../services/storage_engine.dart';
@@ -40,9 +39,9 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
   late AnimationController _fabAnimController;
   late Animation<double> _fabRotationAnim;
 
-  // Supported Extensions requested by user:
-  // .xlsx, .xlsm, .xlsb, .xls, .xlw, .xltx, .xltm, .xlt, .csv, .xml, .ods, .prn, .txt, .doc, .docx
-  static const List<String> allSupportedExtensions = [
+  static const List<String> supportedExtensions = [
+    'doc',
+    'docx',
     'xlsx',
     'xlsm',
     'xlsb',
@@ -56,27 +55,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
     'ods',
     'prn',
     'txt',
-    'doc',
-    'docx',
   ];
-
-  static const List<String> wordExtensions = ['doc', 'docx'];
-
-  static const List<String> spreadsheetExtensions = [
-    'xlsx',
-    'xlsm',
-    'xlsb',
-    'xls',
-    'xlw',
-    'xltx',
-    'xltm',
-    'xlt',
-    'csv',
-    'ods',
-    'prn',
-  ];
-
-  static const List<String> textExtensions = ['txt', 'xml', 'prn'];
 
   @override
   void initState() {
@@ -116,20 +95,104 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
     }
   }
 
-  Future<void> _pickFiles({List<String>? extensions, bool forceAny = false}) async {
+  Color _getFormatColor(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'doc':
+      case 'docx':
+        return const Color(0xFF185ABD); // Word Blue
+      case 'xlsx':
+      case 'xlsm':
+      case 'xlsb':
+      case 'xls':
+      case 'xlw':
+      case 'xltx':
+      case 'xltm':
+      case 'xlt':
+        return const Color(0xFF107C41); // Excel Green
+      case 'csv':
+      case 'ods':
+      case 'prn':
+        return const Color(0xFF0D9488); // Teal / Data
+      case 'xml':
+        return const Color(0xFFD97706); // Amber / XML
+      case 'txt':
+      default:
+        return const Color(0xFF64748B); // Slate / Text
+    }
+  }
+
+  IconData _getFormatIcon(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'doc':
+      case 'docx':
+        return Icons.description_rounded;
+      case 'xlsx':
+      case 'xlsm':
+      case 'xlsb':
+      case 'xls':
+      case 'xlw':
+      case 'xltx':
+      case 'xltm':
+      case 'xlt':
+        return Icons.table_chart_rounded;
+      case 'csv':
+      case 'ods':
+      case 'prn':
+        return Icons.grid_on_rounded;
+      case 'xml':
+        return Icons.code_rounded;
+      case 'txt':
+      default:
+        return Icons.article_rounded;
+    }
+  }
+
+  String _getFormatCategory(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'doc':
+      case 'docx':
+        return 'Word Document';
+      case 'xlsx':
+      case 'xlsm':
+      case 'xlsb':
+      case 'xls':
+      case 'xlw':
+      case 'xltx':
+      case 'xltm':
+      case 'xlt':
+        return 'Excel Workbook';
+      case 'csv':
+        return 'CSV Spreadsheet';
+      case 'ods':
+        return 'OpenDocument Sheet';
+      case 'prn':
+        return 'Print Data Document';
+      case 'xml':
+        return 'XML Data Document';
+      case 'txt':
+      default:
+        return 'Text Document';
+    }
+  }
+
+  Future<void> _pickWordFilesFromDevice({
+    bool forceAny = false,
+    List<String>? specificExtensions,
+  }) async {
     _closeSpeedDial();
     try {
       FilePickerResult? result;
+      final extsToPick = specificExtensions ?? supportedExtensions;
+
       if (forceAny) {
         result = await FilePicker.platform.pickFiles(
           type: FileType.any,
           allowMultiple: true,
         );
       } else {
-        final allowed = extensions ?? allSupportedExtensions;
         result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
-          allowedExtensions: allowed,
+          allowedExtensions: extsToPick,
           allowMultiple: true,
         );
       }
@@ -139,11 +202,11 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
         for (final platformFile in result.files) {
           final filePath = platformFile.path;
           if (filePath != null) {
-            final ext = filePath.contains('.')
-                ? filePath.split('.').last.toLowerCase()
-                : '';
+            final lower = filePath.toLowerCase();
+            final ext = lower.contains('.') ? lower.split('.').last : '';
 
-            if (!allSupportedExtensions.contains(ext)) {
+            // Check if extension is supported
+            if (!supportedExtensions.contains(ext)) {
               if (forceAny) continue;
             }
 
@@ -188,7 +251,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
         } else if (forceAny && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('No supported documents or spreadsheets found in selection'),
+              content: Text('No supported office or document files selected'),
               backgroundColor: Colors.orange,
               duration: Duration(seconds: 1),
             ),
@@ -233,7 +296,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
     if (_selectedFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select at least one document or spreadsheet'),
+          content: Text('Please select at least one document or spreadsheet file to convert'),
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 1),
         ),
@@ -292,7 +355,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
         setState(() => _isConverting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to convert file to PDF: $e'),
+            content: Text('Failed to convert file: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
@@ -303,24 +366,6 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
 
   List<HistoryItem> get _convertedHistory {
     return widget.historyItems.where((e) => e.toolType == 'Word to PDF').toList();
-  }
-
-  Color _getBadgeColor(SelectedWordItem item) {
-    if (item.isSpreadsheet) {
-      return const Color(0xFF107C41); // Excel Green
-    } else if (item.isText) {
-      return const Color(0xFF6366F1); // Indigo
-    }
-    return const Color(0xFF185ABD); // Word Blue
-  }
-
-  IconData _getBadgeIcon(SelectedWordItem item) {
-    if (item.isSpreadsheet) {
-      return Icons.table_chart_rounded;
-    } else if (item.isText) {
-      return Icons.text_snippet_rounded;
-    }
-    return Icons.description_rounded;
   }
 
   @override
@@ -342,17 +387,17 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Word to PDF',
+              'Word & Office to PDF',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
+                fontSize: 17,
                 color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
               ),
             ),
             Text(
-              'DOC, DOCX, XLSX, XLS, CSV, XML, ODS, TXT to PDF',
+              'DOC, DOCX, XLSX, XLS, CSV, XML, ODS, TXT',
               style: TextStyle(
-                fontSize: 10.5,
+                fontSize: 11,
                 color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
               ),
             ),
@@ -362,7 +407,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
           IconButton(
             tooltip: 'Import Files',
             icon: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF185ABD)),
-            onPressed: () => _pickFiles(),
+            onPressed: () => _pickWordFilesFromDevice(),
           ),
         ],
       ),
@@ -557,49 +602,51 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                   if (_isSpeedDialOpen) ...[
                     // Browse All Formats
                     _buildSpeedDialOption(
-                      icon: Icons.auto_awesome_motion_rounded,
-                      label: 'Browse All Formats',
-                      onTap: () => _pickFiles(extensions: allSupportedExtensions),
+                      icon: Icons.folder_open_rounded,
+                      label: 'Import All Supported Formats',
+                      onTap: () => _pickWordFilesFromDevice(),
                     ),
                     const SizedBox(height: 10),
-                    // Excel & Spreadsheets
-                    _buildSpeedDialOption(
-                      icon: Icons.table_chart_rounded,
-                      label: 'Excel (.xlsx, .xls, .csv, .ods...)',
-                      onTap: () => _pickFiles(extensions: spreadsheetExtensions),
-                    ),
-                    const SizedBox(height: 10),
-                    // Word Documents
+                    // Word DOC / DOCX
                     _buildSpeedDialOption(
                       icon: Icons.description_rounded,
                       label: 'Word (.doc, .docx)',
-                      onTap: () => _pickFiles(extensions: wordExtensions),
+                      onTap: () => _pickWordFilesFromDevice(specificExtensions: ['doc', 'docx']),
                     ),
                     const SizedBox(height: 10),
-                    // Text & Data
+                    // Excel & Sheets
                     _buildSpeedDialOption(
-                      icon: Icons.text_snippet_rounded,
-                      label: 'Text & XML (.txt, .xml, .prn)',
-                      onTap: () => _pickFiles(extensions: textExtensions),
+                      icon: Icons.table_chart_rounded,
+                      label: 'Excel (.xlsx, .xls, .csv, .ods)',
+                      onTap: () => _pickWordFilesFromDevice(specificExtensions: [
+                        'xlsx', 'xlsm', 'xlsb', 'xls', 'xlw', 'xltx', 'xltm', 'xlt', 'csv', 'ods', 'prn'
+                      ]),
                     ),
                     const SizedBox(height: 10),
-                    // Any Document
+                    // Text & XML
                     _buildSpeedDialOption(
-                      icon: Icons.folder_open_rounded,
-                      label: 'Browse Device Storage',
-                      onTap: () => _pickFiles(forceAny: true),
+                      icon: Icons.article_rounded,
+                      label: 'Text & XML (.txt, .xml)',
+                      onTap: () => _pickWordFilesFromDevice(specificExtensions: ['txt', 'xml', 'prn']),
+                    ),
+                    const SizedBox(height: 10),
+                    // All Documents Fallback
+                    _buildSpeedDialOption(
+                      icon: Icons.file_present_rounded,
+                      label: 'Browse All Documents',
+                      onTap: () => _pickWordFilesFromDevice(forceAny: true),
                     ),
                     const SizedBox(height: 14),
                   ],
 
-                  // Main Coral/Word Action Button
+                  // Main Coral Action Button
                   GestureDetector(
                     onTap: _toggleSpeedDial,
                     child: Container(
                       width: 58,
                       height: 58,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFA9282), // Theme coral
+                        color: const Color(0xFFFA9282), // Coral theme
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -670,7 +717,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                               : const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
                           label: Text(
                             _isConverting
-                                ? 'Converting to PDF...'
+                                ? 'Converting...'
                                 : 'Convert to PDF (${_selectedFiles.length})',
                             style: const TextStyle(
                               color: Colors.white,
@@ -711,7 +758,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                         const CircularProgressIndicator(color: Color(0xFF185ABD)),
                         const SizedBox(height: 18),
                         Text(
-                          'Converting to Vector PDF...',
+                          'Converting Documents to PDF...',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -720,7 +767,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Parsing data tables and formatting A4 document layout...',
+                          'Extracting tables, text & compiling vector pages...',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,
@@ -746,7 +793,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: widget.isDark ? const Color(0xFF1A1B20) : Colors.white,
           borderRadius: BorderRadius.circular(30),
@@ -772,7 +819,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
               style: TextStyle(
                 color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
                 fontWeight: FontWeight.bold,
-                fontSize: 13.5,
+                fontSize: 13,
               ),
             ),
           ],
@@ -785,13 +832,13 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
     if (_selectedFiles.isEmpty) {
       return Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SpaceEmptyIllustration(
                 title: 'No files selected',
-                subtitle: 'Import Word, Excel, CSV, ODS, or text files to convert to PDF',
+                subtitle: 'Import .doc, .docx, .xlsx, .csv, .xml, .ods, .txt files from device',
                 isDark: widget.isDark,
               ),
               const SizedBox(height: 16),
@@ -799,30 +846,44 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF185ABD),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
-                onPressed: () => _pickFiles(),
+                onPressed: () => _pickWordFilesFromDevice(),
                 icon: const Icon(Icons.file_open_rounded, color: Colors.white),
                 label: const Text(
-                  'Browse Files (.doc, .xlsx, .csv...)',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  'Browse Files (.doc, .xlsx, .csv, .txt)',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
+              // Supported formats badge pills
               Wrap(
-                alignment: WrapAlignment.center,
                 spacing: 6,
                 runSpacing: 6,
+                alignment: WrapAlignment.center,
                 children: [
-                  _buildFormatChip('.XLSX', const Color(0xFF107C41)),
-                  _buildFormatChip('.DOCX', const Color(0xFF185ABD)),
-                  _buildFormatChip('.CSV', const Color(0xFF0D9488)),
-                  _buildFormatChip('.XLS', const Color(0xFF107C41)),
-                  _buildFormatChip('.ODS', const Color(0xFF0284C7)),
-                  _buildFormatChip('.XML', const Color(0xFF6366F1)),
-                  _buildFormatChip('.PRN', const Color(0xFF8B5CF6)),
-                  _buildFormatChip('.TXT', const Color(0xFF64748B)),
-                ],
+                  'DOCX', 'DOC', 'XLSX', 'XLS', 'CSV', 'XML', 'ODS', 'TXT', 'XLSM', 'XLSB'
+                ].map((format) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: widget.isDark ? const Color(0xFF1E2026) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: widget.isDark ? const Color(0xFF2E303A) : const Color(0xFFCBD5E1),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      '.$format',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ],
           ),
@@ -839,7 +900,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${_selectedFiles.length} File(s) in Order',
+                '${_selectedFiles.length} File(s) in Conversion Order',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -871,8 +932,9 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
             },
             itemBuilder: (ctx, index) {
               final item = _selectedFiles[index];
-              final badgeColor = _getBadgeColor(item);
-              final badgeIcon = _getBadgeIcon(item);
+              final formatColor = _getFormatColor(item.extension);
+              final formatIcon = _getFormatIcon(item.extension);
+              final categoryName = _getFormatCategory(item.extension);
 
               return Container(
                 key: ValueKey(item.path),
@@ -900,10 +962,10 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: badgeColor,
+                          color: formatColor,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(badgeIcon, color: Colors.white, size: 22),
+                        child: Icon(formatIcon, color: Colors.white, size: 24),
                       ),
                       Positioned(
                         right: -4,
@@ -918,7 +980,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                             item.extension.toUpperCase(),
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 8,
+                              fontSize: 8.5,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -937,7 +999,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                     ),
                   ),
                   subtitle: Text(
-                    '${item.formattedSize}  •  ${item.formatLabel}',
+                    '${item.formattedSize}  •  $categoryName',
                     style: TextStyle(
                       fontSize: 12,
                       color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
@@ -960,25 +1022,6 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildFormatChip(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
     );
   }
 
