@@ -35,6 +35,14 @@ class StorageEngine {
     } catch (_) {}
   }
 
+  static Future<void> saveHistoryItem(HistoryItem item) async {
+    try {
+      final list = await loadHistory();
+      list.insert(0, item);
+      await saveHistory(list);
+    } catch (_) {}
+  }
+
   static Future<bool> loadDarkMode() async {
     try {
       final prefs = await SharedPreferences.getInstance();

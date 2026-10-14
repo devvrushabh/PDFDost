@@ -5,12 +5,14 @@ class SpaceEmptyIllustration extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool isDark;
+  final double size;
 
   const SpaceEmptyIllustration({
     super.key,
     this.title = 'No files found',
     this.subtitle = 'Tap the button to begin',
     this.isDark = true,
+    this.size = 220,
   });
 
   @override
@@ -19,8 +21,8 @@ class SpaceEmptyIllustration extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(
-          width: 220,
-          height: 190,
+          width: size,
+          height: size * 0.86,
           child: CustomPaint(
             painter: _SpaceEmptyPainter(isDark: isDark),
           ),
