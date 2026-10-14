@@ -45,9 +45,9 @@ class _ToolsTabState extends State<ToolsTab> {
     ToolDefinition(type: PdfToolType.pdfToWord, title: 'PDF to Word', subtitle: 'Convert PDF into DOC document'),
     ToolDefinition(type: PdfToolType.pdfToPowerPoint, title: 'PDF to PowerPoint', subtitle: 'Convert pages into presentation slides'),
     ToolDefinition(type: PdfToolType.pdfToExcel, title: 'PDF to Excel', subtitle: 'Extract data to spreadsheet'),
-    ToolDefinition(type: PdfToolType.wordToPdf, title: 'Word to PDF', subtitle: 'Convert DOC & DOCX to PDF'),
+    ToolDefinition(type: PdfToolType.wordToPdf, title: 'Word to PDF', subtitle: 'Convert DOC, DOCX, XLSX, CSV to PDF'),
     ToolDefinition(type: PdfToolType.powerPointToPdf, title: 'PowerPoint to PDF', subtitle: 'Create presentation PDF'),
-    ToolDefinition(type: PdfToolType.excelToPdf, title: 'Excel to PDF', subtitle: 'Convert table to PDF'),
+    ToolDefinition(type: PdfToolType.excelToPdf, title: 'Excel to PDF', subtitle: 'Convert XLSX, XLS, CSV, ODS to PDF'),
     ToolDefinition(type: PdfToolType.editPdf, title: 'Edit PDF', subtitle: 'Add text, signatures, and notes'),
     ToolDefinition(type: PdfToolType.pdfToJpg, title: 'PDF to JPG', subtitle: 'Export pages to images'),
     ToolDefinition(type: PdfToolType.imageToPdf, title: 'Image to PDF', subtitle: 'Convert pictures into PDF'),
@@ -82,13 +82,11 @@ class _ToolsTabState extends State<ToolsTab> {
         _openGenericToolScreen(tool.type);
         break;
       case PdfToolType.wordToPdf:
+      case PdfToolType.excelToPdf:
         _openWordToPdfScreen();
         break;
       case PdfToolType.powerPointToPdf:
         _showPowerPointToPdfDialog();
-        break;
-      case PdfToolType.excelToPdf:
-        _showExcelToPdfDialog();
         break;
       case PdfToolType.editPdf:
         _showEditPdfDialog();

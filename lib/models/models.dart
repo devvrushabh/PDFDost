@@ -62,6 +62,33 @@ class SelectedWordItem {
     }
     return '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
+
+  bool get isSpreadsheet {
+    final ext = extension.toLowerCase();
+    return ['xlsx', 'xlsm', 'xlsb', 'xls', 'xlw', 'xltx', 'xltm', 'xlt', 'csv', 'ods', 'prn'].contains(ext);
+  }
+
+  bool get isWord {
+    final ext = extension.toLowerCase();
+    return ['doc', 'docx'].contains(ext);
+  }
+
+  bool get isText {
+    final ext = extension.toLowerCase();
+    return ['txt', 'xml', 'prn'].contains(ext);
+  }
+
+  String get formatLabel {
+    final ext = extension.toLowerCase();
+    if (['doc', 'docx'].contains(ext)) return 'Word Document';
+    if (['xlsx', 'xlsm', 'xlsb', 'xls', 'xlw', 'xltx', 'xltm', 'xlt'].contains(ext)) return 'Excel Spreadsheet';
+    if (ext == 'csv') return 'CSV Spreadsheet';
+    if (ext == 'ods') return 'OpenDocument Sheet';
+    if (ext == 'xml') return 'XML Document';
+    if (ext == 'prn') return 'Print File';
+    if (ext == 'txt') return 'Text Document';
+    return '${extension.toUpperCase()} File';
+  }
 }
 
 class SplitPdfConfigItem {
