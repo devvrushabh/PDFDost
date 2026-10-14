@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import '../models/models.dart';
 
@@ -29,6 +30,15 @@ class PdfEngine {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  static String _escapeHtml(String text) {
+    return text
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
   }
 
   // 1. Image to PDF (Flagship)
@@ -248,113 +258,229 @@ class PdfEngine {
     );
   }
 
-  // 4. Compress PDF
-  static Future<PdfEngineResult> compressPdf({
-    required HistoryItem sourceItem,
+  // 4. Compress PDF (Real Vector & Stream Optimizer)
+  static Future<PdfEngineResult> compressPdfDocument({
+    required String sourcePath,
     required String levelName, // Extreme, Recommended, Low
     required String docName,
   }) async {
-    final pdf = pw.Document();
-    final originalFile = File(sourceItem.path);
-    Uint8List? rawBytes;
-    if (await originalFile.exists()) {
-      rawBytes = await originalFile.readAsBytes();
+    final file = File(sourcePath);
+    if (!await file.exists()) {
+      throw Exception('Source file not found at $sourcePath');
+    }
+    final Uint8List originalBytes = await file.readAsBytes();
+    final sf.PdfDocument document = sf.PdfDocument(inputBytes: originalBytes);
+    final int pageCount = document.pages.count;
+
+    if (levelName == 'Extreme') {
+      document.compressionLevel = sf.PdfCompressionLevel.best;
+      document.fileStructure.incrementalUpdate = false;
+      document.fileStructure.crossReferenceType = sf.PdfCrossReferenceType.crossReferenceStream;
+    } else if (levelName == 'Recommended') {
+      document.compressionLevel = sf.PdfCompressionLevel.best;
+      document.fileStructure.incrementalUpdate = false;
+    } else {
+      document.compressionLevel = sf.PdfCompressionLevel.normal;
     }
 
-    final pagesCount = sourceItem.pages > 0 ? sourceItem.pages : 1;
-    for (int i = 0; i < pagesCount; i++) {
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(24),
-          build: (pw.Context ctx) {
-            return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('Optimized Document ($levelName)', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.Text('Page ${i + 1} of $pagesCount', style: const pw.TextStyle(color: PdfColors.grey600)),
-                  ],
-                ),
-                pw.Divider(color: PdfColors.grey400),
-                pw.SizedBox(height: 20),
-                pw.Text('Original File: ${sourceItem.name}'),
-                pw.Text('Compression Preset: $levelName Compression'),
-                pw.SizedBox(height: 20),
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(16),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.green50,
-                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-                    border: pw.Border.all(color: PdfColors.green300),
-                  ),
-                  child: pw.Text(
-                    'Stream and image assets re-encoded with $levelName compression algorithm for optimized file sharing.',
-                    style: const pw.TextStyle(color: PdfColors.green900, fontSize: 11),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      );
+    final List<int> savedBytes = await document.save();
+    document.dispose();
+
+    List<int> bestBytes = savedBytes;
+    try {
+      final sf.PdfDocument cleanDoc = sf.PdfDocument();
+      cleanDoc.compressionLevel = sf.PdfCompressionLevel.best;
+      cleanDoc.fileStructure.crossReferenceType = sf.PdfCrossReferenceType.crossReferenceStream;
+      cleanDoc.fileStructure.incrementalUpdate = false;
+
+      final sf.PdfDocument tempDoc = sf.PdfDocument(inputBytes: originalBytes);
+      for (int i = 0; i < tempDoc.pages.count; i++) {
+        final sf.PdfPage srcPage = tempDoc.pages[i];
+        final sf.PdfTemplate template = srcPage.createTemplate();
+        final sf.PdfSection sec = cleanDoc.sections!.add();
+        sec.pageSettings.size = template.size;
+        sec.pageSettings.margins.all = 0;
+        final sf.PdfPage newP = sec.pages.add();
+        newP.graphics.drawPdfTemplate(template, Offset.zero);
+      }
+      tempDoc.dispose();
+
+      final List<int> cleanBytes = await cleanDoc.save();
+      cleanDoc.dispose();
+
+      if (cleanBytes.length < bestBytes.length) {
+        bestBytes = cleanBytes;
+      }
+    } catch (_) {}
+
+    // Ensure we never return a larger file than original
+    if (bestBytes.length > originalBytes.length) {
+      bestBytes = originalBytes;
     }
 
-    return await _saveDocument(pdf, docName);
+    return await _saveBytes(bestBytes, docName, pageCount);
   }
 
-  // 5. PDF to Word (Exports formatted .doc file)
+  static Future<PdfEngineResult> compressPdf({
+    required HistoryItem sourceItem,
+    required String levelName,
+    required String docName,
+  }) async {
+    return await compressPdfDocument(
+      sourcePath: sourceItem.path,
+      levelName: levelName,
+      docName: docName,
+    );
+  }
+
+  static Future<List<PdfEngineResult>> compressMultiplePdfs({
+    required List<SelectedPdfItem> items,
+    required String levelName,
+    required String baseDocName,
+  }) async {
+    final List<PdfEngineResult> results = [];
+    for (int i = 0; i < items.length; i++) {
+      final item = items[i];
+      final base = baseDocName.isEmpty ? 'Compressed' : baseDocName;
+      final String itemDocName = items.length == 1
+          ? base
+          : '${base}_${i + 1}_${item.name.replaceAll('.pdf', '')}';
+      final res = await compressPdfDocument(
+        sourcePath: item.path,
+        levelName: levelName,
+        docName: itemDocName,
+      );
+      results.add(res);
+    }
+    return results;
+  }
+
+  // 5. PDF to Word (Real formatted .doc conversion)
+  static Future<File> pdfToWordFromPath({
+    required String sourcePath,
+    required String docName,
+    bool includeHeaders = true,
+  }) async {
+    final file = File(sourcePath);
+    if (!await file.exists()) {
+      throw Exception('Source file not found at $sourcePath');
+    }
+    final bytes = await file.readAsBytes();
+    final sf.PdfDocument document = sf.PdfDocument(inputBytes: bytes);
+    final sf.PdfTextExtractor extractor = sf.PdfTextExtractor(document);
+    final int pageCount = document.pages.count;
+
+    final appDir = await getApplicationDocumentsDirectory();
+    var sanitizedName = docName.trim();
+    if (sanitizedName.isEmpty) {
+      sanitizedName = 'Document_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}';
+    }
+    if (sanitizedName.toLowerCase().endsWith('.doc')) {
+      sanitizedName = sanitizedName.substring(0, sanitizedName.length - 4);
+    }
+    sanitizedName = sanitizedName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+    final targetFile = File('${appDir.path}/$sanitizedName.doc');
+
+    final buffer = StringBuffer();
+    buffer.writeln('<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">');
+    buffer.writeln('<head><meta charset="utf-8"><title>$sanitizedName</title>');
+    buffer.writeln('<style>');
+    buffer.writeln('body { font-family: "Segoe UI", Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.6; color: #1e293b; margin: 1in; }');
+    buffer.writeln('h1 { font-size: 20pt; color: #0284c7; margin-bottom: 10pt; font-weight: bold; border-bottom: 2px solid #0284c7; padding-bottom: 6pt; }');
+    buffer.writeln('h2 { font-size: 13pt; color: #334155; margin-top: 18pt; margin-bottom: 8pt; border-bottom: 1px solid #cbd5e1; padding-bottom: 4pt; }');
+    buffer.writeln('p { margin: 0 0 10pt 0; text-align: justify; }');
+    buffer.writeln('.page-break { page-break-after: always; }');
+    buffer.writeln('.meta-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10pt; margin-bottom: 20pt; font-size: 9.5pt; color: #64748b; }');
+    buffer.writeln('</style></head><body>');
+
+    if (includeHeaders) {
+      buffer.writeln('<h1>$sanitizedName</h1>');
+      buffer.writeln('<div class="meta-box">');
+      buffer.writeln('<strong>Converted with PDFDost (PDF to Word Engine)</strong> &bull; ${DateFormat('dd MMMM yyyy, hh:mm a').format(DateTime.now())}<br>');
+      buffer.writeln('Total Pages Extracted: $pageCount');
+      buffer.writeln('</div>');
+    }
+
+    for (int p = 0; p < pageCount; p++) {
+      final pageText = extractor.extractText(startPageIndex: p, endPageIndex: p);
+      if (includeHeaders) {
+        buffer.writeln('<h2>Page ${p + 1}</h2>');
+      }
+      final lines = pageText.split('\n');
+      for (final line in lines) {
+        final trimmed = line.trim();
+        if (trimmed.isNotEmpty) {
+          buffer.writeln('<p>${_escapeHtml(trimmed)}</p>');
+        }
+      }
+      if (p < pageCount - 1) {
+        buffer.writeln('<div class="page-break"></div>');
+      }
+    }
+    buffer.writeln('</body></html>');
+
+    document.dispose();
+    await targetFile.writeAsString(buffer.toString());
+    return targetFile;
+  }
+
   static Future<File> pdfToWord({
     required HistoryItem sourceItem,
     required String docName,
   }) async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final fileName = '$docName.doc';
-    final targetFile = File('${appDir.path}/$fileName');
-
-    final content = StringBuffer();
-    content.writeln('=====================================================');
-    content.writeln('DOCUMENT: ${sourceItem.name}');
-    content.writeln('CONVERTED BY: PDFDost (PDF to Word Engine)');
-    content.writeln('DATE: ${DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now())}');
-    content.writeln('PAGES: ${sourceItem.pages}');
-    content.writeln('=====================================================\n\n');
-
-    for (int p = 1; p <= sourceItem.pages; p++) {
-      content.writeln('--- PAGE $p ---\n');
-      content.writeln('Title: ${sourceItem.name.replaceAll('.pdf', '')}');
-      content.writeln('Extracted Content:');
-      content.writeln('This section contains structured text extracted from page $p of the source PDF document.');
-      content.writeln('Paragraph formatting, headers, and bullet points preserved by PDFDost engine.\n\n');
-    }
-
-    await targetFile.writeAsString(content.toString());
-    return targetFile;
+    return await pdfToWordFromPath(
+      sourcePath: sourceItem.path,
+      docName: docName,
+    );
   }
 
-  // 6. PDF to PowerPoint
-  static Future<PdfEngineResult> pdfToPowerPoint({
-    required HistoryItem sourceItem,
+  // 6. PDF to PowerPoint (Widescreen 16:9 Presentation Slides)
+  static Future<PdfEngineResult> pdfToPowerPointFromPath({
+    required String sourcePath,
     required String docName,
+    String theme = 'Modern Indigo',
   }) async {
+    final file = File(sourcePath);
+    if (!await file.exists()) {
+      throw Exception('Source file not found at $sourcePath');
+    }
+    final bytes = await file.readAsBytes();
+    final sf.PdfDocument document = sf.PdfDocument(inputBytes: bytes);
+    final sf.PdfTextExtractor extractor = sf.PdfTextExtractor(document);
+    final int pageCount = document.pages.count;
+
     final pdf = pw.Document();
-    final pagesCount = sourceItem.pages > 0 ? sourceItem.pages : 3;
+    const slideFormat = PdfPageFormat(960, 540, marginAll: 36);
 
-    // Slide presentation format (Landscape A4: 842 x 595)
-    const slideFormat = PdfPageFormat(842, 595, marginAll: 36);
+    PdfColor primaryColor;
+    PdfColor accentBgColor;
+    if (theme == 'Crimson Coral') {
+      primaryColor = PdfColors.red700;
+      accentBgColor = PdfColors.red100;
+    } else if (theme == 'Slate Emerald') {
+      primaryColor = PdfColors.teal700;
+      accentBgColor = PdfColors.teal100;
+    } else {
+      primaryColor = PdfColors.indigo800;
+      accentBgColor = PdfColors.indigo50;
+    }
 
-    for (int i = 0; i < pagesCount; i++) {
+    for (int p = 0; p < pageCount; p++) {
+      final pageText = extractor.extractText(startPageIndex: p, endPageIndex: p);
+      final rawLines = pageText.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+      final title = rawLines.isNotEmpty ? rawLines.first : 'Slide ${p + 1}';
+      final contentLines = rawLines.length > 1 ? rawLines.skip(1).take(6).toList() : <String>[];
+
       pdf.addPage(
         pw.Page(
           pageFormat: slideFormat,
           build: (pw.Context ctx) {
             return pw.Container(
-              padding: const pw.EdgeInsets.all(24),
+              padding: const pw.EdgeInsets.all(32),
               decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.orange400, width: 2),
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+                color: PdfColors.white,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(16)),
+                border: pw.Border.all(color: primaryColor, width: 2),
               ),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -362,29 +488,79 @@ class PdfEngine {
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text(
-                        i == 0 ? 'Presentation Overview' : 'Slide ${i + 1}: Content Analysis',
-                        style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColors.orange800),
+                      pw.Expanded(
+                        child: pw.Text(
+                          title,
+                          style: pw.TextStyle(
+                            fontSize: 22,
+                            fontWeight: pw.FontWeight.bold,
+                            color: primaryColor,
+                          ),
+                          maxLines: 2,
+                        ),
                       ),
-                      pw.Text(
-                        'PDFDost Slides',
-                        style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 12),
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: pw.BoxDecoration(
+                          color: accentBgColor,
+                          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                        ),
+                        child: pw.Text(
+                          'PDFDost Presentation',
+                          style: pw.TextStyle(color: primaryColor, fontSize: 10, fontWeight: pw.FontWeight.bold),
+                        ),
                       ),
                     ],
                   ),
-                  pw.Divider(color: PdfColors.orange200, thickness: 2),
-                  pw.SizedBox(height: 24),
-                  pw.Text('Source Document: ${sourceItem.name}', style: const pw.TextStyle(fontSize: 14)),
                   pw.SizedBox(height: 12),
-                  pw.Bullet(text: 'Key point 1 extracted from source document page ${i + 1}'),
-                  pw.Bullet(text: 'Visual alignment formatted for high-resolution screen presentations'),
-                  pw.Bullet(text: 'Compatible with Microsoft PowerPoint and Google Slides export'),
+                  pw.Divider(color: primaryColor, thickness: 1.5),
+                  pw.SizedBox(height: 18),
+                  if (contentLines.isNotEmpty)
+                    ...contentLines.map((line) => pw.Padding(
+                          padding: const pw.EdgeInsets.only(bottom: 10),
+                          child: pw.Row(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Container(
+                                margin: const pw.EdgeInsets.only(top: 6, right: 10),
+                                width: 7,
+                                height: 7,
+                                decoration: pw.BoxDecoration(
+                                  color: primaryColor,
+                                  shape: pw.BoxShape.circle,
+                                ),
+                              ),
+                              pw.Expanded(
+                                child: pw.Text(
+                                  line,
+                                  style: const pw.TextStyle(fontSize: 13, lineSpacing: 2.5),
+                                  maxLines: 3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ))
+                  else
+                    pw.Expanded(
+                      child: pw.Center(
+                        child: pw.Text(
+                          'Content extracted from page ${p + 1} of source document.',
+                          style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 13),
+                        ),
+                      ),
+                    ),
                   pw.Spacer(),
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text('Slide ${i + 1} of $pagesCount', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
-                      pw.Text(DateFormat('dd MMM yyyy').format(DateTime.now()), style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+                      pw.Text(
+                        'Slide ${p + 1} of $pageCount',
+                        style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                      ),
+                      pw.Text(
+                        DateFormat('dd MMM yyyy').format(DateTime.now()),
+                        style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                      ),
                     ],
                   ),
                 ],
@@ -395,27 +571,88 @@ class PdfEngine {
       );
     }
 
+    document.dispose();
     return await _saveDocument(pdf, docName);
   }
 
-  // 7. PDF to Excel (Extracts structured spreadsheet .csv / .xlsx)
+  static Future<PdfEngineResult> pdfToPowerPoint({
+    required HistoryItem sourceItem,
+    required String docName,
+  }) async {
+    return await pdfToPowerPointFromPath(
+      sourcePath: sourceItem.path,
+      docName: docName,
+    );
+  }
+
+  // 7. PDF to Excel (Structured Spreadsheet .csv export)
+  static Future<File> pdfToExcelFromPath({
+    required String sourcePath,
+    required String docName,
+  }) async {
+    final file = File(sourcePath);
+    if (!await file.exists()) {
+      throw Exception('Source file not found at $sourcePath');
+    }
+    final bytes = await file.readAsBytes();
+    final sf.PdfDocument document = sf.PdfDocument(inputBytes: bytes);
+    final sf.PdfTextExtractor extractor = sf.PdfTextExtractor(document);
+    final int pageCount = document.pages.count;
+
+    final appDir = await getApplicationDocumentsDirectory();
+    var sanitizedName = docName.trim();
+    if (sanitizedName.isEmpty) {
+      sanitizedName = 'Spreadsheet_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}';
+    }
+    if (sanitizedName.toLowerCase().endsWith('.csv')) {
+      sanitizedName = sanitizedName.substring(0, sanitizedName.length - 4);
+    }
+    sanitizedName = sanitizedName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+    final targetFile = File('${appDir.path}/$sanitizedName.csv');
+
+    final csv = StringBuffer();
+    // Excel UTF-8 BOM
+    csv.write('\uFEFF');
+    csv.writeln('"Page","Line","Extracted Content","Column 2 / Notes"');
+
+    int rowCounter = 1;
+    for (int p = 0; p < pageCount; p++) {
+      final pageText = extractor.extractText(startPageIndex: p, endPageIndex: p);
+      final lines = pageText.split('\n');
+      for (int l = 0; l < lines.length; l++) {
+        final line = lines[l].trim();
+        if (line.isEmpty) continue;
+
+        List<String> cols;
+        if (line.contains('\t')) {
+          cols = line.split('\t').map((s) => s.trim()).toList();
+        } else if (line.contains('  ')) {
+          cols = line.split(RegExp(r'\s{2,}')).map((s) => s.trim()).toList();
+        } else {
+          cols = [line];
+        }
+
+        final col1 = cols.isNotEmpty ? cols[0].replaceAll('"', '""') : '';
+        final col2 = cols.length > 1 ? cols.sublist(1).join(' | ').replaceAll('"', '""') : '';
+
+        csv.writeln('"${p + 1}","$rowCounter","$col1","$col2"');
+        rowCounter++;
+      }
+    }
+
+    document.dispose();
+    await targetFile.writeAsString(csv.toString());
+    return targetFile;
+  }
+
   static Future<File> pdfToExcel({
     required HistoryItem sourceItem,
     required String docName,
   }) async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final fileName = '$docName.csv';
-    final targetFile = File('${appDir.path}/$fileName');
-
-    final csv = StringBuffer();
-    csv.writeln('"Item ID","Description","Page Source","Category","Value","Timestamp"');
-    for (int i = 1; i <= (sourceItem.pages * 3).clamp(3, 30); i++) {
-      final page = ((i - 1) ~/ 3) + 1;
-      csv.writeln('"$i","Data Entry #$i from ${sourceItem.name}","Page $page","Financial","${(i * 125.5).toStringAsFixed(2)}","${DateTime.now().toIso8601String()}"');
-    }
-
-    await targetFile.writeAsString(csv.toString());
-    return targetFile;
+    return await pdfToExcelFromPath(
+      sourcePath: sourceItem.path,
+      docName: docName,
+    );
   }
 
   // 8. Word to PDF Creator
@@ -650,102 +887,198 @@ class PdfEngine {
     return await _saveDocument(pdf, docName);
   }
 
-  // 12. PDF to JPG (Render pages to JPGs)
-  static Future<List<File>> pdfToJpg({
-    required HistoryItem sourceItem,
+  // 12. PDF to JPG (Render pages to real JPG images)
+  static Future<List<File>> pdfToJpgFromPath({
+    required String sourcePath,
+    required String docName,
+    int dpi = 150,
   }) async {
+    final file = File(sourcePath);
+    if (!await file.exists()) {
+      throw Exception('Source file not found at $sourcePath');
+    }
+    final bytes = await file.readAsBytes();
     final appDir = await getApplicationDocumentsDirectory();
-    final List<File> outputFiles = [];
-    final pagesCount = sourceItem.pages > 0 ? sourceItem.pages : 1;
 
-    for (int i = 1; i <= pagesCount; i++) {
-      final imgFile = File('${appDir.path}/${sourceItem.name.replaceAll('.pdf', '')}_page_$i.jpg');
-      // Create a clean placeholder or extracted image
-      final sampleBytes = Uint8List.fromList([
-        0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01, 0x00, 0x48,
-        0x00, 0x48, 0x00, 0x00, 0xFF, 0xDB, 0x00, 0x43, 0x00, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x0A,
-        0x00, 0x0A, 0x01, 0x01, 0x11, 0x00, 0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00,
-        0xBF, 0x00, 0xFF, 0xD9
-      ]);
-      await imgFile.writeAsBytes(sampleBytes);
+    var sanitizedName = docName.trim();
+    if (sanitizedName.isEmpty) {
+      sanitizedName = 'Images_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}';
+    }
+    sanitizedName = sanitizedName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+
+    final List<File> outputFiles = [];
+    int pageIndex = 1;
+
+    await for (final rasterPage in Printing.raster(bytes, dpi: dpi.toDouble())) {
+      final pngBytes = await rasterPage.toPng();
+      final imgFile = File('${appDir.path}/${sanitizedName}_page_$pageIndex.jpg');
+      await imgFile.writeAsBytes(pngBytes);
       outputFiles.add(imgFile);
+      pageIndex++;
     }
 
     return outputFiles;
   }
 
-  // 13. Page Numbers
-  static Future<PdfEngineResult> addPageNumbers({
+  static Future<List<File>> pdfToJpg({
     required HistoryItem sourceItem,
-    required String position, // Bottom Center, Bottom Right, Top Right
-    required String format, // Page X of Y, X / Y, Page X
+    int dpi = 150,
+  }) async {
+    return await pdfToJpgFromPath(
+      sourcePath: sourceItem.path,
+      docName: sourceItem.name.replaceAll('.pdf', ''),
+      dpi: dpi,
+    );
+  }
+
+  // 13. Page Numbers (Vector stamp on actual PDF pages)
+  static Future<PdfEngineResult> addPageNumbersToPdf({
+    required String sourcePath,
+    required String position, // Bottom Center, Bottom Right, Top Right, Bottom Left
+    required String format, // Page {n} of {total}, {n} / {total}, Page {n}, {n}
+    int startNumber = 1,
     required String docName,
   }) async {
-    final pdf = pw.Document();
-    final pagesCount = sourceItem.pages > 0 ? sourceItem.pages : 1;
+    final file = File(sourcePath);
+    if (!await file.exists()) {
+      throw Exception('Source file not found at $sourcePath');
+    }
+    final bytes = await file.readAsBytes();
+    final sf.PdfDocument document = sf.PdfDocument(inputBytes: bytes);
+    final int pageCount = document.pages.count;
 
-    for (int i = 0; i < pagesCount; i++) {
-      final pageNum = i + 1;
-      String pageLabel;
+    final sf.PdfStandardFont font = sf.PdfStandardFont(sf.PdfFontFamily.helvetica, 10);
+    final sf.PdfBrush brush = sf.PdfSolidBrush(sf.PdfColor(100, 116, 139));
+
+    for (int i = 0; i < pageCount; i++) {
+      final sf.PdfPage page = document.pages[i];
+      final int pageNumber = i + startNumber;
+      String label;
       if (format.contains('of')) {
-        pageLabel = 'Page $pageNum of $pagesCount';
+        label = 'Page $pageNumber of $pageCount';
       } else if (format.contains('/')) {
-        pageLabel = '$pageNum / $pagesCount';
+        label = '$pageNumber / $pageCount';
+      } else if (format.startsWith('Page')) {
+        label = 'Page $pageNumber';
       } else {
-        pageLabel = 'Page $pageNum';
+        label = '$pageNumber';
       }
 
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(32),
-          build: (pw.Context ctx) {
-            pw.Alignment alignment;
-            if (position == 'Bottom Right') {
-              alignment = pw.Alignment.bottomRight;
-            } else if (position == 'Top Right') {
-              alignment = pw.Alignment.topRight;
-            } else {
-              alignment = pw.Alignment.bottomCenter;
-            }
+      final Size textSize = font.measureString(label);
+      double x = 0;
+      double y = 0;
 
-            return pw.Stack(
-              children: [
-                pw.Center(
-                  child: pw.Column(
-                    mainAxisAlignment: pw.MainAxisAlignment.center,
-                    children: [
-                      pw.Text(sourceItem.name, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
-                      pw.SizedBox(height: 8),
-                      pw.Text('Numbered Page Document', style: const pw.TextStyle(color: PdfColors.grey600)),
-                    ],
-                  ),
-                ),
-                pw.Align(
-                  alignment: alignment,
-                  child: pw.Container(
-                    padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: pw.BoxDecoration(
-                      color: PdfColors.grey200,
-                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
-                    ),
-                    child: pw.Text(
-                      pageLabel,
-                      style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+      switch (position) {
+        case 'Bottom Right':
+          x = page.size.width - textSize.width - 36;
+          y = page.size.height - 30;
+          break;
+        case 'Top Right':
+          x = page.size.width - textSize.width - 36;
+          y = 20;
+          break;
+        case 'Bottom Left':
+          x = 36;
+          y = page.size.height - 30;
+          break;
+        case 'Bottom Center':
+        default:
+          x = (page.size.width - textSize.width) / 2;
+          y = page.size.height - 30;
+          break;
+      }
+
+      page.graphics.drawString(
+        label,
+        font,
+        brush: brush,
+        bounds: Rect.fromLTWH(x, y, textSize.width + 10, textSize.height + 4),
       );
     }
 
-    return await _saveDocument(pdf, docName);
+    final List<int> savedBytes = await document.save();
+    document.dispose();
+    return await _saveBytes(savedBytes, docName, pageCount);
   }
 
-  // 14. Watermark PDF
+  static Future<PdfEngineResult> addPageNumbers({
+    required HistoryItem sourceItem,
+    required String position,
+    required String format,
+    required String docName,
+  }) async {
+    return await addPageNumbersToPdf(
+      sourcePath: sourceItem.path,
+      position: position,
+      format: format,
+      docName: docName,
+    );
+  }
+
+  // 14. Watermark PDF (Overlay text watermark on actual PDF)
+  static Future<PdfEngineResult> addWatermarkToPdf({
+    required String sourcePath,
+    required String watermarkText,
+    double opacity = 0.35,
+    bool isDiagonal = true,
+    int colorValue = 0xFFDC2626,
+    required String docName,
+  }) async {
+    final file = File(sourcePath);
+    if (!await file.exists()) {
+      throw Exception('Source file not found at $sourcePath');
+    }
+    final bytes = await file.readAsBytes();
+    final sf.PdfDocument document = sf.PdfDocument(inputBytes: bytes);
+    final int pageCount = document.pages.count;
+
+    final int r = (colorValue >> 16) & 0xFF;
+    final int g = (colorValue >> 8) & 0xFF;
+    final int b = colorValue & 0xFF;
+
+    final sf.PdfStandardFont font = sf.PdfStandardFont(
+      sf.PdfFontFamily.helvetica,
+      38,
+      style: sf.PdfFontStyle.bold,
+    );
+    final sf.PdfBrush brush = sf.PdfSolidBrush(sf.PdfColor(r, g, b));
+
+    for (int i = 0; i < pageCount; i++) {
+      final sf.PdfPage page = document.pages[i];
+      final sf.PdfGraphics graphics = page.graphics;
+      final sf.PdfGraphicsState state = graphics.save();
+
+      graphics.setTransparency(opacity.clamp(0.05, 0.95));
+      final Size textSize = font.measureString(watermarkText);
+
+      if (isDiagonal) {
+        graphics.translateTransform(page.size.width / 2, page.size.height / 2);
+        graphics.rotateTransform(-40);
+        graphics.drawString(
+          watermarkText,
+          font,
+          brush: brush,
+          bounds: Rect.fromLTWH(-textSize.width / 2, -textSize.height / 2, textSize.width, textSize.height),
+        );
+      } else {
+        final double x = (page.size.width - textSize.width) / 2;
+        final double y = (page.size.height - textSize.height) / 2;
+        graphics.drawString(
+          watermarkText,
+          font,
+          brush: brush,
+          bounds: Rect.fromLTWH(x, y, textSize.width, textSize.height),
+        );
+      }
+
+      graphics.restore(state);
+    }
+
+    final List<int> savedBytes = await document.save();
+    document.dispose();
+    return await _saveBytes(savedBytes, docName, pageCount);
+  }
+
   static Future<PdfEngineResult> addWatermark({
     required HistoryItem sourceItem,
     required String watermarkText,
@@ -753,96 +1086,110 @@ class PdfEngine {
     required bool isDiagonal,
     required String docName,
   }) async {
-    final pdf = pw.Document();
-    final pagesCount = sourceItem.pages > 0 ? sourceItem.pages : 1;
-
-    for (int i = 0; i < pagesCount; i++) {
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(28),
-          build: (pw.Context ctx) {
-            return pw.Stack(
-              children: [
-                // Base Content
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('Document: ${sourceItem.name}', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-                    pw.Divider(),
-                    pw.SizedBox(height: 20),
-                    pw.Text('Page ${i + 1} of $pagesCount'),
-                    pw.SizedBox(height: 12),
-                    pw.Text('Protected document stamped with official security watermark by PDFDost.'),
-                  ],
-                ),
-                // Watermark overlay
-                pw.Center(
-                  child: pw.Transform.rotateBox(
-                    angle: isDiagonal ? -0.7 : 0.0,
-                    child: pw.Opacity(
-                      opacity: opacity,
-                      child: pw.Text(
-                        watermarkText,
-                        style: pw.TextStyle(
-                          fontSize: 48,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.red700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      );
-    }
-
-    return await _saveDocument(pdf, docName);
+    return await addWatermarkToPdf(
+      sourcePath: sourceItem.path,
+      watermarkText: watermarkText,
+      opacity: opacity,
+      isDiagonal: isDiagonal,
+      docName: docName,
+    );
   }
 
-  // 15. Rotate PDF
-  static Future<PdfEngineResult> rotatePdf({
-    required HistoryItem sourceItem,
+  // 15. Rotate PDF (Native vector page orientation adjustment)
+  static sf.PdfPageRotateAngle _calculateNewRotation(sf.PdfPageRotateAngle current, int degrees) {
+    int currentDeg = 0;
+    switch (current) {
+      case sf.PdfPageRotateAngle.rotateAngle90:
+        currentDeg = 90;
+        break;
+      case sf.PdfPageRotateAngle.rotateAngle180:
+        currentDeg = 180;
+        break;
+      case sf.PdfPageRotateAngle.rotateAngle270:
+        currentDeg = 270;
+        break;
+      case sf.PdfPageRotateAngle.rotateAngle0:
+      default:
+        currentDeg = 0;
+        break;
+    }
+    final int newDeg = (currentDeg + degrees) % 360;
+    switch (newDeg) {
+      case 90:
+        return sf.PdfPageRotateAngle.rotateAngle90;
+      case 180:
+        return sf.PdfPageRotateAngle.rotateAngle180;
+      case 270:
+        return sf.PdfPageRotateAngle.rotateAngle270;
+      default:
+        return sf.PdfPageRotateAngle.rotateAngle0;
+    }
+  }
+
+  static Future<PdfEngineResult> rotatePdfDocument({
+    required String sourcePath,
     required int rotationDegrees, // 90, 180, 270
     required String docName,
   }) async {
-    final pdf = pw.Document();
-    final pagesCount = sourceItem.pages > 0 ? sourceItem.pages : 1;
+    final file = File(sourcePath);
+    if (!await file.exists()) {
+      throw Exception('Source file not found at $sourcePath');
+    }
+    final bytes = await file.readAsBytes();
+    final sf.PdfDocument document = sf.PdfDocument(inputBytes: bytes);
+    final int pageCount = document.pages.count;
 
-    final format = (rotationDegrees == 90 || rotationDegrees == 270)
-        ? PdfPageFormat.a4.landscape
-        : PdfPageFormat.a4.portrait;
-
-    for (int i = 0; i < pagesCount; i++) {
-      pdf.addPage(
-        pw.Page(
-          pageFormat: format,
-          margin: const pw.EdgeInsets.all(24),
-          build: (pw.Context ctx) {
-            return pw.Center(
-              child: pw.Column(
-                mainAxisAlignment: pw.MainAxisAlignment.center,
-                children: [
-                  pw.Text('Rotated Page ${i + 1} ($rotationDegrees°)', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-                  pw.SizedBox(height: 8),
-                  pw.Text('Source: ${sourceItem.name}'),
-                  pw.SizedBox(height: 16),
-                  pw.Text(
-                    'Page orientation adjusted by $rotationDegrees degrees using PDFDost.',
-                    style: const pw.TextStyle(color: PdfColors.grey600),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      );
+    for (int i = 0; i < pageCount; i++) {
+      final sf.PdfPage page = document.pages[i];
+      page.rotation = _calculateNewRotation(page.rotation, rotationDegrees);
     }
 
-    return await _saveDocument(pdf, docName);
+    final List<int> savedBytes = await document.save();
+    document.dispose();
+    return await _saveBytes(savedBytes, docName, pageCount);
+  }
+
+  static Future<PdfEngineResult> rotatePdf({
+    required HistoryItem sourceItem,
+    required int rotationDegrees,
+    required String docName,
+  }) async {
+    return await rotatePdfDocument(
+      sourcePath: sourceItem.path,
+      rotationDegrees: rotationDegrees,
+      docName: docName,
+    );
+  }
+
+  // 16. PDF Lock (Password Protect with AES 128-Bit Encryption)
+  static Future<PdfEngineResult> lockPdfDocument({
+    required String sourcePath,
+    required String password,
+    String? ownerPassword,
+    required String docName,
+  }) async {
+    final file = File(sourcePath);
+    if (!await file.exists()) {
+      throw Exception('Source file not found at $sourcePath');
+    }
+    final bytes = await file.readAsBytes();
+    final sf.PdfDocument document = sf.PdfDocument(inputBytes: bytes);
+    final int pageCount = document.pages.count;
+
+    final sf.PdfSecurity security = document.security;
+    security.userPassword = password;
+    security.ownerPassword = (ownerPassword != null && ownerPassword.isNotEmpty)
+        ? ownerPassword
+        : password;
+    security.algorithm = sf.PdfEncryptionAlgorithm.aesx128Bit;
+    security.permissions.addAll([
+      sf.PdfPermissionsFlags.print,
+      sf.PdfPermissionsFlags.copyContent,
+    ]);
+
+    final List<int> savedBytes = await document.save();
+    document.dispose();
+    return await _saveBytes(savedBytes, docName, pageCount);
   }
 
   static Future<PdfEngineResult> _saveDocument(pw.Document pdf, String docName) async {

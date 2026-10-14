@@ -183,6 +183,13 @@ class ToolBadgeIcon extends StatelessWidget {
           glowColor: const Color(0xFF06B6D4),
           iconWidget: const Icon(Icons.rotate_right_rounded, color: Colors.white, size: 28),
         );
+
+      case PdfToolType.lockPdf:
+        return _ToolBadgeConfig(
+          gradientColors: const [Color(0xFF8B5CF6), Color(0xFF5B21B6)],
+          glowColor: const Color(0xFF8B5CF6),
+          iconWidget: const Icon(Icons.lock_rounded, color: Colors.white, size: 26),
+        );
     }
   }
 

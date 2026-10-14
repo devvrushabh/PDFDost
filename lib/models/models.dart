@@ -131,6 +131,7 @@ enum PdfToolType {
   pageNumbers,
   watermark,
   rotatePdf,
+  lockPdf,
 }
 
 class ToolDefinition {

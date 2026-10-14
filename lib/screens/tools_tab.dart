@@ -8,6 +8,8 @@ import '../services/pdf_engine.dart';
 import '../services/storage_engine.dart';
 import '../widgets/export_modal.dart';
 import '../widgets/tool_badge_icon.dart';
+import 'compress_pdf_screen.dart';
+import 'generic_pdf_tool_screen.dart';
 import 'merge_pdf_screen.dart';
 import 'split_pdf_screen.dart';
 
@@ -51,6 +53,7 @@ class _ToolsTabState extends State<ToolsTab> {
     ToolDefinition(type: PdfToolType.pageNumbers, title: 'Page Numbers', subtitle: 'Add numbers to all pages'),
     ToolDefinition(type: PdfToolType.watermark, title: 'Watermark', subtitle: 'Stamp text or logo on PDF'),
     ToolDefinition(type: PdfToolType.rotatePdf, title: 'Rotate PDF', subtitle: 'Rotate document pages'),
+    ToolDefinition(type: PdfToolType.lockPdf, title: 'PDF Lock', subtitle: 'Protect PDF with password encryption'),
   ];
 
   void _handleToolTap(ToolDefinition tool) {
@@ -65,16 +68,17 @@ class _ToolsTabState extends State<ToolsTab> {
         _openSplitPdfScreen();
         break;
       case PdfToolType.compressPdf:
-        _showCompressPdfDialog();
+        _openCompressPdfScreen();
         break;
       case PdfToolType.pdfToWord:
-        _showPdfToWordDialog();
-        break;
       case PdfToolType.pdfToPowerPoint:
-        _showPdfToPowerPointDialog();
-        break;
       case PdfToolType.pdfToExcel:
-        _showPdfToExcelDialog();
+      case PdfToolType.pdfToJpg:
+      case PdfToolType.pageNumbers:
+      case PdfToolType.watermark:
+      case PdfToolType.rotatePdf:
+      case PdfToolType.lockPdf:
+        _openGenericToolScreen(tool.type);
         break;
       case PdfToolType.wordToPdf:
         _showWordToPdfDialog();
@@ -88,22 +92,37 @@ class _ToolsTabState extends State<ToolsTab> {
       case PdfToolType.editPdf:
         _showEditPdfDialog();
         break;
-      case PdfToolType.pdfToJpg:
-        _showPdfToJpgDialog();
-        break;
-      case PdfToolType.pageNumbers:
-        _showPageNumbersDialog();
-        break;
-      case PdfToolType.watermark:
-        _showWatermarkDialog();
-        break;
-      case PdfToolType.rotatePdf:
-        _showRotatePdfDialog();
-        break;
     }
   }
 
   // --- TOOL IMPLEMENTATIONS ---
+
+  void _openCompressPdfScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => CompressPdfScreen(
+          historyItems: widget.historyItems,
+          isDark: widget.isDark,
+          onAddHistoryItem: widget.onAddHistoryItem,
+          onDeleteHistoryItem: widget.onDeleteHistoryItem,
+        ),
+      ),
+    );
+  }
+
+  void _openGenericToolScreen(PdfToolType type) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => GenericPdfToolScreen(
+          toolType: type,
+          historyItems: widget.historyItems,
+          isDark: widget.isDark,
+          onAddHistoryItem: widget.onAddHistoryItem,
+          onDeleteHistoryItem: widget.onDeleteHistoryItem,
+        ),
+      ),
+    );
+  }
 
   void _openMergePdfScreen() {
     Navigator.of(context).push(

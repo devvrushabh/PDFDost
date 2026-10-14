@@ -8,61 +8,73 @@ class AppLogo extends StatelessWidget {
   const AppLogo({
     super.key,
     this.fontSize = 22,
-    this.showDost = false,
+    this.showDost = true,
     this.isDark = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final iconSize = fontSize * 1.35;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          'I',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w900,
-            color: textColor,
-            letterSpacing: -0.5,
+        // App Icon
+        Container(
+          width: iconSize,
+          height: iconSize,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(iconSize * 0.26),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFE5322D).withOpacity(0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(width: 4),
-        // Stylized Red Heart with page corner fold
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(
-              Icons.favorite_rounded,
-              color: const Color(0xFFE5322D),
-              size: fontSize * 1.05,
-            ),
-            Positioned(
-              top: fontSize * 0.18,
-              right: fontSize * 0.18,
-              child: Container(
-                width: fontSize * 0.28,
-                height: fontSize * 0.28,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(fontSize * 0.12),
-                  ),
-                ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(iconSize * 0.26),
+            child: Image.asset(
+              'assets/icon.png',
+              width: iconSize,
+              height: iconSize,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Image.asset(
+                'PDFDost-icon.png',
+                width: iconSize,
+                height: iconSize,
+                fit: BoxFit.cover,
               ),
             ),
-          ],
+          ),
         ),
-        const SizedBox(width: 4),
-        Text(
-          showDost ? 'PDF DOST' : 'PDF',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w900,
-            color: textColor,
-            letterSpacing: -0.5,
+        const SizedBox(width: 8),
+        // App Name: PDF in text color, Dost in signature red
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: 'PDF',
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w900,
+                  color: textColor,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              TextSpan(
+                text: 'Dost',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFFE5322D),
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -92,38 +104,20 @@ class AppLogoBadge extends StatelessWidget {
         ],
       ),
       child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'I',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(width: 3),
-                Icon(
-                  Icons.favorite_rounded,
-                  color: const Color(0xFFE5322D),
-                  size: 22,
-                ),
-              ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(size * 0.22),
+          child: Image.asset(
+            'assets/icon.png',
+            width: size * 0.85,
+            height: size * 0.85,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Image.asset(
+              'PDFDost-icon.png',
+              width: size * 0.85,
+              height: size * 0.85,
+              fit: BoxFit.cover,
             ),
-            const Text(
-              'PDF',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF1E293B),
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
