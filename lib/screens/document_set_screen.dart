@@ -328,13 +328,12 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
 
       if (mounted) {
         setState(() => _isGeneratingPdf = false);
-        // Show Export Modal sheet
         ExportModalSheet.show(
-          context,
-          filePath: file.path,
-          fileName: fileName,
-          fileSize: '${formattedSize} KB',
-          isDark: widget.isDark,
+          context: context,
+          pdfPath: file.path,
+          docName: fileName,
+          pages: _set.pages.length,
+          sizeStr: '${formattedSize} KB',
         );
       }
     } catch (e) {
