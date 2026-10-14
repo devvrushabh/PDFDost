@@ -83,6 +83,220 @@ def split_pdf(input_path, output_path, start_page=1, end_page=None):
         except ImportError:
             raise ImportError("Please install 'pypdf' (pip install pypdf) to split PDF files.")
 
+def pdf_to_word(input_path, output_path):
+    """
+    Convert PDF text content into a formatted Word (.doc) document.
+    """
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(input_path)
+    except ImportError:
+        from PyPDF2 import PdfReader
+        reader = PdfReader(input_path)
+
+    html_content = [
+        '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
+        '<head><meta charset="utf-8"><title>Converted Document</title>',
+        '<style>body{font-family:"Segoe UI",Arial,sans-serif;font-size:11pt;line-height:1.6;margin:1in;}h2{color:#334155;border-bottom:1px solid #cbd5e1;padding-bottom:4pt;}.page-break{page-break-after:always;}</style>',
+        '</head><body>'
+    ]
+    for idx, page in enumerate(reader.pages):
+        text = page.extract_text() or ""
+        html_content.append(f'<h2>Page {idx + 1}</h2>')
+        for line in text.split('\n'):
+            line = line.strip()
+            if line:
+                html_content.append(f'<p>{line}</p>')
+        if idx < len(reader.pages) - 1:
+            html_content.append('<div class="page-break"></div>')
+    html_content.append('</body></html>')
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(html_content))
+    return output_path
+
+def pdf_to_powerpoint(input_path, output_path):
+    """
+    Convert PDF pages into presentation slides outline format.
+    """
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(input_path)
+    except ImportError:
+        from PyPDF2 import PdfReader
+        reader = PdfReader(input_path)
+
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(f"PDFDost Presentation Outline\nTotal Slides: {len(reader.pages)}\n{'=' * 40}\n\n")
+        for idx, page in enumerate(reader.pages):
+            text = page.extract_text() or ""
+            lines = [l.strip() for l in text.split('\n') if l.strip()]
+            title = lines[0] if lines else f"Slide {idx + 1}"
+            bullets = lines[1:7] if len(lines) > 1 else ["Content extracted from page"]
+            f.write(f"SLIDE {idx + 1}: {title}\n{'-' * 30}\n")
+            for b in bullets:
+                f.write(f" • {b}\n")
+            f.write("\n")
+    return output_path
+
+def pdf_to_excel(input_path, output_path):
+    """
+    Extract structured tabular/line data from PDF into a CSV spreadsheet.
+    """
+    import csv
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(input_path)
+    except ImportError:
+        from PyPDF2 import PdfReader
+        reader = PdfReader(input_path)
+
+    with open(output_path, 'w', newline='', encoding='utf-8-sig') as f:
+        writer = csv.writer(f)
+        writer.writerow(["Page", "Line", "Extracted Content"])
+        row_id = 1
+        for p_idx, page in enumerate(reader.pages):
+            text = page.extract_text() or ""
+            for line in text.split('\n'):
+                line = line.strip()
+                if line:
+                    writer.writerow([p_idx + 1, row_id, line])
+                    row_id += 1
+    return output_path
+
+def pdf_to_jpg(input_path, output_dir):
+    """
+    Convert PDF pages to JPG images.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    out_files = []
+    try:
+        from pdf2image import convert_from_path
+        images = convert_from_path(input_path)
+        for i, img in enumerate(images):
+            out_file = os.path.join(output_dir, f"page_{i + 1}.jpg")
+            img.save(out_file, "JPEG")
+            out_files.append(out_file)
+        return out_files
+    except Exception:
+        try:
+            import fitz
+            doc = fitz.open(input_path)
+            for i, page in enumerate(doc):
+                pix = page.get_pixmap()
+                out_file = os.path.join(output_dir, f"page_{i + 1}.jpg")
+                pix.save(out_file)
+                out_files.append(out_file)
+            return out_files
+        except Exception:
+            raise ImportError("Please install 'pdf2image' or 'pymupdf' to convert PDF to JPG.")
+
+def add_page_numbers(input_path, output_path, position="bottom-center"):
+    """
+    Stamp page numbers onto PDF pages.
+    """
+    try:
+        from pypdf import PdfReader, PdfWriter
+    except ImportError:
+        from PyPDF2 import PdfReader, PdfWriter
+    import io
+    from reportlab.pdfgen import canvas
+
+    reader = PdfReader(input_path)
+    writer = PdfWriter()
+    total = len(reader.pages)
+    for i, page in enumerate(reader.pages):
+        packet = io.BytesIO()
+        w = float(page.mediabox.width)
+        h = float(page.mediabox.height)
+        can = canvas.Canvas(packet, pagesize=(w, h))
+        can.setFont("Helvetica", 10)
+        can.setFillColorRGB(0.3, 0.3, 0.3)
+        label = f"Page {i + 1} of {total}"
+        if position == "bottom-right":
+            can.drawRightString(w - 36, 30, label)
+        elif position == "top-right":
+            can.drawRightString(w - 36, h - 30, label)
+        else:
+            can.drawCentredString(w / 2.0, 30, label)
+        can.save()
+        packet.seek(0)
+        num_pdf = PdfReader(packet)
+        page.merge_page(num_pdf.pages[0])
+        writer.add_page(page)
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return output_path
+
+def add_watermark(input_path, output_path, watermark_text="CONFIDENTIAL", opacity=0.35):
+    """
+    Stamp a watermark text onto PDF pages.
+    """
+    try:
+        from pypdf import PdfReader, PdfWriter
+    except ImportError:
+        from PyPDF2 import PdfReader, PdfWriter
+    import io
+    from reportlab.pdfgen import canvas
+
+    reader = PdfReader(input_path)
+    writer = PdfWriter()
+    for page in reader.pages:
+        packet = io.BytesIO()
+        w = float(page.mediabox.width)
+        h = float(page.mediabox.height)
+        can = canvas.Canvas(packet, pagesize=(w, h))
+        can.saveState()
+        can.setFont("Helvetica-Bold", 42)
+        can.setFillColorRGB(0.85, 0.2, 0.2, alpha=opacity)
+        can.translate(w / 2.0, h / 2.0)
+        can.rotate(45)
+        can.drawCentredString(0, 0, watermark_text)
+        can.restoreState()
+        can.save()
+        packet.seek(0)
+        wm_pdf = PdfReader(packet)
+        page.merge_page(wm_pdf.pages[0])
+        writer.add_page(page)
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return output_path
+
+def rotate_pdf(input_path, output_path, degrees=90):
+    """
+    Rotate PDF pages by specified degrees (90, 180, 270).
+    """
+    try:
+        from pypdf import PdfReader, PdfWriter
+    except ImportError:
+        from PyPDF2 import PdfReader, PdfWriter
+
+    reader = PdfReader(input_path)
+    writer = PdfWriter()
+    for page in reader.pages:
+        page.rotate(degrees)
+        writer.add_page(page)
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return output_path
+
+def lock_pdf(input_path, output_path, password):
+    """
+    Protect and encrypt a PDF with password.
+    """
+    try:
+        from pypdf import PdfReader, PdfWriter
+    except ImportError:
+        from PyPDF2 import PdfReader, PdfWriter
+
+    reader = PdfReader(input_path)
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+    writer.encrypt(password)
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return output_path
+
 HISTORY_FILE = "pdf_history.json"
 
 KV_DESIGN = """
