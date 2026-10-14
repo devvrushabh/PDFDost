@@ -14,7 +14,7 @@ class StorageEngine {
   static const String _docSetsKey = 'pdfdost_doc_sets';
   static const String _docFoldersKey = 'pdfdost_doc_folders';
 
-  static const MethodChannel _storageChannel = MethodChannel('com.devvrushabh.img2pdf/storage');
+  static const MethodChannel _storageChannel = MethodChannel('com.devvrushabh.pdfdost/storage');
 
   static Future<List<HistoryItem>> loadHistory() async {
     try {

@@ -53,7 +53,7 @@ class ExportModalSheet extends StatefulWidget {
 
 class _ExportModalSheetState extends State<ExportModalSheet> {
   bool _hasSaved = false;
-  static const MethodChannel _storageChannel = MethodChannel('com.devvrushabh.img2pdf/storage');
+  static const MethodChannel _storageChannel = MethodChannel('com.devvrushabh.pdfdost/storage');
 
   Future<void> _shareFile() async {
     try {

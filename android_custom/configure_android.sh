@@ -4,8 +4,8 @@ set -e
 echo "=== Configuring Native Android for PDFDost ==="
 
 # 1. Copy custom MainActivity with native MediaStore downloads support
-mkdir -p android/app/src/main/kotlin/com/devvrushabh/img2pdf
-cp android_custom/MainActivity.kt android/app/src/main/kotlin/com/devvrushabh/img2pdf/MainActivity.kt
+mkdir -p android/app/src/main/kotlin/com/devvrushabh/pdfdost
+cp android_custom/MainActivity.kt android/app/src/main/kotlin/com/devvrushabh/pdfdost/MainActivity.kt
 
 # 2. Copy custom app launcher icons into mipmap folders
 cp -r android_custom/res/* android/app/src/main/res/

@@ -35,7 +35,7 @@ jobs:
       - name: Scaffold Native Android Project
         run: |
           rm -rf android
-          flutter create . --org com.devvrushabh --project-name img2pdf --platforms android
+          flutter create . --org com.devvrushabh --project-name pdfdost --platforms android
           bash android_custom/configure_android.sh
 
       - name: Get Dependencies

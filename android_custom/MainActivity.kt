@@ -1,4 +1,4 @@
-package com.devvrushabh.img2pdf
+package com.devvrushabh.pdfdost
 
 import android.content.ContentValues
 import android.content.Intent
@@ -14,7 +14,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 
 class MainActivity: FlutterActivity() {
-    private val CHANNEL = "com.devvrushabh.img2pdf/storage"
+    private val CHANNEL = "com.devvrushabh.pdfdost/storage"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

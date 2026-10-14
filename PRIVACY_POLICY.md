@@ -1,7 +1,7 @@
 # Privacy Policy for PDFDost 📄🛡️
 
 **Effective Date:** October 15, 2026  
-**Application:** PDFDost (`com.devvrushabh.img2pdf`)  
+**Application:** PDFDost (`com.devvrushabh.pdfdost`)  
 **Developer:** Vrushabh Dhote  
 **Contact:** `vrushabhdhote29@gmail.com`  
 **GitHub Repository:** [https://github.com/devvrushabh/PDFDost](https://github.com/devvrushabh/PDFDost)  

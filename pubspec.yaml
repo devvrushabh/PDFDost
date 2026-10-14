@@ -1,5 +1,5 @@
-name: img2pdf
-description: "High quality Image to PDF converter app with visual preview, rename modal, local history, and share sheet"
+name: pdfdost
+description: "PDFDost - High quality Image to PDF converter and complete document utility app"
 publish_to: "none"
 version: 1.0.0+1
 

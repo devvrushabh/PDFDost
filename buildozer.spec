@@ -1,7 +1,7 @@
 [app]
 title = PDFDost
-package.name = img2pdf
-package.domain = org.example
+package.name = pdfdost
+package.domain = com.devvrushabh
 source.dir = .
 source.include_exts = py
 version = 0.2
