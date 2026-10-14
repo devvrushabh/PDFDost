@@ -1,14 +1,11 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import '../models/models.dart';
-import '../services/pdf_engine.dart';
 import '../services/storage_engine.dart';
-import '../widgets/export_modal.dart';
-import '../widgets/space_empty_illustration.dart';
+import 'document_set_screen.dart';
 
 class HomeTab extends StatefulWidget {
   final List<SelectedImageItem> selectedImages;
@@ -24,6 +21,8 @@ class HomeTab extends StatefulWidget {
   final Function(HistoryItem) onAddHistoryItem;
   final VoidCallback? onOpenMergePdf;
   final VoidCallback? onOpenSplitPdf;
+  final Function(int)? onSwitchTab;
+  final VoidCallback? onOpenWordToPdf;
 
   const HomeTab({
     super.key,
@@ -40,472 +39,611 @@ class HomeTab extends StatefulWidget {
     required this.onAddHistoryItem,
     this.onOpenMergePdf,
     this.onOpenSplitPdf,
+    this.onSwitchTab,
+    this.onOpenWordToPdf,
   });
 
   @override
   State<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
-  int _activeChip = 0; // 0: Scanned Images, 1: Converted PDFs
-  bool _isSpeedDialOpen = false;
-  bool _isConverting = false;
+class _HomeTabState extends State<HomeTab> {
+  final ImagePicker _picker = ImagePicker();
+  List<DocumentSet> _documentSets = [];
+  List<DocFolder> _folders = [];
+  bool _isLoading = true;
 
-  late AnimationController _fabAnimController;
-  late Animation<double> _fabRotationAnim;
+  // Selected filter: 'all', 'recent', 'favourite', or folder name
+  String _selectedFilter = 'all';
+
+  // Sub-navigation active tab index (0: Home, 1: PDF Tools, 2: Import ID Photo, 3: Word to PDF)
+  int _activeSubNavIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _fabAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-    _fabRotationAnim = Tween<double>(begin: 0.0, end: math.pi / 4).animate(
-      CurvedAnimation(parent: _fabAnimController, curve: Curves.easeInOut),
-    );
+    _loadData();
   }
 
-  @override
-  void dispose() {
-    _fabAnimController.dispose();
-    super.dispose();
-  }
-
-  void _toggleSpeedDial() {
-    setState(() {
-      _isSpeedDialOpen = !_isSpeedDialOpen;
-      if (_isSpeedDialOpen) {
-        _fabAnimController.forward();
-      } else {
-        _fabAnimController.reverse();
-      }
-    });
-  }
-
-  void _closeSpeedDial() {
-    if (_isSpeedDialOpen) {
+  Future<void> _loadData() async {
+    final sets = await StorageEngine.loadDocSets();
+    final folders = await StorageEngine.loadDocFolders();
+    if (mounted) {
       setState(() {
-        _isSpeedDialOpen = false;
-        _fabAnimController.reverse();
+        _documentSets = sets;
+        _folders = folders;
+        _isLoading = false;
       });
     }
   }
 
-  Future<void> _showRenameAndConvertDialog() async {
-    if (widget.selectedImages.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least one image first')),
-      );
-      return;
+  Future<void> _saveDocSets() async {
+    await StorageEngine.saveDocSets(_documentSets);
+  }
+
+  List<DocumentSet> get _filteredDocuments {
+    if (_selectedFilter == 'all') {
+      return _documentSets;
+    } else if (_selectedFilter == 'recent') {
+      // Sort by updatedAt descending
+      final sorted = List<DocumentSet>.from(_documentSets)
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return sorted;
+    } else if (_selectedFilter == 'favourite') {
+      return _documentSets.where((s) => s.isFavourite).toList();
+    } else {
+      // Match folder / category name
+      return _documentSets
+          .where((s) => s.category.toLowerCase() == _selectedFilter.toLowerCase())
+          .toList();
     }
+  }
 
-    final defaultName = 'Document_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}';
-    final controller = TextEditingController(text: defaultName);
-    final cardBg = widget.isDark ? const Color(0xFF1E293B) : Colors.white;
+  // --- ACTIONS: GROUP IMAGES INTO DOCUMENT SET ---
 
-    final docName = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cardBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Name Your PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Enter a custom document name for the converted PDF:',
-              style: TextStyle(
-                color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                fontSize: 13,
-              ),
+  Future<void> _importImagesAndGroupSet() async {
+    try {
+      final List<XFile> images = await _picker.pickMultiImage();
+      if (images.isNotEmpty) {
+        final now = DateTime.now();
+        final defaultTitle = 'New Doc ${DateFormat('dd-MMM HH:mm').format(now)}';
+
+        final List<DocPage> pages = [];
+        for (int i = 0; i < images.length; i++) {
+          final img = images[i];
+          final file = File(img.path);
+          final size = await file.exists() ? await file.length() : 0;
+          pages.add(
+            DocPage(
+              id: 'page_${now.millisecondsSinceEpoch}_${i + 1}',
+              imagePath: img.path,
+              name: '${i + 1}',
+              sizeBytes: size,
+              date: now,
+              isNew: true,
             ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                color: widget.isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: widget.isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: controller,
-                      autofocus: true,
-                      style: TextStyle(color: widget.isDark ? Colors.white : const Color(0xFF0F172A)),
-                      decoration: const InputDecoration(border: InputBorder.none, hintText: 'Enter document name'),
-                    ),
-                  ),
-                  const Text(
-                    '.pdf',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFE5322D)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE5322D),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              var name = controller.text.trim();
-              if (name.isEmpty) name = defaultName;
-              if (name.toLowerCase().endsWith('.pdf')) {
-                name = name.substring(0, name.length - 4);
-              }
-              Navigator.pop(ctx, name);
-            },
-            child: const Text('Convert Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-
-    if (docName != null && docName.isNotEmpty) {
-      setState(() => _isConverting = true);
-      try {
-        final result = await PdfEngine.convertImagesToPdf(
-          images: widget.selectedImages,
-          docName: docName,
-        );
-
-        final newHistory = HistoryItem(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          name: result.name,
-          path: result.path,
-          pages: result.pages,
-          size: result.sizeStr,
-          date: DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now()),
-          toolType: 'Image to PDF',
-        );
-
-        widget.onAddHistoryItem(newHistory);
-
-        if (mounted) {
-          ExportModalSheet.show(
-            context: context,
-            pdfPath: result.path,
-            docName: result.name,
-            pages: result.pages,
-            sizeStr: result.sizeStr,
           );
         }
-      } catch (e) {
+
+        final newSet = DocumentSet(
+          id: 'set_${now.millisecondsSinceEpoch}',
+          title: defaultTitle,
+          createdAt: now,
+          updatedAt: now,
+          pages: pages,
+          category: _selectedFilter != 'all' && _selectedFilter != 'recent' && _selectedFilter != 'favourite'
+              ? _selectedFilter
+              : 'All docs',
+          isFavourite: false,
+        );
+
+        setState(() {
+          _documentSets.insert(0, newSet);
+        });
+        await _saveDocSets();
+
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Conversion failed: $e'), backgroundColor: Colors.red),
-          );
+          // Open Document Set view directly (Screenshot 2)
+          _openDocumentSet(newSet);
         }
-      } finally {
-        if (mounted) setState(() => _isConverting = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error importing images: $e')),
+        );
       }
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _closeSpeedDial,
-      behavior: HitTestBehavior.translucent,
-      child: Stack(
-        children: [
-          Column(
-            children: [
-              // 1. Top Toggle Chips matching Screenshot 1
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Row(
-                  children: [
-                    // Chip 1: Scanned Images
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          _closeSpeedDial();
-                          setState(() => _activeChip = 0);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: _activeChip == 0
-                                ? (widget.isDark ? const Color(0xFF1E2026) : Colors.white)
-                                : (widget.isDark ? const Color(0xFF16171B) : const Color(0xFFF1F5F9)),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: _activeChip == 0
-                                  ? (widget.isDark ? const Color(0xFF4B5563) : const Color(0xFF94A3B8))
-                                  : Colors.transparent,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withOpacity(0.18),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Icon(Icons.image_rounded, color: Color(0xFF10B981), size: 18),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Scanned Images',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+  Future<void> _captureCameraAndStartSet() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 95,
+      );
+      if (image != null) {
+        final now = DateTime.now();
+        final file = File(image.path);
+        final size = await file.exists() ? await file.length() : 0;
+        final defaultTitle = 'Scanned Doc ${DateFormat('dd-MMM HH:mm').format(now)}';
 
-                    // Chip 2: Converted PDFs
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          _closeSpeedDial();
-                          setState(() => _activeChip = 1);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: _activeChip == 1
-                                ? (widget.isDark ? const Color(0xFF1E2026) : Colors.white)
-                                : (widget.isDark ? const Color(0xFF16171B) : const Color(0xFFF1F5F9)),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: _activeChip == 1
-                                  ? (widget.isDark ? const Color(0xFF4B5563) : const Color(0xFF94A3B8))
-                                  : Colors.transparent,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF38BDF8).withOpacity(0.18),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Icon(Icons.description_rounded, color: Color(0xFF38BDF8), size: 18),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Converted PDFs',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+        final newSet = DocumentSet(
+          id: 'set_${now.millisecondsSinceEpoch}',
+          title: defaultTitle,
+          createdAt: now,
+          updatedAt: now,
+          pages: [
+            DocPage(
+              id: 'page_${now.millisecondsSinceEpoch}_1',
+              imagePath: image.path,
+              name: '1',
+              sizeBytes: size,
+              date: now,
+              isNew: true,
+            ),
+          ],
+          category: _selectedFilter != 'all' && _selectedFilter != 'recent' && _selectedFilter != 'favourite'
+              ? _selectedFilter
+              : 'All docs',
+          isFavourite: false,
+        );
+
+        setState(() {
+          _documentSets.insert(0, newSet);
+        });
+        await _saveDocSets();
+
+        if (mounted) {
+          _openDocumentSet(newSet);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Camera error: $e')),
+        );
+      }
+    }
+  }
+
+  void _openDocumentSet(DocumentSet set) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => DocumentSetScreen(
+          documentSet: set,
+          isDark: widget.isDark,
+          onUpdateSet: (updatedSet) {
+            setState(() {
+              final index = _documentSets.indexWhere((s) => s.id == updatedSet.id);
+              if (index != -1) {
+                _documentSets[index] = updatedSet;
+              }
+            });
+            _saveDocSets();
+          },
+          onDeleteSet: (deletedSet) {
+            _deleteDocumentSet(deletedSet);
+          },
+          onAddHistoryItem: widget.onAddHistoryItem,
+        ),
+      ),
+    );
+  }
+
+  // --- CREATE FOLDER MODAL ---
+
+  void _showCreateFolderDialog() {
+    final controller = TextEditingController();
+    String selectedColor = '#0288D1';
+    final colors = ['#0288D1', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#06B6D4'];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: widget.isDark ? const Color(0xFF1E2024) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.create_new_folder_rounded, color: Color(0xFF0288D1)),
+              SizedBox(width: 10),
+              Text('Create Folder', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter a name for your new document folder:',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                 ),
               ),
-
-              // 2. Body Content (Empty State or List)
-              Expanded(
-                child: _activeChip == 0 ? _buildScannedImagesContent() : _buildConvertedPdfsContent(),
+              const SizedBox(height: 14),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'e.g. Work, Invoices, Certificates',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.folder_outlined),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Folder Color:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: colors.map((hex) {
+                  final color = Color(int.parse(hex.replaceFirst('#', '0xFF')));
+                  final isChosen = selectedColor == hex;
+                  return GestureDetector(
+                    onTap: () => setDialogState(() => selectedColor = hex),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: isChosen ? Border.all(color: Colors.white, width: 2.5) : null,
+                        boxShadow: isChosen
+                            ? [
+                                BoxShadow(
+                                  color: color.withOpacity(0.5),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            : null,
+                      ),
+                      child: isChosen ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
+                    ),
+                  );
+                }).toList(),
               ),
             ],
           ),
-
-          // 3. Dark backdrop when speed dial is open
-          if (_isSpeedDialOpen)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _closeSpeedDial,
-                child: Container(color: Colors.black.withOpacity(0.35)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0288D1),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-            ),
-
-          // 4. Expandable Speed Dial (Matching Screenshot 1)
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            bottom: (widget.selectedImages.isNotEmpty && _activeChip == 0) ? 92 : 24,
-            right: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Camera Option Pill
-                if (_isSpeedDialOpen) ...[
-                  if (widget.onOpenMergePdf != null) ...[
-                    _buildSpeedDialOption(
-                      icon: Icons.call_merge_rounded,
-                      label: 'Merge PDF',
-                      onTap: () {
-                        _closeSpeedDial();
-                        widget.onOpenMergePdf!();
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (widget.onOpenSplitPdf != null) ...[
-                    _buildSpeedDialOption(
-                      icon: Icons.call_split_rounded,
-                      label: 'Split PDF',
-                      onTap: () {
-                        _closeSpeedDial();
-                        widget.onOpenSplitPdf!();
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  _buildSpeedDialOption(
-                    icon: Icons.camera_alt_outlined,
-                    label: 'Camera',
-                    onTap: () {
-                      _closeSpeedDial();
-                      widget.onPickCamera();
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  // Gallery Option Pill
-                  _buildSpeedDialOption(
-                    icon: Icons.photo_outlined,
-                    label: 'Gallery',
-                    onTap: () {
-                      _closeSpeedDial();
-                      widget.onPickGallery();
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                ],
-
-                // Main Circular Coral FAB
-                GestureDetector(
-                  onTap: _toggleSpeedDial,
-                  child: Container(
-                    width: 58,
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFA9282), // Soft coral from screenshot
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFA9282).withOpacity(0.4),
-                          blurRadius: 14,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: AnimatedBuilder(
-                      animation: _fabRotationAnim,
-                      builder: (ctx, child) => Transform.rotate(
-                        angle: _fabRotationAnim.value,
-                        child: const Icon(
-                          Icons.add_rounded,
-                          color: Color(0xFF1E1F24),
-                          size: 32,
-                        ),
+              onPressed: () async {
+                final folderName = controller.text.trim();
+                if (folderName.isNotEmpty) {
+                  final newFolder = await StorageEngine.createFolder(folderName, colorHex: selectedColor);
+                  setState(() {
+                    _folders.add(newFolder);
+                    _selectedFilter = folderName;
+                  });
+                  Navigator.pop(ctx);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Folder "$folderName" created!'),
+                        duration: const Duration(seconds: 1),
+                        backgroundColor: const Color(0xFF10B981),
                       ),
-                    ),
-                  ),
-                ),
-              ],
+                    );
+                  }
+                }
+              },
+              child: const Text('Create', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- MOVE TO FOLDER MODAL ---
+
+  void _showMoveToFolderDialog(DocumentSet set) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: widget.isDark ? const Color(0xFF1E2024) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Move to Folder', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.folder_open_rounded, color: Colors.grey),
+                title: const Text('All docs (Uncategorized)'),
+                trailing: set.category == 'All docs' ? const Icon(Icons.check, color: Color(0xFF0288D1)) : null,
+                onTap: () {
+                  setState(() => set.category = 'All docs');
+                  _saveDocSets();
+                  Navigator.pop(ctx);
+                },
+              ),
+              const Divider(height: 1),
+              ..._folders.map((folder) {
+                final color = Color(int.parse(folder.colorHex.replaceFirst('#', '0xFF')));
+                return ListTile(
+                  leading: Icon(Icons.folder_rounded, color: color),
+                  title: Text(folder.name),
+                  trailing: set.category == folder.name ? const Icon(Icons.check, color: Color(0xFF0288D1)) : null,
+                  onTap: () {
+                    setState(() {
+                      set.category = folder.name;
+                      set.folderId = folder.id;
+                    });
+                    _saveDocSets();
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Moved "${set.title}" to ${folder.name}'),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- MOVE TO TRASH FLOW ---
+
+  void _deleteDocumentSet(DocumentSet set) {
+    final historyItem = HistoryItem(
+      id: set.id,
+      name: '${set.title}.pdf',
+      path: set.generatedPdfPath ?? (set.pages.isNotEmpty ? set.pages.first.imagePath : ''),
+      pages: set.pageCount,
+      size: '${set.pageCount * 130} KB',
+      date: set.formattedDate,
+      toolType: 'Doc Set',
+    );
+
+    widget.onDeleteHistoryItem(historyItem);
+
+    setState(() {
+      _documentSets.removeWhere((s) => s.id == set.id);
+    });
+    _saveDocSets();
+  }
+
+  // --- PLUS FAB BOTTOM SHEET ---
+
+  void _showPlusActionsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: widget.isDark ? const Color(0xFF1E2024) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 18),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Create or Import',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              const SizedBox(height: 16),
+
+              // 1. Create New Folder
+              ListTile(
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0288D1).withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.create_new_folder_rounded, color: Color(0xFF0288D1), size: 22),
+                ),
+                title: const Text('Create New Folder', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                subtitle: const Text('Organize your documents and sets', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showCreateFolderDialog();
+                },
+              ),
+
+              // 2. Import Images (Group into One Set)
+              ListTile(
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.photo_library_rounded, color: Color(0xFF10B981), size: 22),
+                ),
+                title: const Text('Import Images into New Set', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                subtitle: const Text('Select multiple images to group into a set', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _importImagesAndGroupSet();
+                },
+              ),
+
+              // 3. Scan Document with Camera
+              ListTile(
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFA9282).withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded, color: Color(0xFFFA9282), size: 22),
+                ),
+                title: const Text('Scan with Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                subtitle: const Text('Capture pages using on-device camera', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _captureCameraAndStartSet();
+                },
+              ),
+
+              // 4. Import Document / PDF
+              ListTile(
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B5CF6).withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.description_rounded, color: Color(0xFF8B5CF6), size: 22),
+                ),
+                title: const Text('Word to PDF / Convert File', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                subtitle: const Text('Import Word, Excel or document files', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  if (widget.onOpenWordToPdf != null) {
+                    widget.onOpenWordToPdf!();
+                  } else {
+                    widget.onSwitchTab?.call(2);
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- SUB-NAVIGATION TABS (Screenshot 1: Home, PDF Tools, Import ID Photo, PDF Edit) ---
+
+  Widget _buildSubNavTabs() {
+    final activeColor = const Color(0xFF0288D1); // Vibrant Doc Scanner Blue
+    final inactiveColor = widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final bg = widget.isDark ? const Color(0xFF15222C) : const Color(0xFF1E3A4B);
+
+    return Container(
+      color: bg,
+      padding: const EdgeInsets.only(top: 4, bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          // 1. Home
+          _buildSubNavTabItem(
+            icon: Icons.home_rounded,
+            label: 'Home',
+            isActive: _activeSubNavIndex == 0,
+            onTap: () => setState(() => _activeSubNavIndex = 0),
+            activeColor: activeColor,
+            inactiveColor: inactiveColor,
           ),
 
-          // 5. Converting Loading Overlay
-          if (_isConverting)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withOpacity(0.6),
-                alignment: Alignment.center,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-                  decoration: BoxDecoration(
-                    color: widget.isDark ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(color: Color(0xFFE5322D)),
-                      SizedBox(height: 16),
-                      Text(
-                        'Converting Images to PDF...',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          // 2. PDF Tools
+          _buildSubNavTabItem(
+            icon: Icons.business_center_outlined,
+            label: 'PDF Tools',
+            isActive: _activeSubNavIndex == 1,
+            onTap: () {
+              widget.onSwitchTab?.call(2); // Switches to ToolsTab
+            },
+            activeColor: activeColor,
+            inactiveColor: inactiveColor,
+          ),
+
+          // 3. Import ID Photo
+          _buildSubNavTabItem(
+            icon: Icons.credit_card_rounded,
+            label: 'Import ID Photo',
+            isActive: _activeSubNavIndex == 2,
+            onTap: () {
+              widget.onSwitchTab?.call(3); // Switches to ScannerTab
+            },
+            activeColor: activeColor,
+            inactiveColor: inactiveColor,
+          ),
+
+          // 4. Word to PDF / PDF Edit
+          _buildSubNavTabItem(
+            icon: Icons.description_outlined,
+            label: 'PDF Edit',
+            isActive: _activeSubNavIndex == 3,
+            onTap: () {
+              if (widget.onOpenWordToPdf != null) {
+                widget.onOpenWordToPdf!();
+              } else {
+                widget.onSwitchTab?.call(2);
+              }
+            },
+            activeColor: activeColor,
+            inactiveColor: inactiveColor,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSpeedDialOption({
+  Widget _buildSubNavTabItem({
     required IconData icon,
     required String label,
+    required bool isActive,
     required VoidCallback onTap,
+    required Color activeColor,
+    required Color inactiveColor,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: widget.isDark ? const Color(0xFF1A1B20) : Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: widget.isDark ? const Color(0xFF2E303A) : const Color(0xFFCBD5E1),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.18),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: widget.isDark ? Colors.white : const Color(0xFF0F172A), size: 20),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: TextStyle(
-                color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: isActive ? Colors.white : inactiveColor,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isActive ? Colors.white : inactiveColor,
+                    fontSize: 13,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Container(
+              height: 2.5,
+              width: 48,
+              decoration: BoxDecoration(
+                color: isActive ? const Color(0xFF0288D1) : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
           ],
@@ -514,253 +652,587 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildScannedImagesContent() {
-    if (widget.selectedImages.isEmpty) {
-      return Center(
-        child: SpaceEmptyIllustration(
-          title: 'No files found',
-          subtitle: 'Tap the button to begin',
-          isDark: widget.isDark,
-        ),
-      );
-    }
+  // --- FILTER CHIPS BAR (Screenshot 1: All docs, Recent, Favourite, Folders) ---
 
-    // List of selected images with reorder & convert button
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${widget.selectedImages.length} Image(s) Ready',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
-                ),
-              ),
-              Row(
-                children: [
-                  TextButton.icon(
-                    onPressed: widget.onClearImages,
-                    icon: const Icon(Icons.delete_sweep_rounded, size: 18, color: Color(0xFFEF4444)),
-                    label: const Text('Clear', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13)),
-                  ),
-                ],
-              ),
-            ],
+  Widget _buildFilterChipsBar() {
+    final dividerColor = widget.isDark ? const Color(0xFF283645) : const Color(0xFFE2E8F0);
+    final unselectedBg = widget.isDark ? const Color(0xFF1E2833) : Colors.white;
+    final unselectedBorder = widget.isDark ? const Color(0xFF2F3E4E) : const Color(0xFFCBD5E1);
+
+    return Container(
+      height: 48,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          // 1. All docs (Selected Blue Pill)
+          _buildChip(
+            id: 'all',
+            label: 'All docs',
+            icon: Icons.touch_app_rounded,
+            isSelected: _selectedFilter == 'all',
           ),
-        ),
-        Expanded(
-          child: ReorderableListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-            itemCount: widget.selectedImages.length,
-            onReorder: (int oldIndex, int newIndex) {
-              if (oldIndex < newIndex) {
-                newIndex -= 1;
-              }
-              widget.onMoveImage(oldIndex, newIndex);
-            },
-            itemBuilder: (ctx, idx) {
-              final img = widget.selectedImages[idx];
-              return Container(
-                key: ValueKey('${img.path}_$idx'),
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  color: widget.isDark ? const Color(0xFF1E2026) : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: widget.isDark ? const Color(0xFF2A2B33) : const Color(0xFFE2E8F0),
-                  ),
-                ),
-                padding: const EdgeInsets.all(10),
-                child: Row(
-                  children: [
-                    // Page Number Badge
-                    InkWell(
-                      borderRadius: BorderRadius.circular(6),
-                      onTap: () => widget.onChangePosition(idx),
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE5322D).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '${idx + 1}',
-                          style: const TextStyle(color: Color(0xFFE5322D), fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    // Image thumbnail
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        File(img.path),
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Image details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            img.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            img.formattedSize,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Drag Handle
-                    ReorderableDragStartListener(
-                      index: idx,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                        child: const Icon(Icons.drag_indicator_rounded, size: 22, color: Colors.grey),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFFEF4444)),
-                      onPressed: () => widget.onRemoveImage(idx),
-                    ),
-                  ],
-                ),
-              );
-            },
+          const SizedBox(width: 8),
+
+          // 2. Recent (with red count badge)
+          _buildChip(
+            id: 'recent',
+            label: 'Recent',
+            icon: Icons.access_time_rounded,
+            badge: '${_documentSets.length}',
+            isSelected: _selectedFilter == 'recent',
           ),
-        ),
-        // Convert to PDF Floating Bottom Bar
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          child: SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE5322D),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                elevation: 4,
-              ),
-              onPressed: _showRenameAndConvertDialog,
-              icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
-              label: const Text(
-                'CONVERT TO PDF',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+          const SizedBox(width: 8),
+
+          // 3. Favourite (with star)
+          _buildChip(
+            id: 'favourite',
+            label: 'Favourite',
+            icon: Icons.star_rounded,
+            isSelected: _selectedFilter == 'favourite',
+          ),
+          const SizedBox(width: 10),
+
+          // Divider |
+          Center(
+            child: Container(
+              height: 22,
+              width: 1,
+              color: dividerColor,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
             ),
           ),
-        ),
-      ],
+          const SizedBox(width: 10),
+
+          // 4. Custom Folders Chips
+          ..._folders.map((folder) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _buildChip(
+                id: folder.name,
+                label: folder.name,
+                icon: Icons.folder_rounded,
+                iconColor: Color(int.parse(folder.colorHex.replaceFirst('#', '0xFF'))),
+                isSelected: _selectedFilter.toLowerCase() == folder.name.toLowerCase(),
+              ),
+            );
+          }),
+
+          // 5. + Create Folder Chip
+          ActionChip(
+            avatar: const Icon(Icons.add_rounded, size: 16, color: Color(0xFF0288D1)),
+            label: const Text(
+              'Folder',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0288D1)),
+            ),
+            backgroundColor: unselectedBg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Color(0xFF0288D1), width: 1.2),
+            ),
+            onPressed: _showCreateFolderDialog,
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildConvertedPdfsContent() {
-    if (widget.historyItems.isEmpty) {
-      return Center(
-        child: SpaceEmptyIllustration(
-          title: 'No converted PDFs',
-          subtitle: 'Files you convert will appear here',
-          isDark: widget.isDark,
+  Widget _buildChip({
+    required String id,
+    required String label,
+    required IconData icon,
+    String? badge,
+    Color? iconColor,
+    required bool isSelected,
+  }) {
+    final activeBg = const Color(0xFF0288D1);
+    final inactiveBg = widget.isDark ? const Color(0xFF1E2833) : Colors.white;
+    final inactiveBorder = widget.isDark ? const Color(0xFF2F3E4E) : const Color(0xFFCBD5E1);
+    final textPrimary = widget.isDark ? Colors.white : const Color(0xFF0F172A);
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedFilter = id),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? activeBg : inactiveBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? activeBg : inactiveBorder,
+            width: 1.2,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: activeBg.withOpacity(0.35),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : (iconColor ?? (widget.isDark ? Colors.white70 : const Color(0xFF475569))),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : textPrimary,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              ),
+            ),
+            if (badge != null) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  badge,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- THUMBNAIL ILLUSTRATION (Simulates Document Cover from Screenshot 1) ---
+
+  Widget _buildDocumentThumbnail(DocumentSet set) {
+    if (set.pages.isNotEmpty && set.pages.first.imagePath.isNotEmpty && File(set.pages.first.imagePath).existsSync()) {
+      return Image.file(
+        File(set.pages.first.imagePath),
+        fit: BoxFit.cover,
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-      itemCount: widget.historyItems.length,
-      itemBuilder: (ctx, idx) {
-        final item = widget.historyItems[idx];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: widget.isDark ? const Color(0xFF1E2026) : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: widget.isDark ? const Color(0xFF2A2B33) : const Color(0xFFE2E8F0),
+    // High quality vector document mockup matching Screenshot 1
+    final borderColor = widget.isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1);
+    final bg = widget.isDark ? const Color(0xFF14191F) : const Color(0xFFF8FAFC);
+
+    return Container(
+      color: bg,
+      padding: const EdgeInsets.all(6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top mini header
+          Container(
+            height: 4,
+            width: 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0288D1),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            leading: Container(
-              width: 44,
-              height: 44,
+          const SizedBox(height: 4),
+          Container(
+            height: 2,
+            width: double.infinity,
+            color: borderColor,
+          ),
+          const SizedBox(height: 3),
+          Container(
+            height: 2,
+            width: 32,
+            color: borderColor.withOpacity(0.6),
+          ),
+          const Spacer(),
+          // Center diagram box
+          Center(
+            child: Container(
+              width: 36,
+              height: 24,
               decoration: BoxDecoration(
-                color: const Color(0xFFE5322D).withOpacity(0.14),
-                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF0288D1).withOpacity(0.5), width: 0.8),
+                borderRadius: BorderRadius.circular(3),
+                color: const Color(0xFF0288D1).withOpacity(0.06),
               ),
-              child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFFE5322D), size: 24),
+              child: const Icon(Icons.art_track_rounded, size: 14, color: Color(0xFF0288D1)),
             ),
-            title: Text(
-              item.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
-              ),
-            ),
-            subtitle: Text(
-              '${item.pages} Pages  •  ${item.size}  •  ${item.date}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-              ),
-            ),
-            trailing: PopupMenuButton<String>(
-              icon: Icon(
-                Icons.more_vert_rounded,
-                color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-              ),
-              onSelected: (action) async {
-                if (action == 'open') {
-                  await OpenFilex.open(item.path);
-                } else if (action == 'save') {
-                  final ok = await StorageEngine.saveToDownloads(item.path, item.name);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(ok ? '✓ Saved to Downloads' : 'Save failed')),
-                    );
-                  }
-                } else if (action == 'delete') {
-                  widget.onDeleteHistoryItem(item);
-                }
-              },
-              itemBuilder: (ctx) => [
-                const PopupMenuItem(value: 'open', child: Text('Open PDF')),
-                const PopupMenuItem(value: 'save', child: Text('Save to Downloads')),
-                const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
-              ],
-            ),
-            onTap: () => OpenFilex.open(item.path),
           ),
-        );
-      },
+          const Spacer(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(height: 2, width: 14, color: borderColor),
+              Container(height: 2, width: 14, color: borderColor),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = widget.isDark ? const Color(0xFF12181F) : const Color(0xFFF8FAFC);
+    final cardBg = widget.isDark ? const Color(0xFF1B242D) : Colors.white;
+    final textPrimary = widget.isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final dividerColor = widget.isDark ? const Color(0xFF24303C) : const Color(0xFFE2E8F0);
+
+    return Scaffold(
+      backgroundColor: bg,
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              // 1. Sub-navigation Horizontal Tab Bar (Screenshot 1)
+              _buildSubNavTabs(),
+
+              // 2. Filter Pills Bar (All docs, Recent, Favourite, Folders)
+              _buildFilterChipsBar(),
+
+              // 3. Documents (N) Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Documents (${_filteredDocuments.length})',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.create_new_folder_outlined, size: 22),
+                          tooltip: 'Create Folder',
+                          onPressed: _showCreateFolderDialog,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.sort_rounded, size: 22),
+                          tooltip: 'Sort Documents',
+                          onPressed: () {
+                            setState(() {
+                              _documentSets = _documentSets.reversed.toList();
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // 4. Documents List (Document Sets)
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _filteredDocuments.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.folder_open_rounded, size: 64, color: textSecondary.withOpacity(0.4)),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No documents in $_selectedFilter',
+                                  style: TextStyle(fontSize: 16, color: textSecondary, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Tap the + button below to import images or scan',
+                                  style: TextStyle(fontSize: 13, color: textSecondary),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  icon: const Icon(Icons.photo_library_rounded),
+                                  label: const Text('Import Images into Set'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF0288D1),
+                                  ),
+                                  onPressed: _importImagesAndGroupSet,
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+                            itemCount: _filteredDocuments.length,
+                            itemBuilder: (ctx, index) {
+                              final docSet = _filteredDocuments[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: dividerColor),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(widget.isDark ? 0.2 : 0.04),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () => _openDocumentSet(docSet),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Row(
+                                      children: [
+                                        // Left: Document Preview Container (Screenshot 1)
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Container(
+                                            width: 66,
+                                            height: 86,
+                                            decoration: BoxDecoration(
+                                              color: widget.isDark ? const Color(0xFF14191F) : const Color(0xFFF1F5F9),
+                                              border: Border.all(color: dividerColor, width: 1.2),
+                                            ),
+                                            child: _buildDocumentThumbnail(docSet),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+
+                                        // Center Column: Title, Subtitle, Badges
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                docSet.title,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: textPrimary,
+                                                  height: 1.25,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                docSet.formattedDate,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: textSecondary,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+
+                                              // Badges Row: [50] [N] [📄]
+                                              Row(
+                                                children: [
+                                                  // Page count pill
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      border: Border.all(
+                                                        color: widget.isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8),
+                                                        width: 1,
+                                                      ),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    child: Text(
+                                                      '${docSet.pageCount}',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: textSecondary,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+
+                                                  // Red [N] Badge
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                                    decoration: BoxDecoration(
+                                                      border: Border.all(color: const Color(0xFFEF4444), width: 1.2),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                    child: const Text(
+                                                      'N',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Color(0xFFEF4444),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+
+                                                  // Blue PDF Icon
+                                                  const Icon(
+                                                    Icons.picture_as_pdf_rounded,
+                                                    size: 18,
+                                                    color: Color(0xFF0288D1),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+
+                                        // Right: 3-dots Menu (...)
+                                        PopupMenuButton<String>(
+                                          icon: Icon(Icons.more_horiz_rounded, color: textSecondary, size: 24),
+                                          color: widget.isDark ? const Color(0xFF1E2024) : Colors.white,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                          onSelected: (val) {
+                                            if (val == 'open') {
+                                              _openDocumentSet(docSet);
+                                            } else if (val == 'folder') {
+                                              _showMoveToFolderDialog(docSet);
+                                            } else if (val == 'favourite') {
+                                              setState(() => docSet.isFavourite = !docSet.isFavourite);
+                                              _saveDocSets();
+                                            } else if (val == 'delete') {
+                                              _deleteDocumentSet(docSet);
+                                            }
+                                          },
+                                          itemBuilder: (ctx) => [
+                                            const PopupMenuItem(
+                                              value: 'open',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.folder_open_rounded, size: 18),
+                                                  SizedBox(width: 8),
+                                                  Text('Open Document Set'),
+                                                ],
+                                              ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'folder',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.drive_file_move_outlined, size: 18),
+                                                  SizedBox(width: 8),
+                                                  Text('Move to Folder'),
+                                                ],
+                                              ),
+                                            ),
+                                            PopupMenuItem(
+                                              value: 'favourite',
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    docSet.isFavourite ? Icons.star_rounded : Icons.star_outline_rounded,
+                                                    size: 18,
+                                                    color: Colors.amber,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(docSet.isFavourite ? 'Remove Favourite' : 'Add to Favourite'),
+                                                ],
+                                              ),
+                                            ),
+                                            const PopupMenuDivider(),
+                                            const PopupMenuItem(
+                                              value: 'delete',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                                                  SizedBox(width: 8),
+                                                  Text('Move to Trash', style: TextStyle(color: Colors.red)),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
+
+          // 5. Dual Floating Action Button (Screenshot 1: [ 📷 | + ])
+          Positioned(
+            bottom: 24,
+            right: 20,
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0288D1), // DocScanner rich blue
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0288D1).withOpacity(0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Camera button (Quick capture to new set)
+                  InkWell(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      bottomLeft: Radius.circular(30),
+                    ),
+                    onTap: _captureCameraAndStartSet,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      child: Icon(
+                        Icons.camera_alt_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
+                  ),
+
+                  // Divider
+                  Container(
+                    height: 28,
+                    width: 1,
+                    color: Colors.white.withOpacity(0.35),
+                  ),
+
+                  // Plus button (Create folder / import images / make group)
+                  InkWell(
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
+                    ),
+                    onTap: _showPlusActionsSheet,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

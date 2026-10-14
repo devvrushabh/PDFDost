@@ -11,6 +11,8 @@ class StorageEngine {
   static const String _themeKey = 'img2pdf_theme_mode';
   static const String _mobileDataKey = 'img2pdf_ask_mobile_data';
   static const String _ocrLangKey = 'img2pdf_ocr_language';
+  static const String _docSetsKey = 'pdfdost_doc_sets';
+  static const String _docFoldersKey = 'pdfdost_doc_folders';
 
   static const MethodChannel _storageChannel = MethodChannel('com.devvrushabh.img2pdf/storage');
 
@@ -262,5 +264,173 @@ class StorageEngine {
       purgedCount = trashList.length;
     } catch (_) {}
     return purgedCount;
+  }
+
+  // --- DOCUMENT SETS & FOLDERS MANAGEMENT ---
+
+  static Future<List<DocumentSet>> loadDocSets() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final setsJson = prefs.getString(_docSetsKey);
+      if (setsJson != null) {
+        final List<dynamic> decoded = jsonDecode(setsJson);
+        return decoded
+            .map((item) => DocumentSet.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+        final sampleSets = _createInitialSampleSets();
+        await saveDocSets(sampleSets);
+        return sampleSets;
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static List<DocumentSet> _createInitialSampleSets() {
+    final now = DateTime.now();
+    return [
+      DocumentSet(
+        id: 'sample_1',
+        title: 'AWS Cloud Practitioner Questions',
+        createdAt: now.subtract(const Duration(days: 1)),
+        updatedAt: now.subtract(const Duration(days: 1)),
+        category: 'All docs',
+        isFavourite: true,
+        pages: List.generate(
+          50,
+          (index) => DocPage(
+            id: 'aws_page_${index + 1}',
+            imagePath: '',
+            name: '${index + 1}',
+            sizeBytes: 134 * 1024 + (index % 5) * 5 * 1024,
+            date: now.subtract(const Duration(days: 1)),
+            isNew: true,
+          ),
+        ),
+      ),
+      DocumentSet(
+        id: 'sample_2',
+        title: 'EY Scenario Based Questions',
+        createdAt: now.subtract(const Duration(days: 2)),
+        updatedAt: now.subtract(const Duration(days: 2)),
+        category: 'All docs',
+        pages: [
+          DocPage(
+            id: 'ey_page_1',
+            imagePath: '',
+            name: '1',
+            sizeBytes: 156 * 1024,
+            date: now.subtract(const Duration(days: 2)),
+            isNew: false,
+          ),
+        ],
+      ),
+      DocumentSet(
+        id: 'sample_3',
+        title: 'Azure Data Factory Scenario Based...',
+        createdAt: now.subtract(const Duration(days: 2)),
+        updatedAt: now.subtract(const Duration(days: 2)),
+        category: 'All docs',
+        pages: List.generate(
+          10,
+          (index) => DocPage(
+            id: 'azure_page_${index + 1}',
+            imagePath: '',
+            name: '${index + 1}',
+            sizeBytes: 142 * 1024,
+            date: now.subtract(const Duration(days: 2)),
+            isNew: false,
+          ),
+        ),
+      ),
+      DocumentSet(
+        id: 'sample_4',
+        title: 'Data Warehousing Prep Questions',
+        createdAt: now.subtract(const Duration(days: 2)),
+        updatedAt: now.subtract(const Duration(days: 2)),
+        category: 'Academic',
+        pages: List.generate(
+          10,
+          (index) => DocPage(
+            id: 'dw_page_${index + 1}',
+            imagePath: '',
+            name: '${index + 1}',
+            sizeBytes: 165 * 1024,
+            date: now.subtract(const Duration(days: 2)),
+            isNew: false,
+          ),
+        ),
+      ),
+      DocumentSet(
+        id: 'sample_5',
+        title: 'Data Interview Que-Set-04',
+        createdAt: now.subtract(const Duration(days: 3)),
+        updatedAt: now.subtract(const Duration(days: 3)),
+        category: 'All docs',
+        pages: List.generate(
+          6,
+          (index) => DocPage(
+            id: 'interview_page_${index + 1}',
+            imagePath: '',
+            name: '${index + 1}',
+            sizeBytes: 128 * 1024,
+            date: now.subtract(const Duration(days: 3)),
+            isNew: true,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  static Future<void> saveDocSets(List<DocumentSet> sets) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonList = sets.map((e) => e.toJson()).toList();
+      await prefs.setString(_docSetsKey, jsonEncode(jsonList));
+    } catch (_) {}
+  }
+
+  static Future<List<DocFolder>> loadDocFolders() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final foldersJson = prefs.getString(_docFoldersKey);
+      if (foldersJson != null) {
+        final List<dynamic> decoded = jsonDecode(foldersJson);
+        return decoded
+            .map((item) => DocFolder.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+        final defaultFolders = [
+          DocFolder(id: 'f_business', name: 'Business Card', createdAt: DateTime.now(), colorHex: '#0288D1'),
+          DocFolder(id: 'f_id', name: 'ID Card', createdAt: DateTime.now(), colorHex: '#10B981'),
+          DocFolder(id: 'f_academic', name: 'Academic', createdAt: DateTime.now(), colorHex: '#8B5CF6'),
+          DocFolder(id: 'f_personal', name: 'Personal', createdAt: DateTime.now(), colorHex: '#F59E0B'),
+        ];
+        await saveDocFolders(defaultFolders);
+        return defaultFolders;
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<void> saveDocFolders(List<DocFolder> folders) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonList = folders.map((e) => e.toJson()).toList();
+      await prefs.setString(_docFoldersKey, jsonEncode(jsonList));
+    } catch (_) {}
+  }
+
+  static Future<DocFolder> createFolder(String name, {String colorHex = '#0288D1'}) async {
+    final folder = DocFolder(
+      id: 'f_${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      createdAt: DateTime.now(),
+      colorHex: colorHex,
+    );
+    final folders = await loadDocFolders();
+    folders.add(folder);
+    await saveDocFolders(folders);
+    return folder;
   }
 }

@@ -201,3 +201,157 @@ class ToolDefinition {
     required this.subtitle,
   });
 }
+
+class DocPage {
+  final String id;
+  String imagePath;
+  String name;
+  int sizeBytes;
+  DateTime date;
+  bool isNew;
+
+  DocPage({
+    required this.id,
+    required this.imagePath,
+    required this.name,
+    required this.sizeBytes,
+    required this.date,
+    this.isNew = true,
+  });
+
+  String get formattedSize {
+    if (sizeBytes < 1024) return '$sizeBytes B';
+    if (sizeBytes < 1024 * 1024) {
+      return '${(sizeBytes / 1024).toStringAsFixed(0)} kB';
+    }
+    return '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  String get formattedDate {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    if (difference.inDays == 0) return 'Today';
+    if (difference.inDays == 1) return 'Yesterday';
+    if (difference.inDays < 7) return '${difference.inDays} days ago';
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'imagePath': imagePath,
+        'name': name,
+        'sizeBytes': sizeBytes,
+        'date': date.toIso8601String(),
+        'isNew': isNew,
+      };
+
+  factory DocPage.fromJson(Map<String, dynamic> json) => DocPage(
+        id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        imagePath: json['imagePath'] as String? ?? '',
+        name: json['name'] as String? ?? '1',
+        sizeBytes: json['sizeBytes'] as int? ?? 0,
+        date: json['date'] != null
+            ? DateTime.tryParse(json['date'] as String) ?? DateTime.now()
+            : DateTime.now(),
+        isNew: json['isNew'] as bool? ?? false,
+      );
+}
+
+class DocFolder {
+  final String id;
+  String name;
+  DateTime createdAt;
+  String colorHex;
+
+  DocFolder({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    this.colorHex = '#0288D1',
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'createdAt': createdAt.toIso8601String(),
+        'colorHex': colorHex,
+      };
+
+  factory DocFolder.fromJson(Map<String, dynamic> json) => DocFolder(
+        id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: json['name'] as String? ?? 'New Folder',
+        createdAt: json['createdAt'] != null
+            ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
+            : DateTime.now(),
+        colorHex: json['colorHex'] as String? ?? '#0288D1',
+      );
+}
+
+class DocumentSet {
+  final String id;
+  String title;
+  DateTime createdAt;
+  DateTime updatedAt;
+  List<DocPage> pages;
+  String category;
+  String? folderId;
+  bool isFavourite;
+  String? generatedPdfPath;
+
+  DocumentSet({
+    required this.id,
+    required this.title,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.pages,
+    this.category = 'All docs',
+    this.folderId,
+    this.isFavourite = false,
+    this.generatedPdfPath,
+  });
+
+  int get pageCount => pages.length;
+
+  String get firstImagePath => pages.isNotEmpty ? pages.first.imagePath : '';
+
+  String get formattedDate {
+    final now = DateTime.now();
+    final difference = now.difference(updatedAt);
+    if (difference.inDays == 0) return 'Today';
+    if (difference.inDays == 1) return 'Yesterday';
+    if (difference.inDays < 7) return '${difference.inDays} days ago';
+    return '${updatedAt.day}/${updatedAt.month}/${updatedAt.year}';
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+        'pages': pages.map((p) => p.toJson()).toList(),
+        'category': category,
+        'folderId': folderId,
+        'isFavourite': isFavourite,
+        'generatedPdfPath': generatedPdfPath,
+      };
+
+  factory DocumentSet.fromJson(Map<String, dynamic> json) => DocumentSet(
+        id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        title: json['title'] as String? ?? 'Untitled Document',
+        createdAt: json['createdAt'] != null
+            ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
+            : DateTime.now(),
+        updatedAt: json['updatedAt'] != null
+            ? DateTime.tryParse(json['updatedAt'] as String) ?? DateTime.now()
+            : DateTime.now(),
+        pages: json['pages'] != null
+            ? (json['pages'] as List<dynamic>)
+                .map((p) => DocPage.fromJson(p as Map<String, dynamic>))
+                .toList()
+            : [],
+        category: json['category'] as String? ?? 'All docs',
+        folderId: json['folderId'] as String?,
+        isFavourite: json['isFavourite'] as bool? ?? false,
+        generatedPdfPath: json['generatedPdfPath'] as String?,
+      );
+}
