@@ -64,6 +64,50 @@ jobs:
             sed -i '/ndkVersion/d' android/app/build.gradle 2>/dev/null || true
           fi
 
+          # Suppress unsupported compileSdk checks
+          echo "android.suppressUnsupportedCompileSdk=36" >> android/gradle.properties
+
+          # Disable AarMetadata tasks on subprojects so third-party plugins (e.g. file_picker) compile smoothly
+          if [ -f "android/build.gradle.kts" ]; then
+            cat << 'EOF' >> android/build.gradle.kts
+
+subprojects {
+    tasks.configureEach {
+        if (name.contains("AarMetadata")) {
+            enabled = false
+        }
+    }
+}
+allprojects {
+    tasks.configureEach {
+        if (name.contains("AarMetadata")) {
+            enabled = false
+        }
+    }
+}
+EOF
+          fi
+
+          if [ -f "android/build.gradle" ]; then
+            cat << 'EOF' >> android/build.gradle
+
+subprojects {
+    tasks.configureEach {
+        if (name.contains("AarMetadata")) {
+            enabled = false
+        }
+    }
+}
+allprojects {
+    tasks.configureEach {
+        if (name.contains("AarMetadata")) {
+            enabled = false
+        }
+    }
+}
+EOF
+          fi
+
       - name: Get Dependencies
         run: flutter pub get
 
