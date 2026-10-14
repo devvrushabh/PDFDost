@@ -502,29 +502,6 @@ class _HomeTabState extends State<HomeTab> {
                   _captureCameraAndStartSet();
                 },
               ),
-
-              // 4. Import Document / PDF
-              ListTile(
-                leading: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B5CF6).withOpacity(0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.description_rounded, color: Color(0xFF8B5CF6), size: 22),
-                ),
-                title: const Text('Word to PDF / Convert File', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                subtitle: const Text('Import Word, Excel or document files', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  if (widget.onOpenWordToPdf != null) {
-                    widget.onOpenWordToPdf!();
-                  } else {
-                    widget.onSwitchTab?.call(2);
-                  }
-                },
-              ),
             ],
           ),
         ),
