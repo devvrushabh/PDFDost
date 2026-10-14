@@ -7,7 +7,6 @@ import 'screens/files_tab.dart';
 import 'screens/home_tab.dart';
 import 'screens/merge_pdf_screen.dart';
 import 'screens/split_pdf_screen.dart';
-import 'screens/scanner_tab.dart';
 import 'screens/settings_tab.dart';
 import 'screens/tools_tab.dart';
 import 'screens/word_to_pdf_screen.dart';
@@ -128,7 +127,7 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentTabIndex = 0; // 0: Home, 1: Files, 2: Tools, 3: Scanner, 4: Settings
+  int _currentTabIndex = 0; // 0: Home, 1: Files, 2: Tools, 3: Settings
   final List<SelectedImageItem> _selectedImages = [];
   final List<HistoryItem> _historyItems = [];
   final List<TrashItem> _trashItems = [];
@@ -503,11 +502,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             onAddHistoryItem: _addHistoryItem,
             onDeleteHistoryItem: _deleteHistoryItem,
           ),
-          ScannerTab(
-            isDark: widget.isDarkMode,
-            onAddScannedImage: (img) => setState(() => _selectedImages.add(img)),
-            onAddHistoryItem: _addHistoryItem,
-          ),
           SettingsTab(
             isDark: widget.isDarkMode,
             onToggleTheme: widget.onToggleTheme,
@@ -531,8 +525,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
               _buildNavItem(1, Icons.folder_outlined, Icons.folder_rounded, 'Files'),
               _buildNavItem(2, Icons.handyman_outlined, Icons.handyman_rounded, 'Tools'),
-              _buildNavItem(3, Icons.crop_free_rounded, Icons.crop_free_rounded, 'Scanner'),
-              _buildNavItem(4, Icons.settings_outlined, Icons.settings_rounded, 'Settings'),
+              _buildNavItem(3, Icons.settings_outlined, Icons.settings_rounded, 'Settings'),
             ],
           ),
         ),
