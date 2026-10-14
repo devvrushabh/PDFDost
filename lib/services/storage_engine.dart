@@ -125,4 +125,18 @@ class StorageEngine {
     } catch (_) {}
     return false;
   }
+
+  static Future<bool> openUpiPayment(String upiUri) async {
+    if (Platform.isAndroid) {
+      try {
+        final res = await _storageChannel.invokeMethod<bool>('openUpi', {
+          'upiUri': upiUri,
+        });
+        return res ?? false;
+      } catch (_) {
+        return false;
+      }
+    }
+    return false;
+  }
 }

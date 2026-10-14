@@ -14,6 +14,7 @@ cp -r android_custom/res/* android/app/src/main/res/
 sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>' android/app/src/main/AndroidManifest.xml
 sed -i 's/<application/<application android:requestLegacyExternalStorage="true"/' android/app/src/main/AndroidManifest.xml
 sed -i 's/android:label="[^"]*"/android:label="PDFDost"/' android/app/src/main/AndroidManifest.xml
+sed -i '/<\/manifest>/i \    <queries>\n        <intent>\n            <action android:name="android.intent.action.VIEW" />\n            <data android:scheme="upi" />\n        </intent>\n    </queries>' android/app/src/main/AndroidManifest.xml
 
 # 4. Configure SDK versions via local.properties and build.gradle
 touch android/local.properties

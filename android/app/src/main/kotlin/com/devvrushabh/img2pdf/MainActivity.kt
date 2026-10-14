@@ -1,6 +1,8 @@
 package com.devvrushabh.img2pdf
 
 import android.content.ContentValues
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -30,6 +32,22 @@ class MainActivity: FlutterActivity() {
                     result.success(savedPath)
                 } catch (e: Exception) {
                     result.error("SAVE_FAILED", e.message, null)
+                }
+            } else if (call.method == "openUpi") {
+                val upiUri = call.argument<String>("upiUri")
+                if (upiUri == null) {
+                    result.error("INVALID_ARGS", "Missing upiUri", null)
+                    return@setMethodCallHandler
+                }
+
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        data = Uri.parse(upiUri)
+                    }
+                    startActivity(intent)
+                    result.success(true)
+                } catch (e: Exception) {
+                    result.success(false)
                 }
             } else {
                 result.notImplemented()

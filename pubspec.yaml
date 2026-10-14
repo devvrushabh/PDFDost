@@ -30,6 +30,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icon.png
+    - assets/upi_qr.png
     - PDFDost-icon.png
 
 dependency_overrides:

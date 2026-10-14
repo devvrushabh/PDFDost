@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../services/storage_engine.dart';
 import '../widgets/app_logo.dart';
@@ -74,51 +75,165 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
-  void _showPremiumDialog() {
+  Future<void> _openUpiPayment() async {
+    const upiId = '8830638458-2@ybl';
+    const payeeName = 'Vrushabh Dhote';
+    final upiUrl = 'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&cu=INR&tn=${Uri.encodeComponent('Donate to PDFDost')}';
+
+    // Copy UPI ID to clipboard automatically
+    await Clipboard.setData(const ClipboardData(text: upiId));
+
+    // Launch native UPI intent
+    final success = await StorageEngine.openUpiPayment(upiUrl);
+
+    if (mounted) {
+      if (!success) {
+        _showQrCodeModal(noAppFound: true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Opening UPI payment app...'),
+            duration: Duration(seconds: 1),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showQrCodeModal({bool noAppFound = false}) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: widget.isDark ? const Color(0xFF1E2026) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 70,
-              height: 70,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFEF3C7),
-                shape: BoxShape.circle,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.workspace_premium_rounded, color: Color(0xFFF59E0B), size: 44),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.favorite_rounded, color: Color(0xFF10B981), size: 16),
+                  SizedBox(width: 6),
+                  Text(
+                    'Support Open Source',
+                    style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(height: 14),
+            Text(
+              'Donate to PDFDost',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'By Vrushabh Dhote',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  'assets/upi_qr.png',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: widget.isDark ? const Color(0xFF282A33) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Flexible(
+                    child: Text(
+                      '8830638458-2@ybl',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      Clipboard.setData(const ClipboardData(text: '8830638458-2@ybl'));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✓ UPI ID copied to clipboard: 8830638458-2@ybl'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Row(
+                        children: [
+                          Icon(Icons.copy_rounded, size: 16, color: Color(0xFFFA9282)),
+                          SizedBox(width: 4),
+                          Text('Copy', style: TextStyle(color: Color(0xFFFA9282), fontWeight: FontWeight.bold, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (noAppFound) ...[
+              const SizedBox(height: 10),
+              const Text(
+                'UPI ID copied to clipboard. Scan QR or open your payment app to donate.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, color: Colors.orangeAccent),
+              ),
+            ],
             const SizedBox(height: 18),
-            const Text(
-              'PDFDost Premium',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              '• Unlimited document conversions\n• High-precision optical OCR text recognition\n• Zero ads & lightning processing\n• Cloud backup & synchronization',
-              style: TextStyle(height: 1.6, fontSize: 14),
-            ),
-            const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
+              height: 46,
+              child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFA9282),
-                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.payment_rounded, color: Colors.white, size: 18),
+                label: const Text(
+                  'Open UPI App to Pay',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 onPressed: () {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Free 7-day trial activated! Enjoy Premium.')),
-                  );
+                  _openUpiPayment();
                 },
-                child: const Text('Start 7 Days Free Trial', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -203,15 +318,29 @@ class _SettingsTabState extends State<SettingsTab> {
           child: Column(
             children: [
               ListTile(
-                leading: const Icon(Icons.account_circle_outlined, size: 24),
-                title: const Text('Current membership', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Free', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                leading: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.code_rounded, color: Color(0xFF10B981), size: 20),
+                ),
+                title: const Text(
+                  'Free Open Source App By Vrushabh Dhote',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                subtitle: const Text(
+                  '100% Free Forever • Privacy First • Offline',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
               ),
               Divider(height: 1, color: dividerColor),
 
-              // Upgrade to Premium Banner with glowing 3D Crown
+              // Open Source Support Banner with small QR code replacing yellow icon
               GestureDetector(
-                onTap: _showPremiumDialog,
+                onTap: _showQrCodeModal,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
@@ -224,58 +353,91 @@ class _SettingsTabState extends State<SettingsTab> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Upgrade to Premium\nfor unlimited usage',
+                              'Support PDFDost\nOpen Source Project',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, height: 1.25),
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Get 7 days free trial',
+                              'Scan QR or tap to donate via UPI',
                               style: TextStyle(color: headerTextColor, fontSize: 12),
                             ),
                           ],
                         ),
                       ),
-                      // Golden 3D Crown Badge with Sparkles
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Container(
-                            width: 62,
-                            height: 62,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: const RadialGradient(
-                                colors: [Color(0xFFFBBF24), Color(0xFFD97706)],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFF59E0B).withOpacity(0.4),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.workspace_premium_rounded,
-                              color: Color(0xFF1E1F26),
-                              size: 36,
-                            ),
+                      const SizedBox(width: 12),
+                      // Small QR Code replacing dark yellow icon
+                      Container(
+                        width: 58,
+                        height: 58,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: widget.isDark ? const Color(0xFF3B3E4A) : const Color(0xFFCBD5E1),
+                            width: 1.2,
                           ),
-                        ],
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Image.asset(
+                            'assets/upi_qr.png',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
               Divider(height: 1, color: dividerColor),
+
+              // Donate and Pay Button (replaces Restore purchases)
               ListTile(
-                leading: const Icon(Icons.credit_card_outlined, size: 24),
-                title: const Text('Restore purchases', style: TextStyle(fontWeight: FontWeight.w600)),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Purchases restored successfully')),
-                  );
-                },
+                leading: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFA9282).withOpacity(0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.volunteer_activism_rounded, color: Color(0xFFFA9282), size: 20),
+                ),
+                title: const Text('Donate and Pay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                subtitle: const Text('UPI ID: 8830638458-2@ybl', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFA9282),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFA9282).withOpacity(0.35),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.payment_rounded, color: Colors.white, size: 16),
+                      SizedBox(width: 6),
+                      Text(
+                        'Pay',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                onTap: _openUpiPayment,
               ),
             ],
           ),
