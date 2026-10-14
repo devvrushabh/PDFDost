@@ -56,9 +56,6 @@ class _HomeTabState extends State<HomeTab> {
   // Selected filter: 'all', 'recent', 'favourite', or folder name
   String _selectedFilter = 'all';
 
-  // Sub-navigation active tab index (0: Home, 1: PDF Tools, 2: Import ID Photo, 3: Word to PDF)
-  int _activeSubNavIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -535,285 +532,6 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  // --- SUB-NAVIGATION TABS (Screenshot 1: Home, PDF Tools, Import ID Photo, PDF Edit) ---
-
-  Widget _buildSubNavTabs() {
-    final activeColor = const Color(0xFF0288D1); // Vibrant Doc Scanner Blue
-    final inactiveColor = widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final bg = widget.isDark ? const Color(0xFF15222C) : const Color(0xFF1E3A4B);
-
-    return Container(
-      color: bg,
-      padding: const EdgeInsets.only(top: 4, bottom: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          // 1. Home
-          _buildSubNavTabItem(
-            icon: Icons.home_rounded,
-            label: 'Home',
-            isActive: _activeSubNavIndex == 0,
-            onTap: () => setState(() => _activeSubNavIndex = 0),
-            activeColor: activeColor,
-            inactiveColor: inactiveColor,
-          ),
-
-          // 2. PDF Tools
-          _buildSubNavTabItem(
-            icon: Icons.business_center_outlined,
-            label: 'PDF Tools',
-            isActive: _activeSubNavIndex == 1,
-            onTap: () {
-              widget.onSwitchTab?.call(2); // Switches to ToolsTab
-            },
-            activeColor: activeColor,
-            inactiveColor: inactiveColor,
-          ),
-
-          // 3. Import ID Photo
-          _buildSubNavTabItem(
-            icon: Icons.credit_card_rounded,
-            label: 'Import ID Photo',
-            isActive: _activeSubNavIndex == 2,
-            onTap: () {
-              widget.onSwitchTab?.call(3); // Switches to ScannerTab
-            },
-            activeColor: activeColor,
-            inactiveColor: inactiveColor,
-          ),
-
-          // 4. Word to PDF / PDF Edit
-          _buildSubNavTabItem(
-            icon: Icons.description_outlined,
-            label: 'PDF Edit',
-            isActive: _activeSubNavIndex == 3,
-            onTap: () {
-              if (widget.onOpenWordToPdf != null) {
-                widget.onOpenWordToPdf!();
-              } else {
-                widget.onSwitchTab?.call(2);
-              }
-            },
-            activeColor: activeColor,
-            inactiveColor: inactiveColor,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubNavTabItem({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-    required Color activeColor,
-    required Color inactiveColor,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  color: isActive ? Colors.white : inactiveColor,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: isActive ? Colors.white : inactiveColor,
-                    fontSize: 13,
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Container(
-              height: 2.5,
-              width: 48,
-              decoration: BoxDecoration(
-                color: isActive ? const Color(0xFF0288D1) : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- FILTER CHIPS BAR (Screenshot 1: All docs, Recent, Favourite, Folders) ---
-
-  Widget _buildFilterChipsBar() {
-    final dividerColor = widget.isDark ? const Color(0xFF283645) : const Color(0xFFE2E8F0);
-    final unselectedBg = widget.isDark ? const Color(0xFF1E2833) : Colors.white;
-    final unselectedBorder = widget.isDark ? const Color(0xFF2F3E4E) : const Color(0xFFCBD5E1);
-
-    return Container(
-      height: 48,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          // 1. All docs (Selected Blue Pill)
-          _buildChip(
-            id: 'all',
-            label: 'All docs',
-            icon: Icons.touch_app_rounded,
-            isSelected: _selectedFilter == 'all',
-          ),
-          const SizedBox(width: 8),
-
-          // 2. Recent (with red count badge)
-          _buildChip(
-            id: 'recent',
-            label: 'Recent',
-            icon: Icons.access_time_rounded,
-            badge: '${_documentSets.length}',
-            isSelected: _selectedFilter == 'recent',
-          ),
-          const SizedBox(width: 8),
-
-          // 3. Favourite (with star)
-          _buildChip(
-            id: 'favourite',
-            label: 'Favourite',
-            icon: Icons.star_rounded,
-            isSelected: _selectedFilter == 'favourite',
-          ),
-          const SizedBox(width: 10),
-
-          // Divider |
-          Center(
-            child: Container(
-              height: 22,
-              width: 1,
-              color: dividerColor,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-            ),
-          ),
-          const SizedBox(width: 10),
-
-          // 4. Custom Folders Chips
-          ..._folders.map((folder) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _buildChip(
-                id: folder.name,
-                label: folder.name,
-                icon: Icons.folder_rounded,
-                iconColor: Color(int.parse(folder.colorHex.replaceFirst('#', '0xFF'))),
-                isSelected: _selectedFilter.toLowerCase() == folder.name.toLowerCase(),
-              ),
-            );
-          }),
-
-          // 5. + Create Folder Chip
-          ActionChip(
-            avatar: const Icon(Icons.add_rounded, size: 16, color: Color(0xFF0288D1)),
-            label: const Text(
-              'Folder',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0288D1)),
-            ),
-            backgroundColor: unselectedBg,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: const BorderSide(color: Color(0xFF0288D1), width: 1.2),
-            ),
-            onPressed: _showCreateFolderDialog,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChip({
-    required String id,
-    required String label,
-    required IconData icon,
-    String? badge,
-    Color? iconColor,
-    required bool isSelected,
-  }) {
-    final activeBg = const Color(0xFF0288D1);
-    final inactiveBg = widget.isDark ? const Color(0xFF1E2833) : Colors.white;
-    final inactiveBorder = widget.isDark ? const Color(0xFF2F3E4E) : const Color(0xFFCBD5E1);
-    final textPrimary = widget.isDark ? Colors.white : const Color(0xFF0F172A);
-
-    return GestureDetector(
-      onTap: () => setState(() => _selectedFilter = id),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? activeBg : inactiveBg,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? activeBg : inactiveBorder,
-            width: 1.2,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: activeBg.withOpacity(0.35),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.white : (iconColor ?? (widget.isDark ? Colors.white70 : const Color(0xFF475569))),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : textPrimary,
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              ),
-            ),
-            if (badge != null) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  badge,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   // --- THUMBNAIL ILLUSTRATION (Simulates Document Cover from Screenshot 1) ---
 
   Widget _buildDocumentThumbnail(DocumentSet set) {
@@ -896,28 +614,76 @@ class _HomeTabState extends State<HomeTab> {
         children: [
           Column(
             children: [
-              // 1. Sub-navigation Horizontal Tab Bar (Screenshot 1)
-              _buildSubNavTabs(),
-
-              // 2. Filter Pills Bar (All docs, Recent, Favourite, Folders)
-              _buildFilterChipsBar(),
-
-              // 3. Documents (N) Header
+              // Documents (N) Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Documents (${_filteredDocuments.length})',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: textPrimary,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          _selectedFilter == 'all'
+                              ? 'Documents (${_filteredDocuments.length})'
+                              : '$_selectedFilter (${_filteredDocuments.length})',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                        ),
+                        if (_selectedFilter != 'all') ...[
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => setState(() => _selectedFilter = 'all'),
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.25),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close_rounded, size: 14),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     Row(
                       children: [
+                        // Folder Filter Dropdown
+                        PopupMenuButton<String>(
+                          icon: Icon(
+                            _selectedFilter == 'all' ? Icons.filter_list_rounded : Icons.filter_alt_rounded,
+                            size: 22,
+                            color: _selectedFilter != 'all' ? const Color(0xFF0288D1) : textSecondary,
+                          ),
+                          tooltip: 'Filter by Folder',
+                          color: widget.isDark ? const Color(0xFF1E2024) : Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          onSelected: (val) => setState(() => _selectedFilter = val),
+                          itemBuilder: (ctx) => [
+                            const PopupMenuItem(value: 'all', child: Text('All Documents')),
+                            const PopupMenuItem(value: 'recent', child: Text('Recent')),
+                            const PopupMenuItem(value: 'favourite', child: Text('Favourites')),
+                            if (_folders.isNotEmpty) const PopupMenuDivider(),
+                            ..._folders.map(
+                              (f) => PopupMenuItem(
+                                value: f.name,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.folder_rounded,
+                                      size: 18,
+                                      color: Color(int.parse(f.colorHex.replaceFirst('#', '0xFF'))),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(f.name),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                         IconButton(
                           icon: const Icon(Icons.create_new_folder_outlined, size: 22),
                           tooltip: 'Create Folder',

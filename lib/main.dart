@@ -427,259 +427,46 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final dividerColor = widget.isDarkMode ? const Color(0xFF23242B) : const Color(0xFFE2E8F0);
 
     return Scaffold(
-      drawer: Drawer(
-        backgroundColor: widget.isDarkMode ? const Color(0xFF17202A) : Colors.white,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: widget.isDarkMode ? const Color(0xFF131D26) : const Color(0xFF1E3A4B),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.document_scanner_rounded, color: Color(0xFF0288D1), size: 36),
-                      SizedBox(width: 12),
-                      Text(
-                        'Doc Scanner',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'PDFDost • Fast, Offline & Privacy-First',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home_rounded, color: Color(0xFF0288D1)),
-              title: const Text('Home'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentTabIndex = 0);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.folder_rounded, color: Color(0xFF10B981)),
-              title: const Text('All Files'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentTabIndex = 1);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.handyman_rounded, color: Color(0xFF8B5CF6)),
-              title: const Text('PDF Tools'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentTabIndex = 2);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.crop_free_rounded, color: Color(0xFFFA9282)),
-              title: const Text('ID Scanner'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentTabIndex = 3);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
-              title: const Text('Trash & 30-Day Retention'),
-              trailing: _trashItems.isNotEmpty
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '${_trashItems.length}',
-                        style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                    )
-                  : null,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (ctx) => TrashScreen(
-                      trashItems: _trashItems,
-                      isDark: widget.isDarkMode,
-                      onRestore: _restoreTrashItem,
-                      onDeletePermanently: _deleteTrashItemPermanently,
-                      onEmptyTrash: _emptyTrash,
-                    ),
-                  ),
-                );
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.volunteer_activism_rounded, color: Color(0xFFFFB800)),
-              title: const Text('Donate & Support'),
-              subtitle: const Text('UPI ID: 8830638458-2@ybl', style: TextStyle(fontSize: 11)),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentTabIndex = 4);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_rounded),
-              title: const Text('Settings'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentTabIndex = 4);
-              },
-            ),
-          ],
+      appBar: AppBar(
+        title: Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: AppLogo(fontSize: 22, isDark: widget.isDarkMode),
         ),
-      ),
-      appBar: _currentTabIndex == 0
-          ? AppBar(
-              backgroundColor: widget.isDarkMode ? const Color(0xFF15222C) : const Color(0xFF1E3A4B),
-              elevation: 0,
-              leading: Builder(
-                builder: (ctx) => IconButton(
-                  icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 26),
-                  onPressed: () => Scaffold.of(ctx).openDrawer(),
-                ),
-              ),
-              title: const Text(
-                'Doc Scanner',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  letterSpacing: 0.2,
-                ),
-              ),
-              actions: [
-                // Crown / VIP icon (Screenshot 1)
-                IconButton(
-                  icon: const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFC107), size: 24),
-                  tooltip: 'Support & Donate',
-                  onPressed: () => setState(() => _currentTabIndex = 4),
-                ),
-                // Search icon (Screenshot 1)
-                IconButton(
-                  icon: const Icon(Icons.search_rounded, color: Colors.white, size: 24),
-                  tooltip: 'Search Documents',
-                  onPressed: () => setState(() => _currentTabIndex = 1),
-                ),
-                // 3-dots overflow icon (Screenshot 1)
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
-                  color: widget.isDarkMode ? const Color(0xFF1E2024) : Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  onSelected: (val) {
-                    if (val == 'trash') {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (ctx) => TrashScreen(
-                            trashItems: _trashItems,
-                            isDark: widget.isDarkMode,
-                            onRestore: _restoreTrashItem,
-                            onDeletePermanently: _deleteTrashItemPermanently,
-                            onEmptyTrash: _emptyTrash,
-                          ),
-                        ),
-                      );
-                    } else if (val == 'settings') {
-                      setState(() => _currentTabIndex = 4);
-                    } else if (val == 'theme') {
-                      widget.onToggleTheme();
-                    }
-                  },
-                  itemBuilder: (ctx) => [
-                    const PopupMenuItem(
-                      value: 'trash',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline_rounded, size: 20, color: Color(0xFFEF4444)),
-                          SizedBox(width: 10),
-                          Text('Trash (30 days)'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'settings',
-                      child: Row(
-                        children: [
-                          Icon(Icons.settings_outlined, size: 20),
-                          SizedBox(width: 10),
-                          Text('Settings'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'theme',
-                      child: Row(
-                        children: [
-                          Icon(widget.isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined, size: 20),
-                          SizedBox(width: 10),
-                          Text(widget.isDarkMode ? 'Light Mode' : 'Dark Mode'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            )
-          : AppBar(
-              title: Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: AppLogo(fontSize: 22, isDark: widget.isDarkMode),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.search_rounded, size: 24),
-                  onPressed: () => setState(() => _currentTabIndex = 1),
-                ),
-                if (_currentTabIndex == 2)
-                  IconButton(
-                    icon: const Icon(Icons.view_agenda_outlined, size: 22),
-                    onPressed: () {},
-                  ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 14, left: 4),
-                  child: GestureDetector(
-                    onTap: () => LoginModalSheet.show(context),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: widget.isDarkMode ? const Color(0xFF262831) : const Color(0xFFE2E8F0),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: widget.isDarkMode ? const Color(0xFF383A46) : const Color(0xFFCBD5E1),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.person_rounded,
-                        size: 20,
-                        color: widget.isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search_rounded, size: 24),
+            onPressed: () => setState(() => _currentTabIndex = 1),
+          ),
+          if (_currentTabIndex == 2)
+            IconButton(
+              icon: const Icon(Icons.view_agenda_outlined, size: 22),
+              onPressed: () {},
             ),
+          Padding(
+            padding: const EdgeInsets.only(right: 14, left: 4),
+            child: GestureDetector(
+              onTap: () => LoginModalSheet.show(context),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: widget.isDarkMode ? const Color(0xFF262831) : const Color(0xFFE2E8F0),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: widget.isDarkMode ? const Color(0xFF383A46) : const Color(0xFFCBD5E1),
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  Icons.person_rounded,
+                  size: 20,
+                  color: widget.isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: IndexedStack(
         index: _currentTabIndex,
         children: [
