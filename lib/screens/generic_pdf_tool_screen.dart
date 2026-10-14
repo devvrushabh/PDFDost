@@ -1123,7 +1123,6 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
     }
 
     return ReorderableListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
       header: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1175,7 +1174,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
           const SizedBox(height: 10),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
       onReorder: (int oldIndex, int newIndex) {
         setState(() {
           if (oldIndex < newIndex) {

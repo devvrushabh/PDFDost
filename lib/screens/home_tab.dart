@@ -354,7 +354,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
           AnimatedPositioned(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOutCubic,
-            bottom: (widget.selectedImages.isNotEmpty && widget.activeChip == 0) ? 92 : 24,
+            bottom: (widget.selectedImages.isNotEmpty && _activeChip == 0) ? 92 : 24,
             right: 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
