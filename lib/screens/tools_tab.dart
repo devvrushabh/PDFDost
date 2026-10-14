@@ -9,6 +9,7 @@ import '../services/storage_engine.dart';
 import '../widgets/export_modal.dart';
 import '../widgets/tool_badge_icon.dart';
 import 'merge_pdf_screen.dart';
+import 'split_pdf_screen.dart';
 
 class ToolsTab extends StatefulWidget {
   final List<HistoryItem> historyItems;
@@ -61,7 +62,7 @@ class _ToolsTabState extends State<ToolsTab> {
         _openMergePdfScreen();
         break;
       case PdfToolType.splitPdf:
-        _showSplitPdfDialog();
+        _openSplitPdfScreen();
         break;
       case PdfToolType.compressPdf:
         _showCompressPdfDialog();
@@ -108,6 +109,19 @@ class _ToolsTabState extends State<ToolsTab> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (ctx) => MergePdfScreen(
+          historyItems: widget.historyItems,
+          isDark: widget.isDark,
+          onAddHistoryItem: widget.onAddHistoryItem,
+          onDeleteHistoryItem: widget.onDeleteHistoryItem,
+        ),
+      ),
+    );
+  }
+
+  void _openSplitPdfScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => SplitPdfScreen(
           historyItems: widget.historyItems,
           isDark: widget.isDark,
           onAddHistoryItem: widget.onAddHistoryItem,

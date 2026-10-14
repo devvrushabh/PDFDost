@@ -42,6 +42,39 @@ class SelectedPdfItem {
   }
 }
 
+class SplitPdfConfigItem {
+  final String path;
+  final String name;
+  final int sizeBytes;
+  final int pageCount;
+  int startPage;
+  int endPage;
+  bool splitAllPages;
+
+  SplitPdfConfigItem({
+    required this.path,
+    required this.name,
+    required this.sizeBytes,
+    required this.pageCount,
+    this.startPage = 1,
+    int? endPage,
+    this.splitAllPages = false,
+  }) : endPage = endPage ?? pageCount;
+
+  String get formattedSize {
+    if (sizeBytes < 1024) return '$sizeBytes B';
+    if (sizeBytes < 1024 * 1024) {
+      return '${(sizeBytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  int get pagesToExtractCount {
+    if (splitAllPages) return pageCount;
+    return (endPage - startPage + 1).clamp(1, pageCount);
+  }
+}
+
 class HistoryItem {
   final String id;
   final String name;

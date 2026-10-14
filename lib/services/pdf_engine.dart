@@ -159,57 +159,99 @@ class PdfEngine {
     return await mergePdfsFromPaths(paths: paths, docName: docName);
   }
 
-  // 3. Split PDF Document
+  // 3. Real Vector PDF Split Engine
+  static Future<PdfEngineResult> splitPdfPages({
+    required String sourcePath,
+    required int startPage,
+    required int endPage,
+    required String docName,
+  }) async {
+    final file = File(sourcePath);
+    if (!await file.exists()) {
+      throw Exception('Source PDF not found at $sourcePath');
+    }
+
+    final Uint8List sourceBytes = await file.readAsBytes();
+    final sf.PdfLoadedDocument loadedDoc = sf.PdfLoadedDocument(sourceBytes);
+    final int totalSourcePages = loadedDoc.pages.count;
+
+    final int from = startPage.clamp(1, totalSourcePages);
+    final int to = endPage.clamp(from, totalSourcePages);
+
+    final sf.PdfDocument newDocument = sf.PdfDocument();
+    int totalExtracted = 0;
+
+    try {
+      for (int pageNum = from; pageNum <= to; pageNum++) {
+        final int pageIndex = pageNum - 1;
+        final sf.PdfLoadedPage loadedPage = loadedDoc.pages[pageIndex] as sf.PdfLoadedPage;
+        final sf.SizeF pageSize = loadedPage.size;
+        final sf.PdfPageOrientation orientation = loadedPage.orientation;
+
+        final sf.PdfSection section = newDocument.sections!.add();
+        section.pageSettings.size = pageSize;
+        section.pageSettings.orientation = orientation;
+        section.pageSettings.margins.all = 0;
+
+        final sf.PdfPage newPage = section.pages.add();
+        final sf.PdfTemplate template = loadedPage.createTemplate();
+        newPage.graphics.drawPdfTemplate(template, Offset.zero, pageSize);
+        totalExtracted++;
+      }
+
+      loadedDoc.dispose();
+
+      if (totalExtracted == 0) {
+        newDocument.dispose();
+        throw Exception('No pages were extracted.');
+      }
+
+      final List<int> extractedBytes = await newDocument.save();
+      newDocument.dispose();
+
+      return await _saveBytes(extractedBytes, docName, totalExtracted);
+    } catch (e) {
+      newDocument.dispose();
+      loadedDoc.dispose();
+      rethrow;
+    }
+  }
+
+  static Future<List<PdfEngineResult>> splitMultiplePdfs({
+    required List<SplitPdfConfigItem> items,
+    required String baseDocName,
+  }) async {
+    final List<PdfEngineResult> results = [];
+    for (int i = 0; i < items.length; i++) {
+      final item = items[i];
+      final base = baseDocName.isEmpty ? 'Split' : baseDocName;
+      final String itemDocName = items.length == 1
+          ? base
+          : '${base}_${i + 1}_${item.name.replaceAll('.pdf', '')}';
+
+      final res = await splitPdfPages(
+        sourcePath: item.path,
+        startPage: item.startPage,
+        endPage: item.endPage,
+        docName: itemDocName,
+      );
+      results.add(res);
+    }
+    return results;
+  }
+
   static Future<PdfEngineResult> splitPdf({
     required HistoryItem sourceItem,
     required int startPage,
     required int endPage,
     required String docName,
   }) async {
-    final pdf = pw.Document();
-    final count = (endPage - startPage + 1).clamp(1, 100);
-
-    for (int i = 0; i < count; i++) {
-      final pageNum = startPage + i;
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(32),
-          build: (pw.Context ctx) {
-            return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Header(
-                  level: 0,
-                  text: 'Extracted Page $pageNum',
-                  textStyle: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
-                ),
-                pw.SizedBox(height: 12),
-                pw.Text('Extracted from: ${sourceItem.name}'),
-                pw.Text('Source Size: ${sourceItem.size}'),
-                pw.SizedBox(height: 24),
-                pw.Container(
-                  width: double.infinity,
-                  height: 380,
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.grey300),
-                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-                  ),
-                  alignment: pw.Alignment.center,
-                  child: pw.Text(
-                    'Page $pageNum Content\n(Extracted using PDFDost)',
-                    textAlign: pw.TextAlign.center,
-                    style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 14),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      );
-    }
-
-    return await _saveDocument(pdf, docName);
+    return await splitPdfPages(
+      sourcePath: sourceItem.path,
+      startPage: startPage,
+      endPage: endPage,
+      docName: docName,
+    );
   }
 
   // 4. Compress PDF

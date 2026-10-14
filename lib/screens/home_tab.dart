@@ -23,6 +23,7 @@ class HomeTab extends StatefulWidget {
   final Function(HistoryItem) onDeleteHistoryItem;
   final Function(HistoryItem) onAddHistoryItem;
   final VoidCallback? onOpenMergePdf;
+  final VoidCallback? onOpenSplitPdf;
 
   const HomeTab({
     super.key,
@@ -38,6 +39,7 @@ class HomeTab extends StatefulWidget {
     required this.onDeleteHistoryItem,
     required this.onAddHistoryItem,
     this.onOpenMergePdf,
+    this.onOpenSplitPdf,
   });
 
   @override
@@ -365,6 +367,17 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                       onTap: () {
                         _closeSpeedDial();
                         widget.onOpenMergePdf!();
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (widget.onOpenSplitPdf != null) ...[
+                    _buildSpeedDialOption(
+                      icon: Icons.call_split_rounded,
+                      label: 'Split PDF',
+                      onTap: () {
+                        _closeSpeedDial();
+                        widget.onOpenSplitPdf!();
                       },
                     ),
                     const SizedBox(height: 12),

@@ -50,6 +50,39 @@ def merge_pdfs(pdf_paths, output_path):
         except ImportError:
             raise ImportError("Please install 'pypdf' (pip install pypdf) to merge PDF files.")
 
+def split_pdf(input_path, output_path, start_page=1, end_page=None):
+    """
+    Extract a range of pages from a PDF file.
+    Supports pypdf or PyPDF2.
+    """
+    try:
+        from pypdf import PdfReader, PdfWriter
+        reader = PdfReader(input_path)
+        writer = PdfWriter()
+        total = len(reader.pages)
+        start = max(0, start_page - 1)
+        end = total if end_page is None else min(total, end_page)
+        for i in range(start, end):
+            writer.add_page(reader.pages[i])
+        with open(output_path, "wb") as f:
+            writer.write(f)
+        return output_path
+    except ImportError:
+        try:
+            from PyPDF2 import PdfReader, PdfWriter
+            reader = PdfReader(input_path)
+            writer = PdfWriter()
+            total = len(reader.pages)
+            start = max(0, start_page - 1)
+            end = total if end_page is None else min(total, end_page)
+            for i in range(start, end):
+                writer.add_page(reader.pages[i])
+            with open(output_path, "wb") as f:
+                writer.write(f)
+            return output_path
+        except ImportError:
+            raise ImportError("Please install 'pypdf' (pip install pypdf) to split PDF files.")
+
 HISTORY_FILE = "pdf_history.json"
 
 KV_DESIGN = """
