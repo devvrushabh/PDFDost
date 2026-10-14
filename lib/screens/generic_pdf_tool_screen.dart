@@ -1816,6 +1816,9 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
           ),
           IconButton(
             icon: const Icon(Icons.share_outlined, size: 20),
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(8),
+            tooltip: 'Share',
             onPressed: () {
               if (File(item.path).existsSync()) {
                 Share.shareXFiles([XFile(item.path)], text: 'Sharing ${item.name}');
@@ -1824,14 +1827,77 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
           ),
           IconButton(
             icon: const Icon(Icons.open_in_new_rounded, size: 20, color: Color(0xFFFF4B4B)),
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(8),
+            tooltip: 'Open',
             onPressed: () {
               if (File(item.path).existsSync()) {
                 OpenFilex.open(item.path);
               }
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline_rounded, size: 20, color: Color(0xFFEF4444)),
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(8),
+            tooltip: 'Delete',
+            onPressed: () => _confirmDeleteCompletedItem(item),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteCompletedItem(HistoryItem item) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: widget.isDark ? const Color(0xFF1E2024) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Completed File?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        content: Text('Are you sure you want to delete "${item.name}"? This file will be removed permanently.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final file = File(item.path);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (_) {}
+
+      setState(() {
+        widget.historyItems.removeWhere((e) => e.id == item.id);
+      });
+      await StorageEngine.saveHistory(widget.historyItems);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Document deleted'),
+            duration: Duration(seconds: 1),
+            backgroundColor: Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
   }
 }
