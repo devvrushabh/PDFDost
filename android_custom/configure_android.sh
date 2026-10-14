@@ -15,13 +15,16 @@ sed -i '/<application/i \    <uses-permission android:name="android.permission.I
 sed -i 's/<application/<application android:requestLegacyExternalStorage="true"/' android/app/src/main/AndroidManifest.xml
 sed -i 's/android:label="[^"]*"/android:label="PDFDost"/' android/app/src/main/AndroidManifest.xml
 
-# 4. Configure SDK versions (minSdk 21, compileSdk 36)
+# 4. Configure SDK versions via local.properties and build.gradle
+touch android/local.properties
+echo "flutter.compileSdkVersion=36" >> android/local.properties
+echo "flutter.targetSdkVersion=36" >> android/local.properties
+echo "flutter.minSdkVersion=21" >> android/local.properties
+
 sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 21/' android/app/build.gradle.kts 2>/dev/null || true
 sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/' android/app/build.gradle 2>/dev/null || true
 sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle.kts 2>/dev/null || true
-sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 36/' android/app/build.gradle.kts 2>/dev/null || true
 sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 36/' android/app/build.gradle 2>/dev/null || true
-sed -i 's/targetSdkVersion flutter.targetSdkVersion/targetSdkVersion 36/' android/app/build.gradle 2>/dev/null || true
 
 # 5. Use pre-installed runner NDK instead of triggering failed sdkmanager downloads
 NDK_DIR=""
@@ -44,39 +47,5 @@ fi
 
 # 6. Suppress unsupported compileSdk checks in gradle.properties
 echo "android.suppressUnsupportedCompileSdk=36" >> android/gradle.properties
-
-# 7. Force all subprojects (e.g. file_picker) to compile with compileSdk 36 so checkReleaseAarMetadata succeeds
-if [ -f "android/build.gradle.kts" ]; then
-  cat << 'EOF' >> android/build.gradle.kts
-
-subprojects {
-    afterEvaluate {
-        val isAndroid = plugins.hasPlugin("com.android.application") || plugins.hasPlugin("com.android.library")
-        if (isAndroid) {
-            extensions.findByName("android")?.let { androidExt ->
-                if (androidExt is com.android.build.gradle.BaseExtension) {
-                    androidExt.compileSdkVersion(36)
-                }
-            }
-        }
-    }
-}
-EOF
-fi
-
-if [ -f "android/build.gradle" ]; then
-  cat << 'EOF' >> android/build.gradle
-
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty("android")) {
-            project.android {
-                compileSdkVersion 36
-            }
-        }
-    }
-}
-EOF
-fi
 
 echo "=== Native Android configuration completed successfully ==="
