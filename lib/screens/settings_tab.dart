@@ -148,10 +148,30 @@ class _SettingsTabState extends State<SettingsTab> {
                 color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
               ),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'By Vrushabh Dhote',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('By ', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFA9282).withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(
+                      color: const Color(0xFFFA9282).withOpacity(0.35),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Text(
+                    'Vrushabh Dhote',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFA9282),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Container(
@@ -337,9 +357,40 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                   child: const Icon(Icons.code_rounded, color: Color(0xFF10B981), size: 20),
                 ),
-                title: const Text(
-                  'Free Open Source App By Vrushabh Dhote',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                title: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 5,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      'Free App By',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFA9282).withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: const Color(0xFFFA9282).withOpacity(0.45),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Text(
+                        'Vrushabh Dhote',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                          color: Color(0xFFFA9282),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 subtitle: const Text(
                   '100% Free Forever • Privacy First • Offline',
