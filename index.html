@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDFDost - 100% Free & Privacy-First Document & PDF Utility</title>
+  <meta name="description" content="PDFDost is a modern, 100% offline, privacy-first Android PDF utility and document scanner app by Vrushabh Dhote. Available on Indus Appstore.">
+  <link rel="icon" type="image/png" href="../PDFDost-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #FA9282;
+      --primary-dark: #E55342;
+      --primary-light: #FFF0EE;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --bg-body: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --border-color: #E2E8F0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    header {
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    .brand img {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+    }
+
+    .brand span.dost {
+      color: var(--primary-dark);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary-dark);
+    }
+
+    .btn-privacy {
+      background: var(--primary-light);
+      color: var(--primary-dark) !important;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(250, 146, 130, 0.4);
+      font-weight: 700 !important;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      text-align: center;
+      padding: 70px 24px 50px 24px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .app-badge {
+      display: inline-block;
+      background: #ECFDF5;
+      color: #059669;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid #A7F3D0;
+      margin-bottom: 20px;
+    }
+
+    .hero-section h1 {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+
+    .hero-section p {
+      font-size: 18px;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .cta-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: var(--primary-dark);
+      color: #FFFFFF;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 15px;
+      box-shadow: 0 4px 15px rgba(229, 83, 66, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      background: #D43E2E;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #FFFFFF;
+      color: var(--text-main);
+      text-decoration: none;
+      font-weight: 700;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 15px;
+      border: 1px solid var(--border-color);
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      border-color: #CBD5E1;
+      background: #F1F5F9;
+    }
+
+    /* Grid Features */
+    .features-section {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 32px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+
+    .card .icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    .card h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* Privacy Banner */
+    .privacy-banner {
+      max-width: 1000px;
+      margin: 40px auto 60px auto;
+      padding: 0 24px;
+    }
+
+    .banner-inner {
+      background: #FFFFFF;
+      border: 2px solid var(--primary);
+      border-radius: 20px;
+      padding: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .banner-text h3 {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .banner-text p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-color);
+      background: #FFFFFF;
+      padding: 32px 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--primary-dark);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+      .hero-section h1 {
+        font-size: 28px;
+      }
+      .nav-links {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <img src="../PDFDost-icon.png" alt="PDFDost Icon">
+        <div>PDF<span class="dost">Dost</span></div>
+      </a>
+      <div class="nav-links">
+        <a href="privacy.html" class="btn-privacy">🛡️ Privacy Policy</a>
+        <a href="terms.html">Terms</a>
+        <a href="https://github.com/devvrushabh/PDFDost/releases/latest" target="_blank">Download APK</a>
+        <a href="https://github.com/devvrushabh/PDFDost" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero-section">
+      <div class="app-badge">🇮🇳 Built for Indus Appstore • 100% Free Forever</div>
+      <h1>Your Friendly, Private & Offline Document Companion</h1>
+      <p>
+        PDFDost gives you 12 professional document & PDF conversion tools, multi-folder document organization, camera scanning, and 30-day trash protection—all 100% on your device with zero cloud tracking.
+      </p>
+
+      <div class="cta-group">
+        <a href="privacy.html" class="btn-primary">📄 Read Privacy Policy</a>
+        <a href="https://github.com/devvrushabh/PDFDost/releases/download/v1.0.0/PDFDost-v1.0.0.apk" class="btn-secondary">⬇️ Download APK (v1.0.0)</a>
+      </div>
+    </div>
+
+    <div class="features-section">
+      <h2 class="section-title">Why PDFDost Stands Apart</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="icon">🔒</div>
+          <h3>100% Private & Offline</h3>
+          <p>No documents, photos, or data ever leave your device. All conversions execute locally.</p>
+        </div>
+        <div class="card">
+          <div class="icon">📁</div>
+          <h3>Document Sets & Folders</h3>
+          <p>Organize multiple photos or scans into single multi-page sets with customizable color-coded folders.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🛠️</div>
+          <h3>12 Comprehensive Tools</h3>
+          <p>Images to PDF, Word to PDF, Merge, Split, PDF to Word, Excel, PowerPoint, Watermark, and Lock PDF.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔄</div>
+          <h3>Drag-and-Drop Reordering</h3>
+          <p>Hold and drag pages or files to set the exact sequence before converting or merging.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🗑️</div>
+          <h3>30-Day Trash Auto-Retention</h3>
+          <p>Deleted files stay safely in your local Trash bin for 30 days with instant 1-tap restore.</p>
+        </div>
+        <div class="card">
+          <div class="icon">💸</div>
+          <h3>Zero Ads & Free Forever</h3>
+          <p>No subscriptions, no forced watermarks, and no signups required. Dedicated open-source utility.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="privacy-banner">
+      <div class="banner-inner">
+        <div class="banner-text">
+          <h3>Indus Appstore Privacy Policy Compliance</h3>
+          <p>PDFDost strictly complies with PhonePe Indus Appstore developer data safety guidelines.</p>
+        </div>
+        <a href="privacy.html" class="btn-primary">View Full Policy ➔</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2026 PDFDost. Free App by <a href="https://github.com/devvrushabh" target="_blank">Vrushabh Dhote</a>.</p>
+    <p style="margin-top: 6px;">
+      <a href="privacy.html">Privacy Policy</a> • 
+      <a href="terms.html">Terms & Conditions</a> • 
+      <a href="https://github.com/devvrushabh/PDFDost">GitHub Repository</a>
+    </p>
+  </footer>
+
+</body>
+</html>
