@@ -23,6 +23,33 @@ from PIL import Image as PILImage, ImageOps
 # iLovePDF Modern Light Theme Background
 Window.clearcolor = (0.972, 0.976, 0.984, 1)
 
+def merge_pdfs(pdf_paths, output_path):
+    """
+    Merge two or more PDF files into a single unified PDF document.
+    Supports pypdf or PyPDF2.
+    """
+    if len(pdf_paths) < 2:
+        raise ValueError("At least two PDF files are required to perform a merge.")
+    try:
+        from pypdf import PdfMerger
+        merger = PdfMerger()
+        for path in pdf_paths:
+            merger.append(path)
+        merger.write(output_path)
+        merger.close()
+        return output_path
+    except ImportError:
+        try:
+            from PyPDF2 import PdfMerger
+            merger = PdfMerger()
+            for path in pdf_paths:
+                merger.append(path)
+            merger.write(output_path)
+            merger.close()
+            return output_path
+        except ImportError:
+            raise ImportError("Please install 'pypdf' (pip install pypdf) to merge PDF files.")
+
 HISTORY_FILE = "pdf_history.json"
 
 KV_DESIGN = """

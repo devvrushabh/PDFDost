@@ -22,6 +22,7 @@ class HomeTab extends StatefulWidget {
   final VoidCallback onClearImages;
   final Function(HistoryItem) onDeleteHistoryItem;
   final Function(HistoryItem) onAddHistoryItem;
+  final VoidCallback? onOpenMergePdf;
 
   const HomeTab({
     super.key,
@@ -36,6 +37,7 @@ class HomeTab extends StatefulWidget {
     required this.onClearImages,
     required this.onDeleteHistoryItem,
     required this.onAddHistoryItem,
+    this.onOpenMergePdf,
   });
 
   @override
@@ -356,6 +358,17 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
               children: [
                 // Camera Option Pill
                 if (_isSpeedDialOpen) ...[
+                  if (widget.onOpenMergePdf != null) ...[
+                    _buildSpeedDialOption(
+                      icon: Icons.call_merge_rounded,
+                      label: 'Merge PDF',
+                      onTap: () {
+                        _closeSpeedDial();
+                        widget.onOpenMergePdf!();
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   _buildSpeedDialOption(
                     icon: Icons.camera_alt_outlined,
                     label: 'Camera',

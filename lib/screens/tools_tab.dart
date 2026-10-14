@@ -8,12 +8,14 @@ import '../services/pdf_engine.dart';
 import '../services/storage_engine.dart';
 import '../widgets/export_modal.dart';
 import '../widgets/tool_badge_icon.dart';
+import 'merge_pdf_screen.dart';
 
 class ToolsTab extends StatefulWidget {
   final List<HistoryItem> historyItems;
   final bool isDark;
   final VoidCallback onTriggerImageToPdf;
   final Function(HistoryItem) onAddHistoryItem;
+  final Function(HistoryItem)? onDeleteHistoryItem;
 
   const ToolsTab({
     super.key,
@@ -21,6 +23,7 @@ class ToolsTab extends StatefulWidget {
     required this.isDark,
     required this.onTriggerImageToPdf,
     required this.onAddHistoryItem,
+    this.onDeleteHistoryItem,
   });
 
   @override
@@ -55,7 +58,7 @@ class _ToolsTabState extends State<ToolsTab> {
         widget.onTriggerImageToPdf();
         break;
       case PdfToolType.mergePdf:
-        _showMergePdfDialog();
+        _openMergePdfScreen();
         break;
       case PdfToolType.splitPdf:
         _showSplitPdfDialog();
@@ -101,7 +104,20 @@ class _ToolsTabState extends State<ToolsTab> {
 
   // --- TOOL IMPLEMENTATIONS ---
 
-  // 1. Merge PDF Dialog
+  void _openMergePdfScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => MergePdfScreen(
+          historyItems: widget.historyItems,
+          isDark: widget.isDark,
+          onAddHistoryItem: widget.onAddHistoryItem,
+          onDeleteHistoryItem: widget.onDeleteHistoryItem,
+        ),
+      ),
+    );
+  }
+
+  // 1. Merge PDF Dialog (Legacy/Fallback)
   void _showMergePdfDialog() {
     if (widget.historyItems.length < 2) {
       _showSnackbar('Need at least 2 saved PDF documents to merge. Convert or create PDFs first!');

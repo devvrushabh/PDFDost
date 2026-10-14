@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import '../models/models.dart';
 
 class PdfEngineResult {
@@ -78,72 +79,84 @@ class PdfEngine {
     return await _saveDocument(pdf, docName);
   }
 
-  // 2. Merge PDF Documents
+  // Inspect page count of a PDF file
+  static Future<int> getPdfPageCount(String path) async {
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        final loadedDoc = sf.PdfLoadedDocument(bytes);
+        final count = loadedDoc.pages.count;
+        loadedDoc.dispose();
+        return count;
+      }
+    } catch (_) {}
+    return 1;
+  }
+
+  // 2. Real PDF Merge Engine (combines multiple vector PDFs into one)
+  static Future<PdfEngineResult> mergePdfsFromPaths({
+    required List<String> paths,
+    required String docName,
+  }) async {
+    final sf.PdfDocument newDocument = sf.PdfDocument();
+    int totalPages = 0;
+
+    try {
+      for (final path in paths) {
+        final file = File(path);
+        if (await file.exists()) {
+          final Uint8List bytes = await file.readAsBytes();
+          final sf.PdfLoadedDocument loadedDoc = sf.PdfLoadedDocument(bytes);
+
+          for (int i = 0; i < loadedDoc.pages.count; i++) {
+            final sf.PdfLoadedPage loadedPage = loadedDoc.pages[i] as sf.PdfLoadedPage;
+            final sf.SizeF pageSize = loadedPage.size;
+            final sf.PdfPageOrientation orientation = loadedPage.orientation;
+
+            final sf.PdfSection section = newDocument.sections!.add();
+            section.pageSettings.size = pageSize;
+            section.pageSettings.orientation = orientation;
+            section.pageSettings.margins.all = 0;
+
+            final sf.PdfPage newPage = section.pages.add();
+            final sf.PdfTemplate template = loadedPage.createTemplate();
+            newPage.graphics.drawPdfTemplate(template, Offset.zero, pageSize);
+            totalPages++;
+          }
+
+          loadedDoc.dispose();
+        }
+      }
+
+      if (totalPages == 0) {
+        throw Exception('No valid PDF pages found to merge.');
+      }
+
+      final List<int> mergedBytes = await newDocument.save();
+      newDocument.dispose();
+
+      return await _saveBytes(mergedBytes, docName, totalPages);
+    } catch (e) {
+      newDocument.dispose();
+      rethrow;
+    }
+  }
+
+  static Future<PdfEngineResult> mergePdfItems({
+    required List<SelectedPdfItem> items,
+    required String docName,
+  }) async {
+    final paths = items.map((e) => e.path).toList();
+    return await mergePdfsFromPaths(paths: paths, docName: docName);
+  }
+
   static Future<PdfEngineResult> mergePdfs({
     required List<HistoryItem> items,
     required String docName,
   }) async {
-    final pdf = pw.Document();
-    int totalPages = 0;
-
-    for (final item in items) {
-      final file = File(item.path);
-      if (await file.exists()) {
-        pdf.addPage(
-          pw.Page(
-            pageFormat: PdfPageFormat.a4,
-            margin: const pw.EdgeInsets.all(28),
-            build: (pw.Context ctx) {
-              return pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Container(
-                    padding: const pw.EdgeInsets.all(12),
-                    decoration: pw.BoxDecoration(
-                      color: PdfColors.grey200,
-                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-                    ),
-                    child: pw.Row(
-                      children: [
-                        pw.Text(
-                          'Merged Section: ${item.name}',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                  pw.SizedBox(height: 20),
-                  pw.Text('Source Document: ${item.name}'),
-                  pw.Text('Original Pages: ${item.pages}'),
-                  pw.Text('Original Date: ${item.date}'),
-                  pw.SizedBox(height: 16),
-                  pw.Divider(color: PdfColors.grey400),
-                  pw.SizedBox(height: 16),
-                  pw.Text(
-                    'Content from ${item.name} has been consolidated into this unified PDF document.',
-                    style: const pw.TextStyle(color: PdfColors.grey800, fontSize: 11),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-        totalPages += 1;
-      }
-    }
-
-    if (totalPages == 0) {
-      // Fallback if no valid files found
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          build: (ctx) => pw.Center(child: pw.Text('Consolidated PDF Document')),
-        ),
-      );
-      totalPages = 1;
-    }
-
-    return await _saveDocument(pdf, docName);
+    final paths = items.map((e) => e.path).toList();
+    return await mergePdfsFromPaths(paths: paths, docName: docName);
   }
 
   // 3. Split PDF Document
@@ -817,6 +830,31 @@ class PdfEngine {
       path: targetFile.path,
       name: fileName,
       pages: pdf.document.pdfPageList.pages.length,
+      sizeStr: formatBytes(bytes.length),
+      sizeBytes: bytes.length,
+    );
+  }
+
+  static Future<PdfEngineResult> _saveBytes(List<int> bytes, String docName, int pageCount) async {
+    var sanitizedName = docName.trim();
+    if (sanitizedName.isEmpty) {
+      sanitizedName = 'Merged_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}';
+    }
+    if (sanitizedName.toLowerCase().endsWith('.pdf')) {
+      sanitizedName = sanitizedName.substring(0, sanitizedName.length - 4);
+    }
+    sanitizedName = sanitizedName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+
+    final appDir = await getApplicationDocumentsDirectory();
+    final fileName = '$sanitizedName.pdf';
+    final targetFile = File('${appDir.path}/$fileName');
+
+    await targetFile.writeAsBytes(bytes);
+
+    return PdfEngineResult(
+      path: targetFile.path,
+      name: fileName,
+      pages: pageCount,
       sizeStr: formatBytes(bytes.length),
       sizeBytes: bytes.length,
     );

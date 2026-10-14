@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'models/models.dart';
 import 'screens/files_tab.dart';
 import 'screens/home_tab.dart';
+import 'screens/merge_pdf_screen.dart';
 import 'screens/scanner_tab.dart';
 import 'screens/settings_tab.dart';
 import 'screens/tools_tab.dart';
@@ -296,6 +297,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
+  void _openMergePdf() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => MergePdfScreen(
+          historyItems: _historyItems,
+          isDark: widget.isDarkMode,
+          onAddHistoryItem: _addHistoryItem,
+          onDeleteHistoryItem: _deleteHistoryItem,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomNavBg = widget.isDarkMode ? const Color(0xFF16171B) : Colors.white;
@@ -360,6 +374,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             onClearImages: _clearSelectedImages,
             onDeleteHistoryItem: _deleteHistoryItem,
             onAddHistoryItem: _addHistoryItem,
+            onOpenMergePdf: _openMergePdf,
           ),
           FilesTab(
             historyItems: _historyItems,
@@ -371,6 +386,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             isDark: widget.isDarkMode,
             onTriggerImageToPdf: _pickGalleryImages,
             onAddHistoryItem: _addHistoryItem,
+            onDeleteHistoryItem: _deleteHistoryItem,
           ),
           ScannerTab(
             isDark: widget.isDarkMode,
