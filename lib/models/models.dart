@@ -42,6 +42,28 @@ class SelectedPdfItem {
   }
 }
 
+class SelectedWordItem {
+  final String path;
+  final String name;
+  final int sizeBytes;
+  final String extension;
+
+  SelectedWordItem({
+    required this.path,
+    required this.name,
+    required this.sizeBytes,
+    required this.extension,
+  });
+
+  String get formattedSize {
+    if (sizeBytes < 1024) return '$sizeBytes B';
+    if (sizeBytes < 1024 * 1024) {
+      return '${(sizeBytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+}
+
 class SplitPdfConfigItem {
   final String path;
   final String name;

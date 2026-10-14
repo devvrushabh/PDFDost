@@ -1192,6 +1192,9 @@ class PdfEngine {
     return await _saveBytes(savedBytes, docName, pageCount);
   }
 
+  static Future<PdfEngineResult> saveDocumentInternal(pw.Document pdf, String docName) =>
+      _saveDocument(pdf, docName);
+
   static Future<PdfEngineResult> _saveDocument(pw.Document pdf, String docName) async {
     var sanitizedName = docName.trim();
     if (sanitizedName.isEmpty) {
