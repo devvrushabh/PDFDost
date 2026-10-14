@@ -209,10 +209,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
 
       // Save to public storage
       try {
-        await StorageEngine.savePdfFile(
-          sourcePath: result.path,
-          fileName: result.name,
-        );
+        await StorageEngine.saveToDownloads(result.path, result.name);
       } catch (_) {}
 
       // Add to app history

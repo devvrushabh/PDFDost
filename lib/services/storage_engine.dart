@@ -126,6 +126,9 @@ class StorageEngine {
     return false;
   }
 
+  static Future<bool> savePdfFile({required String sourcePath, required String fileName}) =>
+      saveToDownloads(sourcePath, fileName);
+
   static Future<bool> openUpiPayment(String upiUri) async {
     if (Platform.isAndroid) {
       try {
