@@ -1118,44 +1118,78 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-      children: [
-        // 1. Tool Options Card
-        _buildToolOptionsCard(),
-        const SizedBox(height: 16),
+    return ReorderableListView(
+      header: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Tool Options Card
+          _buildToolOptionsCard(),
+          const SizedBox(height: 16),
 
-        // 2. Selected Files Header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Selected PDFs (${_selectedPdfs.length})',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: widget.isDark ? Colors.white70 : const Color(0xFF334155),
+          // 2. Selected Files Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Selected PDFs (${_selectedPdfs.length})',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: widget.isDark ? Colors.white70 : const Color(0xFF334155),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF4B4B).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.drag_indicator_rounded, size: 12, color: Color(0xFFFF4B4B)),
+                        SizedBox(width: 2),
+                        Text(
+                          'Hold & drag to reorder',
+                          style: TextStyle(fontSize: 10, color: Color(0xFFFF4B4B), fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-            Text(
-              '${_selectedPdfs.fold<int>(0, (sum, item) => sum + item.pageCount)} total pages',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-
-        // 3. Selected Items List
-        ...List.generate(_selectedPdfs.length, (index) {
-          final item = _selectedPdfs[index];
-          return _buildSelectedPdfCard(item, index);
-        }),
+              Text(
+                '${_selectedPdfs.fold<int>(0, (sum, item) => sum + item.pageCount)} total pages',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+      onReorder: (int oldIndex, int newIndex) {
+        setState(() {
+          if (oldIndex < newIndex) {
+            newIndex -= 1;
+          }
+          final item = _selectedPdfs.removeAt(oldIndex);
+          _selectedPdfs.insert(newIndex, item);
+        });
+      },
+      children: [
+        for (int index = 0; index < _selectedPdfs.length; index++)
+          _buildSelectedPdfCard(_selectedPdfs[index], index),
       ],
     );
   }
 
   Widget _buildSelectedPdfCard(SelectedPdfItem item, int index) {
     return Container(
+      key: ValueKey('${item.path}_$index'),
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1174,16 +1208,35 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
       ),
       child: Row(
         children: [
+          // Order Position Badge
           Container(
-            width: 44,
-            height: 44,
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF4B4B).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '${index + 1}',
+              style: const TextStyle(
+                color: Color(0xFFFF4B4B),
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: const Color(0xFFFF4B4B).withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFFFF4B4B), size: 24),
+            child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFFFF4B4B), size: 22),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1220,6 +1273,18 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
                   ],
                 ),
               ],
+            ),
+          ),
+          // Drag handle
+          ReorderableDragStartListener(
+            index: index,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              child: const Icon(
+                Icons.drag_indicator_rounded,
+                size: 22,
+                color: Colors.grey,
+              ),
             ),
           ),
           IconButton(

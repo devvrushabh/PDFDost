@@ -552,12 +552,19 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
           ),
         ),
         Expanded(
-          child: ListView.builder(
+          child: ReorderableListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
             itemCount: widget.selectedImages.length,
+            onReorder: (int oldIndex, int newIndex) {
+              if (oldIndex < newIndex) {
+                newIndex -= 1;
+              }
+              widget.onMoveImage(oldIndex, newIndex);
+            },
             itemBuilder: (ctx, idx) {
               final img = widget.selectedImages[idx];
               return Container(
+                key: ValueKey('${img.path}_$idx'),
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
                   color: widget.isDark ? const Color(0xFF1E2026) : Colors.white,
@@ -570,17 +577,21 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                 child: Row(
                   children: [
                     // Page Number Badge
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE5322D).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '${idx + 1}',
-                        style: const TextStyle(color: Color(0xFFE5322D), fontWeight: FontWeight.bold, fontSize: 13),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(6),
+                      onTap: () => widget.onChangePosition(idx),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE5322D).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${idx + 1}',
+                          style: const TextStyle(color: Color(0xFFE5322D), fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -621,14 +632,13 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                         ],
                       ),
                     ),
-                    // Reorder arrows
-                    IconButton(
-                      icon: const Icon(Icons.arrow_upward_rounded, size: 20),
-                      onPressed: idx > 0 ? () => widget.onMoveImage(idx, idx - 1) : null,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_downward_rounded, size: 20),
-                      onPressed: idx < widget.selectedImages.length - 1 ? () => widget.onMoveImage(idx, idx + 1) : null,
+                    // Drag Handle
+                    ReorderableDragStartListener(
+                      index: idx,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                        child: const Icon(Icons.drag_indicator_rounded, size: 22, color: Colors.grey),
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFFEF4444)),

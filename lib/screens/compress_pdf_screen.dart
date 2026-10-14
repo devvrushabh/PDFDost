@@ -911,12 +911,22 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
 
         // Selected PDF List
         Expanded(
-          child: ListView.builder(
+          child: ReorderableListView.builder(
             padding: const EdgeInsets.only(left: 16, right: 16, bottom: 90),
             itemCount: _selectedPdfs.length,
+            onReorder: (int oldIndex, int newIndex) {
+              setState(() {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                final item = _selectedPdfs.removeAt(oldIndex);
+                _selectedPdfs.insert(newIndex, item);
+              });
+            },
             itemBuilder: (ctx, index) {
               final item = _selectedPdfs[index];
               return Container(
+                key: ValueKey('${item.path}_$index'),
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -981,17 +991,14 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
                         ],
                       ),
                     ),
-                    // Move Up/Down buttons
-                    if (_selectedPdfs.length > 1) ...[
-                      IconButton(
-                        icon: const Icon(Icons.arrow_upward_rounded, size: 18),
-                        onPressed: index > 0 ? () => _moveSelectedPdf(index, index - 1) : null,
+                    // Drag Handle
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                        child: const Icon(Icons.drag_indicator_rounded, size: 22, color: Colors.grey),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_downward_rounded, size: 18),
-                        onPressed: index < _selectedPdfs.length - 1 ? () => _moveSelectedPdf(index, index + 1) : null,
-                      ),
-                    ],
+                    ),
                     // Remove button
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 20, color: Colors.red),

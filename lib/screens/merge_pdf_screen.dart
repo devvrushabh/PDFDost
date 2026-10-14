@@ -938,12 +938,22 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
 
         // List of PDFs in order
         Expanded(
-          child: ListView.builder(
+          child: ReorderableListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
             itemCount: _selectedPdfs.length,
+            onReorder: (int oldIndex, int newIndex) {
+              setState(() {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                final item = _selectedPdfs.removeAt(oldIndex);
+                _selectedPdfs.insert(newIndex, item);
+              });
+            },
             itemBuilder: (ctx, idx) {
               final pdf = _selectedPdfs[idx];
               return Container(
+                key: ValueKey('${pdf.path}_$idx'),
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
                   color: widget.isDark ? const Color(0xFF1E2026) : Colors.white,
@@ -1022,14 +1032,13 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
                       ),
                     ),
 
-                    // Reorder arrows
-                    IconButton(
-                      icon: const Icon(Icons.arrow_upward_rounded, size: 20),
-                      onPressed: idx > 0 ? () => _moveSelectedPdf(idx, idx - 1) : null,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_downward_rounded, size: 20),
-                      onPressed: idx < _selectedPdfs.length - 1 ? () => _moveSelectedPdf(idx, idx + 1) : null,
+                    // Drag Handle
+                    ReorderableDragStartListener(
+                      index: idx,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                        child: const Icon(Icons.drag_indicator_rounded, size: 22, color: Colors.grey),
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFFEF4444)),
