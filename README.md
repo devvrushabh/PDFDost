@@ -15,6 +15,10 @@
   <img src="https://img.shields.io/badge/License-Open%20Source-orange.svg?style=flat-square" alt="License" />
   <img src="https://img.shields.io/badge/Build-GitHub%20Actions-brightgreen.svg?style=flat-square" alt="CI/CD" />
   <img src="https://img.shields.io/badge/Processing-100%25%20On--Device-red.svg?style=flat-square" alt="Offline" />
+<p align="center">
+  <a href="https://devvrushabh.github.io/PDFDost/privacy.html"><b>🛡️ Live Privacy Policy (Indus Appstore Compliant)</b></a> •
+  <a href="https://devvrushabh.github.io/PDFDost/"><b>🌐 Official Website</b></a> •
+  <a href="https://github.com/devvrushabh/PDFDost/releases/latest"><b>⬇️ Download Latest APK</b></a>
 </p>
 
 ---

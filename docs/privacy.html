@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - PDFDost</title>
+  <meta name="description" content="Privacy Policy for PDFDost Android Application - 100% Offline, Privacy-First PDF & Document Utility.">
+  <link rel="icon" type="image/png" href="../PDFDost-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #FA9282;
+      --primary-dark: #E55342;
+      --primary-light: #FFF0EE;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --bg-body: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --border-color: #E2E8F0;
+      --tag-bg: #ECFDF5;
+      --tag-text: #059669;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      line-height: 1.7;
+      padding-bottom: 60px;
+    }
+
+    /* Header & Navigation */
+    header {
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    .brand img {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+    }
+
+    .brand span.dost {
+      color: var(--primary-dark);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 14px;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--primary-dark);
+    }
+
+    .badge-indus {
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid #A7F3D0;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 900px;
+      margin: 40px auto 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Hero Banner */
+    .hero {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 36px;
+      margin-bottom: 32px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    }
+
+    .hero-tag {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 6px 14px;
+      border-radius: 30px;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      line-height: 1.25;
+    }
+
+    .hero p {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 760px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .meta-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .meta-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-top: 2px;
+    }
+
+    /* Content Cards */
+    .content-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+
+    .content-card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .content-card h2 .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      font-size: 16px;
+    }
+
+    .content-card p {
+      color: #334155;
+      font-size: 15px;
+      margin-bottom: 14px;
+    }
+
+    .content-card ul {
+      margin-left: 20px;
+      margin-bottom: 16px;
+      color: #334155;
+      font-size: 15px;
+    }
+
+    .content-card li {
+      margin-bottom: 8px;
+    }
+
+    .highlight-box {
+      background: #F0FDF4;
+      border-left: 4px solid #22C55E;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 16px 0;
+    }
+
+    .highlight-box p {
+      color: #166534;
+      font-size: 14px;
+      margin-bottom: 0;
+      font-weight: 500;
+    }
+
+    .permissions-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .permissions-table th, .permissions-table td {
+      border: 1px solid var(--border-color);
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .permissions-table th {
+      background: #F8FAFC;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .permissions-table td code {
+      background: #F1F5F9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+      color: #0F172A;
+    }
+
+    /* Contact & Footer */
+    .contact-card {
+      background: linear-gradient(135deg, #1E293B, #0F172A);
+      color: #FFFFFF;
+      border-radius: 16px;
+      padding: 32px;
+      margin-top: 36px;
+    }
+
+    .contact-card h2 {
+      color: #FFFFFF;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .contact-card p {
+      color: #94A3B8;
+      font-size: 15px;
+      margin-bottom: 20px;
+    }
+
+    .contact-card a.email-btn {
+      display: inline-block;
+      background: var(--primary);
+      color: #FFFFFF;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: background 0.2s ease;
+    }
+
+    .contact-card a.email-btn:hover {
+      background: var(--primary-dark);
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 48px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    footer a {
+      color: var(--primary-dark);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+      .hero {
+        padding: 24px;
+      }
+      .hero h1 {
+        font-size: 24px;
+      }
+      .content-card {
+        padding: 20px;
+      }
+      .nav-links {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <img src="../PDFDost-icon.png" alt="PDFDost Icon">
+        <div>PDF<span class="dost">Dost</span></div>
+      </a>
+      <div class="nav-links">
+        <span class="badge-indus">✓ Indus Appstore Compliant</span>
+        <a href="index.html">Home</a>
+        <a href="privacy.html" class="active">Privacy Policy</a>
+        <a href="terms.html">Terms</a>
+        <a href="https://github.com/devvrushabh/PDFDost" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+    
+    <!-- Hero Banner -->
+    <div class="hero">
+      <span class="hero-tag">Privacy & Data Governance</span>
+      <h1>Privacy Policy for PDFDost</h1>
+      <p>
+        PDFDost is engineered from the ground up with a <b>zero-cloud, offline-first</b> architecture. We believe your private documents, scanned papers, and personal records should remain exclusively on your device.
+      </p>
+
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">Application</span>
+          <span class="meta-value">PDFDost (img2pdf)</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Developer</span>
+          <span class="meta-value">Vrushabh Dhote</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Effective Date</span>
+          <span class="meta-value">October 15, 2026</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Store Compliance</span>
+          <span class="meta-value">Indus Appstore & Google Play</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 1: Overview & Philosophy -->
+    <div class="content-card">
+      <h2><span class="icon">🔒</span> 1. Core Privacy Commitment</h2>
+      <p>
+        PDFDost ("we", "our", or "the App"), developed independently by <b>Vrushabh Dhote</b>, operates strictly as an offline client-side utility application. 
+      </p>
+      <div class="highlight-box">
+        <p>
+          <b>Summary:</b> PDFDost does NOT collect, transmit, store, sell, or share any personal identifiable information (PII), documents, photos, or device data with any remote servers or third-party entities.
+        </p>
+      </div>
+      <p>
+        All image-to-PDF conversions, document scanning, merging, splitting, watermarking, password encryption, and file manipulations are executed 100% locally on your smartphone processor using on-device Flutter and native Android runtime environments.
+      </p>
+    </div>
+
+    <!-- Section 2: Information We Do NOT Collect -->
+    <div class="content-card">
+      <h2><span class="icon">🚫</span> 2. Information We Do NOT Collect</h2>
+      <p>To ensure transparency, PDFDost explicitly clarifies that it does NOT collect:</p>
+      <ul>
+        <li><b>No Personal Identifiers:</b> We do not ask for or collect your name, phone number, email address, physical address, or account credentials.</li>
+        <li><b>No Document Uploads:</b> Any PDF, Word (.docx), Excel (.xlsx), CSV, or photo imported into the app remains strictly stored in your local device sandbox.</li>
+        <li><b>No Analytics or Telemetry:</b> The app contains no third-party tracking SDKs (no Google Firebase Analytics, no Meta/Facebook SDKs, no Mixpanel, and no Flurry).</li>
+        <li><b>No Advertising IDs:</b> The app is 100% free and ad-free. We do not read Google Advertising ID (AAID) or track user behaviors.</li>
+        <li><b>No Location Data:</b> The app does not access your GPS coordinates, coarse location, or Wi-Fi network identifiers.</li>
+      </ul>
+    </div>
+
+    <!-- Section 3: Android Device Permissions -->
+    <div class="content-card">
+      <h2><span class="icon">📱</span> 3. Android Device Permissions & Usage</h2>
+      <p>
+        PDFDost requests minimal Android runtime permissions strictly required to perform document utility tasks. Every permission is requested dynamically only when you invoke the corresponding feature:
+      </p>
+
+      <table class="permissions-table">
+        <thead>
+          <tr>
+            <th>Permission</th>
+            <th>Feature & Purpose</th>
+            <th>Data Handling</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>CAMERA</code></td>
+            <td>Used when you tap <b>"Scan with Camera"</b> or capture pages to create a new document set.</td>
+            <td>Frames and photos are processed in memory and saved to your device's local private storage. Never uploaded.</td>
+          </tr>
+          <tr>
+            <td><code>READ_MEDIA_IMAGES</code><br><code>READ_EXTERNAL_STORAGE</code></td>
+            <td>Used when you tap <b>"Import Images"</b> or select documents from your gallery to create PDFs.</td>
+            <td>Only files explicitly selected by you through Android's system file picker are read locally.</td>
+          </tr>
+          <tr>
+            <td><code>WRITE_EXTERNAL_STORAGE</code><br>(Android &lt; 10)</td>
+            <td>Used on legacy devices to export and save generated PDF files to your device's Downloads or Documents directory.</td>
+            <td>File creation is strictly local.</td>
+          </tr>
+          <tr>
+            <td><code>INTERNET</code></td>
+            <td>Used solely when the user clicks an external link (such as viewing source code on GitHub, opening email to contact support, or triggering a UPI payment app).</td>
+            <td>No app document data or personal telemetry is transmitted over the network.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Section 4: Data Retention & Trash System -->
+    <div class="content-card">
+      <h2><span class="icon">🗑️</span> 4. Data Storage, Retention & 30-Day Trash Policy</h2>
+      <p>
+        All documents, sets, folders, and history records created within PDFDost are saved locally in the app's private sandbox storage (via <code>SharedPreferences</code> and device local storage).
+      </p>
+      <ul>
+        <li><b>30-Day Trash Auto-Retention:</b> When you delete a document or conversion history item, it is moved to an on-device Trash folder with a retention timestamp. Files in the Trash are kept for 30 days to protect you from accidental deletion.</li>
+        <li><b>User Restoration:</b> You can restore any item from the Trash back to its active folder with 1 tap at any time within the 30-day window.</li>
+        <li><b>Permanent Deletion:</b> Files older than 30 days are automatically deleted permanently from your device storage. You can also tap <b>"Empty Trash"</b> or <b>"Delete Permanently"</b> at any time to immediately erase them.</li>
+        <li><b>App Uninstall:</b> Uninstalling the app completely purges all app-private storage, trash, and temporary caches from your Android device.</li>
+      </ul>
+    </div>
+
+    <!-- Section 5: Donations & Payments -->
+    <div class="content-card">
+      <h2><span class="icon">💳</span> 5. Voluntary UPI Donations</h2>
+      <p>
+        PDFDost is 100% free with no in-app purchases or paywalls. In the Settings tab, users may optionally support open-source development through voluntary UPI donations:
+      </p>
+      <ul>
+        <li>Tapping <b>"Donate and Pay"</b> or scanning the QR code invokes Android's standard <code>upi://pay</code> system intent to hand over the transaction directly to your installed UPI banking application (e.g., PhonePe, Google Pay, Paytm, BHIM).</li>
+        <li>PDFDost does NOT collect, process, or store bank account details, UPI PINs, credit card numbers, or transaction histories. All financial transactions are handled solely by your bank and chosen UPI payment provider.</li>
+      </ul>
+    </div>
+
+    <!-- Section 6: Children's Privacy -->
+    <div class="content-card">
+      <h2><span class="icon">👶</span> 6. Children's Privacy</h2>
+      <p>
+        PDFDost is a general utility app suitable for all age groups. Because the app does not collect any personal data, register accounts, or transmit information over the internet, it does not knowingly collect personal information from children under the age of 13 in compliance with COPPA (Children's Online Privacy Protection Act) and applicable global regulations.
+      </p>
+    </div>
+
+    <!-- Section 7: Security of Your Data -->
+    <div class="content-card">
+      <h2><span class="icon">🛡️</span> 7. Data Security</h2>
+      <p>
+        We rely on the robust security mechanisms provided by the Android Operating System, including Linux application sandboxing and scoped storage. Other applications installed on your device cannot access PDFDost's internal storage without explicit user interaction.
+      </p>
+    </div>
+
+    <!-- Section 8: Changes to this Policy -->
+    <div class="content-card">
+      <h2><span class="icon">📝</span> 8. Policy Updates</h2>
+      <p>
+        We may update this Privacy Policy periodically to reflect new features or platform requirements. Any updates will be published on this live URL with an updated "Effective Date". Continued use of the application constitutes acceptance of any revisions.
+      </p>
+    </div>
+
+    <!-- Section 9: Contact & Developer Info -->
+    <div class="contact-card">
+      <h2>Contact the Developer</h2>
+      <p>
+        If you have any questions, concerns, feedback, or inquiries regarding this Privacy Policy or PDFDost's offline architecture, please reach out directly:
+      </p>
+      <p style="margin-bottom: 8px;"><b>Developer:</b> Vrushabh Dhote</p>
+      <p style="margin-bottom: 24px;"><b>Email:</b> vrushabhdhote29@gmail.com</p>
+      <a href="mailto:vrushabhdhote29@gmail.com?subject=PDFDost%20Privacy%20Inquiry" class="email-btn">✉️ Contact via Email</a>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <p>© 2026 PDFDost. Free & Open-Source App by <a href="https://github.com/devvrushabh" target="_blank">Vrushabh Dhote</a>.</p>
+      <p style="margin-top: 6px;">Published for <b>Indus Appstore</b> & Android Users Worldwide.</p>
+    </footer>
+
+  </main>
+
+</body>
+</html>
