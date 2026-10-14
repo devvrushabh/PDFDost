@@ -1841,7 +1841,13 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
             constraints: const BoxConstraints(),
             padding: const EdgeInsets.all(8),
             tooltip: 'Delete',
-            onPressed: () => _confirmDeleteCompletedItem(item),
+            onPressed: () {
+              if (widget.onDeleteHistoryItem != null) {
+                widget.onDeleteHistoryItem!(item);
+              } else {
+                _confirmDeleteCompletedItem(item);
+              }
+            },
           ),
         ],
       ),
@@ -1854,8 +1860,8 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
       builder: (ctx) => AlertDialog(
         backgroundColor: widget.isDark ? const Color(0xFF1E2024) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Completed File?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        content: Text('Are you sure you want to delete "${item.name}"? This file will be removed permanently.'),
+        title: const Text('Move to Trash?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        content: Text('"${item.name}" will be moved to Trash and kept for 30 days before being permanently deleted.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -1870,20 +1876,14 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text('Move to Trash', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
 
     if (confirm == true) {
-      try {
-        final file = File(item.path);
-        if (await file.exists()) {
-          await file.delete();
-        }
-      } catch (_) {}
-
+      await StorageEngine.moveToTrash(item);
       setState(() {
         widget.historyItems.removeWhere((e) => e.id == item.id);
       });
@@ -1892,7 +1892,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✓ Document deleted'),
+            content: Text('✓ Moved to Trash (retained for 30 days)'),
             duration: Duration(seconds: 1),
             backgroundColor: Color(0xFFEF4444),
           ),

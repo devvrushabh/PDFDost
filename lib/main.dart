@@ -129,6 +129,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentTabIndex = 0; // 0: Home, 1: Files, 2: Tools, 3: Scanner, 4: Settings
   final List<SelectedImageItem> _selectedImages = [];
   final List<HistoryItem> _historyItems = [];
+  final List<TrashItem> _trashItems = [];
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -139,10 +140,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   Future<void> _loadHistory() async {
     final list = await StorageEngine.loadHistory();
-    setState(() {
-      _historyItems.clear();
-      _historyItems.addAll(list);
-    });
+    final trash = await StorageEngine.loadTrash();
+    if (mounted) {
+      setState(() {
+        _historyItems.clear();
+        _historyItems.addAll(list);
+        _trashItems.clear();
+        _trashItems.addAll(trash);
+      });
+    }
   }
 
   Future<void> _saveHistory() async {
@@ -274,28 +280,104 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: widget.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete File?'),
-        content: Text('Are you sure you want to delete "${item.name}"?'),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline_rounded, color: Color(0xFFFA9282)),
+            SizedBox(width: 8),
+            Text('Move to Trash?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: Text('"${item.name}" will be kept in Trash for 30 days before being permanently deleted.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
             onPressed: () async {
               Navigator.pop(ctx);
-              try {
-                final file = File(item.path);
-                if (await file.exists()) await file.delete();
-              } catch (_) {}
-              setState(() {
-                _historyItems.removeWhere((e) => e.id == item.id);
-              });
-              await _saveHistory();
+              await _moveToTrash(item);
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            child: const Text('Move to Trash', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _moveToTrash(HistoryItem item) async {
+    final trashItem = await StorageEngine.moveToTrash(item);
+    setState(() {
+      _historyItems.removeWhere((e) => e.id == item.id);
+      _trashItems.removeWhere((t) => t.item.id == item.id);
+      _trashItems.insert(0, trashItem);
+    });
+    await _saveHistory();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Moved "${item.name}" to Trash (30 days left)'),
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'Undo',
+            textColor: const Color(0xFFFA9282),
+            onPressed: () async {
+              await _restoreTrashItem(trashItem);
+            },
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _restoreTrashItem(TrashItem trashItem) async {
+    await StorageEngine.restoreFromTrash(trashItem);
+    setState(() {
+      _trashItems.removeWhere((t) => t.item.id == trashItem.item.id);
+      if (!_historyItems.any((h) => h.id == trashItem.item.id)) {
+        _historyItems.insert(0, trashItem.item);
+      }
+    });
+    await _saveHistory();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✓ Restored "${trashItem.item.name}"'),
+          duration: const Duration(seconds: 1),
+          backgroundColor: const Color(0xFF10B981),
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteTrashItemPermanently(TrashItem trashItem) async {
+    await StorageEngine.deletePermanently(trashItem);
+    setState(() {
+      _trashItems.removeWhere((t) => t.item.id == trashItem.item.id);
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Permanently deleted "${trashItem.item.name}"'),
+          duration: const Duration(seconds: 1),
+          backgroundColor: const Color(0xFFEF4444),
+        ),
+      );
+    }
+  }
+
+  Future<void> _emptyTrash() async {
+    await StorageEngine.emptyTrash();
+    setState(() {
+      _trashItems.clear();
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Trash emptied successfully'),
+          duration: Duration(seconds: 1),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+    }
   }
 
   void _openMergePdf() {
@@ -393,8 +475,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
           FilesTab(
             historyItems: _historyItems,
+            trashItems: _trashItems,
             isDark: widget.isDarkMode,
             onDeleteItem: _deleteHistoryItem,
+            onRestoreTrashItem: _restoreTrashItem,
+            onDeletePermanently: _deleteTrashItemPermanently,
+            onEmptyTrash: _emptyTrash,
           ),
           ToolsTab(
             historyItems: _historyItems,
@@ -411,6 +497,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           SettingsTab(
             isDark: widget.isDarkMode,
             onToggleTheme: widget.onToggleTheme,
+            trashItems: _trashItems,
+            onRestoreTrashItem: _restoreTrashItem,
+            onDeletePermanently: _deleteTrashItemPermanently,
+            onEmptyTrash: _emptyTrash,
           ),
         ],
       ),

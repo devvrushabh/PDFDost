@@ -7,6 +7,7 @@ import '../models/models.dart';
 
 class StorageEngine {
   static const String _historyKey = 'img2pdf_history_list';
+  static const String _trashKey = 'img2pdf_trash_list';
   static const String _themeKey = 'img2pdf_theme_mode';
   static const String _mobileDataKey = 'img2pdf_ask_mobile_data';
   static const String _ocrLangKey = 'img2pdf_ocr_language';
@@ -141,5 +142,125 @@ class StorageEngine {
       }
     }
     return false;
+  }
+
+  // --- TRASH & 30-DAY RETENTION SYSTEM ---
+
+  /// Loads trash items and automatically purges any files retained for > 30 days
+  static Future<List<TrashItem>> loadTrash() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final trashJson = prefs.getString(_trashKey);
+      if (trashJson != null) {
+        final List<dynamic> decoded = jsonDecode(trashJson);
+        final list = decoded
+            .map((item) => TrashItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+
+        // Automatic 30-day purge
+        final List<TrashItem> activeTrash = [];
+        bool hasExpired = false;
+
+        for (final trashItem in list) {
+          if (trashItem.isExpired) {
+            hasExpired = true;
+            try {
+              final file = File(trashItem.item.path);
+              if (await file.exists()) {
+                await file.delete();
+              }
+            } catch (_) {}
+          } else {
+            activeTrash.add(trashItem);
+          }
+        }
+
+        if (hasExpired) {
+          await saveTrash(activeTrash);
+        }
+
+        return activeTrash;
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<void> saveTrash(List<TrashItem> items) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonList = items.map((e) => e.toJson()).toList();
+      await prefs.setString(_trashKey, jsonEncode(jsonList));
+    } catch (_) {}
+  }
+
+  static Future<TrashItem> moveToTrash(HistoryItem item) async {
+    final trashItem = TrashItem(
+      item: item,
+      deletedAt: DateTime.now(),
+    );
+    try {
+      final trashList = await loadTrash();
+      // Remove any existing entry for this id
+      trashList.removeWhere((e) => e.item.id == item.id);
+      trashList.insert(0, trashItem);
+      await saveTrash(trashList);
+    } catch (_) {}
+    return trashItem;
+  }
+
+  static Future<HistoryItem?> restoreFromTrash(TrashItem trashItem) async {
+    try {
+      final trashList = await loadTrash();
+      trashList.removeWhere((e) => e.item.id == trashItem.item.id);
+      await saveTrash(trashList);
+
+      final historyList = await loadHistory();
+      if (!historyList.any((e) => e.id == trashItem.item.id)) {
+        historyList.insert(0, trashItem.item);
+        await saveHistory(historyList);
+      }
+      return trashItem.item;
+    } catch (_) {}
+    return null;
+  }
+
+  static Future<void> deletePermanently(TrashItem trashItem) async {
+    try {
+      final file = File(trashItem.item.path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {}
+
+    try {
+      final trashList = await loadTrash();
+      trashList.removeWhere((e) => e.item.id == trashItem.item.id);
+      await saveTrash(trashList);
+    } catch (_) {}
+  }
+
+  static Future<void> emptyTrash() async {
+    try {
+      final trashList = await loadTrash();
+      for (final t in trashList) {
+        try {
+          final file = File(t.item.path);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        } catch (_) {}
+      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_trashKey);
+    } catch (_) {}
+  }
+
+  static Future<int> cleanExpiredTrash() async {
+    int purgedCount = 0;
+    try {
+      final trashList = await loadTrash(); // loadTrash() automatically purges expired items
+      purgedCount = trashList.length;
+    } catch (_) {}
+    return purgedCount;
   }
 }

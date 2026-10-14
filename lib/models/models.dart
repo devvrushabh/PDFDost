@@ -137,6 +137,40 @@ class HistoryItem {
       );
 }
 
+class TrashItem {
+  final HistoryItem item;
+  final DateTime deletedAt;
+
+  TrashItem({
+    required this.item,
+    required this.deletedAt,
+  });
+
+  /// Days remaining out of the 30-day retention period
+  int get daysRemaining {
+    final expiryDate = deletedAt.add(const Duration(days: 30));
+    final diff = expiryDate.difference(DateTime.now()).inDays;
+    return diff > 0 ? diff : 0;
+  }
+
+  /// Whether the item has passed the 30-day retention period
+  bool get isExpired {
+    return DateTime.now().isAfter(deletedAt.add(const Duration(days: 30)));
+  }
+
+  Map<String, dynamic> toJson() => {
+        'item': item.toJson(),
+        'deletedAt': deletedAt.toIso8601String(),
+      };
+
+  factory TrashItem.fromJson(Map<String, dynamic> json) => TrashItem(
+        item: HistoryItem.fromJson(json['item'] as Map<String, dynamic>),
+        deletedAt: json['deletedAt'] != null
+            ? DateTime.tryParse(json['deletedAt'] as String) ?? DateTime.now()
+            : DateTime.now(),
+      );
+}
+
 enum PdfToolType {
   mergePdf,
   splitPdf,

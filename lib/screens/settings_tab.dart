@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import '../models/models.dart';
 import '../services/storage_engine.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/login_modal.dart';
+import 'trash_screen.dart';
 
 class SettingsTab extends StatefulWidget {
   final bool isDark;
   final VoidCallback onToggleTheme;
+  final List<TrashItem> trashItems;
+  final Function(TrashItem)? onRestoreTrashItem;
+  final Function(TrashItem)? onDeletePermanently;
+  final VoidCallback? onEmptyTrash;
 
   const SettingsTab({
     super.key,
     required this.isDark,
     required this.onToggleTheme,
+    this.trashItems = const [],
+    this.onRestoreTrashItem,
+    this.onDeletePermanently,
+    this.onEmptyTrash,
   });
 
   @override
@@ -486,6 +496,56 @@ class _SettingsTabState extends State<SettingsTab> {
                   ],
                 ),
                 onTap: _showOcrLanguagePicker,
+              ),
+              Divider(height: 1, color: dividerColor),
+              ListTile(
+                leading: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 18),
+                ),
+                title: const Text('Trash & Retention', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Kept for 30 days before permanent deletion', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.trashItems.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${widget.trashItems.length}',
+                          style: const TextStyle(
+                            color: Color(0xFFEF4444),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chevron_right_rounded, size: 20),
+                  ],
+                ),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (ctx) => TrashScreen(
+                        trashItems: widget.trashItems,
+                        isDark: widget.isDark,
+                        onRestore: (item) => widget.onRestoreTrashItem?.call(item),
+                        onDeletePermanently: (item) => widget.onDeletePermanently?.call(item),
+                        onEmptyTrash: () => widget.onEmptyTrash?.call(),
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
