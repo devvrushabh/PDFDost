@@ -316,7 +316,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Moved "${item.name}" to Trash (30 days left)'),
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 1),
           action: SnackBarAction(
             label: 'Undo',
             textColor: const Color(0xFFFA9282),
