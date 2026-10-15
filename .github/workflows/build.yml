@@ -79,20 +79,26 @@ jobs:
             
             ---
             
-            ### 🚀 What's Included in this Release
-            - 📑 **Complete 12-Tool PDF & Office Suite**:
-              - **Images to PDF**: Convert photos/scans to PDF with custom margins and page sizes.
-              - **Word to PDF**: Convert `.docx`, `.doc`, spreadsheets (`.xlsx`, `.xlsm`, `.xlsb`, `.xls`, `.csv`), and text formats (`.txt`, `.xml`, `.ods`, `.prn`).
-              - **Merge PDF**: Merge multiple PDF files with hold-and-drag reordering.
-              - **Split PDF**: Split by specific pages or custom page ranges (`1-3, 5, 8-10`).
-              - **PDF to Word**: Convert PDFs into editable Microsoft Word documents (`.docx`).
-              - **PDF to PowerPoint**: Convert presentation slides into PowerPoint (`.pptx`).
-              - **PDF to Excel**: Extract tabular data into Excel spreadsheets (`.xlsx`).
-              - **PDF to JPG**: Extract high-resolution image pages (JPEG).
-              - **Page Numbers**: Add headers/footers with alignment and custom prefix options.
-              - **Watermark PDF**: Safeguard documents with custom text, angle, and opacity.
-              - **Rotate PDF**: Rotate all pages (90°, 180°, 270°) to correct orientation.
-              - **Lock PDF**: Secure documents with strong password protection.
+            ### 🚀 What's New in this Release
+            - 🖼️ **Dedicated Image to PDF Screen**: Multi-image picker, reorder pages, rotate scans, and direct export.
+            - 📝 **Enhanced Word & Office to PDF Engine**: Preserves document formatting, tables, images, and spreadsheets.
+            - ✨ **Multi-Selection Mode**: Long-press to select multiple document sets for bulk delete, share, and export.
+            - 📁 **Streamlined File Management**: Added Clear All option and fast 1-second undo for trash operations.
+            - 🎨 **UI & Typography Improvements**: Refined buttons, contrast, and dark mode aesthetic.
+            
+            ### 📑 Complete 12-Tool PDF & Office Suite
+            - **Images to PDF**: Convert photos/scans to PDF with custom margins and page sizes.
+            - **Word to PDF**: Convert `.docx`, `.doc`, spreadsheets (`.xlsx`, `.xlsm`, `.xlsb`, `.xls`, `.csv`), and text formats (`.txt`, `.xml`, `.ods`, `.prn`).
+            - **Merge PDF**: Merge multiple PDF files with hold-and-drag reordering.
+            - **Split PDF**: Split by specific pages or custom page ranges (`1-3, 5, 8-10`).
+            - **PDF to Word**: Convert PDFs into editable Microsoft Word documents (`.docx`).
+            - **PDF to PowerPoint**: Convert presentation slides into PowerPoint (`.pptx`).
+            - **PDF to Excel**: Extract tabular data into Excel spreadsheets (`.xlsx`).
+            - **PDF to JPG**: Extract high-resolution image pages (JPEG).
+            - **Page Numbers**: Add headers/footers with alignment and custom prefix options.
+            - **Watermark PDF**: Safeguard documents with custom text, angle, and opacity.
+            - **Rotate PDF**: Rotate all pages (90°, 180°, 270°) to correct orientation.
+            - **Lock PDF**: Secure documents with strong password protection.
             - 📁 **Organized Folders & Document Sets**: Group multiple photos into document sets with color-coded custom folders and quick inline filtering.
             - 🔄 **Hold-and-Drag Reordering**: Rearrange file and page order across all tools before converting.
             - 🗑️ **30-Day Trash Auto-Retention**: Files are safely retained for 30 days before permanent deletion, with instant 1-tap restore.

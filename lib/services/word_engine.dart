@@ -220,20 +220,17 @@ class WordEngine {
   /// Extracts raw byte content safely from ArchiveFile across archive package versions
   static Uint8List _getArchiveFileBytes(ArchiveFile f) {
     try {
-      final content = f.content;
+      final dynamic content = f.content;
       if (content is Uint8List) {
         return content;
       } else if (content is List<int>) {
         return Uint8List.fromList(content);
-      } else if (content is InputStream) {
-        return content.toUint8List();
       }
       final dynamic dyn = f;
       if (dyn.rawContent != null) {
-        final rc = dyn.rawContent;
+        final dynamic rc = dyn.rawContent;
         if (rc is Uint8List) return rc;
         if (rc is List<int>) return Uint8List.fromList(rc);
-        if (rc is InputStream) return rc.toUint8List();
       }
       return Uint8List(0);
     } catch (_) {
