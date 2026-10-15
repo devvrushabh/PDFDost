@@ -703,10 +703,29 @@ class _HomeTabState extends State<HomeTab> {
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton.icon(
-                                  icon: const Icon(Icons.photo_library_rounded),
-                                  label: const Text('Import Images into Set'),
+                                  icon: const Icon(
+                                    Icons.photo_library_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  label: const Text(
+                                    'Import Images into Set',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14.5,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF0288D1),
+                                    backgroundColor: const Color(0xFF0284C7),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    elevation: 2,
+                                    shadowColor: const Color(0xFF0284C7).withOpacity(0.35),
                                   ),
                                   onPressed: _importImagesAndGroupSet,
                                 ),
