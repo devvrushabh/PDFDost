@@ -381,6 +381,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
+  Future<void> _clearAllHistory() async {
+    await StorageEngine.clearHistory();
+    setState(() {
+      _historyItems.clear();
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All files cleared successfully'),
+          duration: Duration(seconds: 1),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+    }
+  }
+
   void _openMergePdf() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -494,6 +510,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             onRestoreTrashItem: _restoreTrashItem,
             onDeletePermanently: _deleteTrashItemPermanently,
             onEmptyTrash: _emptyTrash,
+            onClearAllFiles: _clearAllHistory,
           ),
           ToolsTab(
             historyItems: _historyItems,

@@ -16,18 +16,42 @@ class StorageEngine {
 
   static const MethodChannel _storageChannel = MethodChannel('com.devvrushabh.pdfdost/storage');
 
+  static bool _isDefaultSampleHistoryItem(HistoryItem item) {
+    if (item.id.startsWith('sample_')) return true;
+    final lowerName = item.name.toLowerCase();
+    return lowerName.contains('aws cloud practitioner') ||
+        lowerName.contains('azure data factory') ||
+        lowerName.contains('data warehousing') ||
+        lowerName.contains('data interview que-set') ||
+        lowerName.contains('ey scenario based') ||
+        lowerName.contains('aditya thesis') ||
+        lowerName.contains('feedback form from industry');
+  }
+
   static Future<List<HistoryItem>> loadHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final historyJson = prefs.getString(_historyKey);
       if (historyJson != null) {
         final List<dynamic> decoded = jsonDecode(historyJson);
-        return decoded
+        final list = decoded
             .map((item) => HistoryItem.fromJson(item as Map<String, dynamic>))
+            .where((item) => !_isDefaultSampleHistoryItem(item))
             .toList();
+        if (list.length != decoded.length) {
+          await saveHistory(list);
+        }
+        return list;
       }
     } catch (_) {}
     return [];
+  }
+
+  static Future<void> clearHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_historyKey);
+    } catch (_) {}
   }
 
   static Future<void> saveHistory(List<HistoryItem> items) async {
@@ -268,118 +292,32 @@ class StorageEngine {
 
   // --- DOCUMENT SETS & FOLDERS MANAGEMENT ---
 
+  static bool _isDefaultSampleSetName(String title) {
+    final lower = title.toLowerCase();
+    return lower.contains('aws cloud practitioner') ||
+        lower.contains('azure data factory') ||
+        lower.contains('data warehousing') ||
+        lower.contains('data interview que-set') ||
+        lower.contains('ey scenario based');
+  }
+
   static Future<List<DocumentSet>> loadDocSets() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final setsJson = prefs.getString(_docSetsKey);
       if (setsJson != null) {
         final List<dynamic> decoded = jsonDecode(setsJson);
-        return decoded
+        final list = decoded
             .map((item) => DocumentSet.fromJson(item as Map<String, dynamic>))
+            .where((item) => !item.id.startsWith('sample_') && !_isDefaultSampleSetName(item.title))
             .toList();
-      } else {
-        final sampleSets = _createInitialSampleSets();
-        await saveDocSets(sampleSets);
-        return sampleSets;
+        if (list.length != decoded.length) {
+          await saveDocSets(list);
+        }
+        return list;
       }
     } catch (_) {}
     return [];
-  }
-
-  static List<DocumentSet> _createInitialSampleSets() {
-    final now = DateTime.now();
-    return [
-      DocumentSet(
-        id: 'sample_1',
-        title: 'AWS Cloud Practitioner Questions',
-        createdAt: now.subtract(const Duration(days: 1)),
-        updatedAt: now.subtract(const Duration(days: 1)),
-        category: 'All docs',
-        isFavourite: true,
-        pages: List.generate(
-          50,
-          (index) => DocPage(
-            id: 'aws_page_${index + 1}',
-            imagePath: '',
-            name: '${index + 1}',
-            sizeBytes: 134 * 1024 + (index % 5) * 5 * 1024,
-            date: now.subtract(const Duration(days: 1)),
-            isNew: true,
-          ),
-        ),
-      ),
-      DocumentSet(
-        id: 'sample_2',
-        title: 'EY Scenario Based Questions',
-        createdAt: now.subtract(const Duration(days: 2)),
-        updatedAt: now.subtract(const Duration(days: 2)),
-        category: 'All docs',
-        pages: [
-          DocPage(
-            id: 'ey_page_1',
-            imagePath: '',
-            name: '1',
-            sizeBytes: 156 * 1024,
-            date: now.subtract(const Duration(days: 2)),
-            isNew: false,
-          ),
-        ],
-      ),
-      DocumentSet(
-        id: 'sample_3',
-        title: 'Azure Data Factory Scenario Based...',
-        createdAt: now.subtract(const Duration(days: 2)),
-        updatedAt: now.subtract(const Duration(days: 2)),
-        category: 'All docs',
-        pages: List.generate(
-          10,
-          (index) => DocPage(
-            id: 'azure_page_${index + 1}',
-            imagePath: '',
-            name: '${index + 1}',
-            sizeBytes: 142 * 1024,
-            date: now.subtract(const Duration(days: 2)),
-            isNew: false,
-          ),
-        ),
-      ),
-      DocumentSet(
-        id: 'sample_4',
-        title: 'Data Warehousing Prep Questions',
-        createdAt: now.subtract(const Duration(days: 2)),
-        updatedAt: now.subtract(const Duration(days: 2)),
-        category: 'Academic',
-        pages: List.generate(
-          10,
-          (index) => DocPage(
-            id: 'dw_page_${index + 1}',
-            imagePath: '',
-            name: '${index + 1}',
-            sizeBytes: 165 * 1024,
-            date: now.subtract(const Duration(days: 2)),
-            isNew: false,
-          ),
-        ),
-      ),
-      DocumentSet(
-        id: 'sample_5',
-        title: 'Data Interview Que-Set-04',
-        createdAt: now.subtract(const Duration(days: 3)),
-        updatedAt: now.subtract(const Duration(days: 3)),
-        category: 'All docs',
-        pages: List.generate(
-          6,
-          (index) => DocPage(
-            id: 'interview_page_${index + 1}',
-            imagePath: '',
-            name: '${index + 1}',
-            sizeBytes: 128 * 1024,
-            date: now.subtract(const Duration(days: 3)),
-            isNew: true,
-          ),
-        ),
-      ),
-    ];
   }
 
   static Future<void> saveDocSets(List<DocumentSet> sets) async {

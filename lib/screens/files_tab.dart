@@ -15,6 +15,7 @@ class FilesTab extends StatefulWidget {
   final Function(TrashItem) onRestoreTrashItem;
   final Function(TrashItem) onDeletePermanently;
   final VoidCallback onEmptyTrash;
+  final VoidCallback onClearAllFiles;
 
   const FilesTab({
     super.key,
@@ -25,6 +26,7 @@ class FilesTab extends StatefulWidget {
     required this.onRestoreTrashItem,
     required this.onDeletePermanently,
     required this.onEmptyTrash,
+    required this.onClearAllFiles,
   });
 
   @override
@@ -121,6 +123,49 @@ class _FilesTabState extends State<FilesTab> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _confirmClearAllFiles() {
+    if (widget.historyItems.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: widget.isDark ? const Color(0xFF1E293B) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_sweep_rounded, color: Colors.red, size: 26),
+            SizedBox(width: 10),
+            Text('Clear All Files?'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to remove all ${widget.historyItems.length} file(s)?',
+          style: TextStyle(
+            color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              widget.onClearAllFiles();
+              setState(() {});
+            },
+            child: const Text('Clear All', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -450,6 +495,14 @@ class _FilesTabState extends State<FilesTab> {
                   color: secondaryTextColor,
                 ),
               ),
+              if (widget.historyItems.isNotEmpty)
+                TextButton(
+                  onPressed: _confirmClearAllFiles,
+                  child: const Text(
+                    'Clear All',
+                    style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
             ],
           ),
         ),
