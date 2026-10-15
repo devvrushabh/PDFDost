@@ -10,6 +10,7 @@ import '../widgets/export_modal.dart';
 import '../widgets/tool_badge_icon.dart';
 import 'compress_pdf_screen.dart';
 import 'generic_pdf_tool_screen.dart';
+import 'image_to_pdf_screen.dart';
 import 'merge_pdf_screen.dart';
 import 'split_pdf_screen.dart';
 import 'word_to_pdf_screen.dart';
@@ -60,7 +61,7 @@ class _ToolsTabState extends State<ToolsTab> {
   void _handleToolTap(ToolDefinition tool) {
     switch (tool.type) {
       case PdfToolType.imageToPdf:
-        widget.onTriggerImageToPdf();
+        _openImageToPdfScreen();
         break;
       case PdfToolType.mergePdf:
         _openMergePdfScreen();
@@ -95,6 +96,19 @@ class _ToolsTabState extends State<ToolsTab> {
   }
 
   // --- TOOL IMPLEMENTATIONS ---
+
+  void _openImageToPdfScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => ImageToPdfScreen(
+          historyItems: widget.historyItems,
+          isDark: widget.isDark,
+          onAddHistoryItem: widget.onAddHistoryItem,
+          onDeleteHistoryItem: widget.onDeleteHistoryItem,
+        ),
+      ),
+    );
+  }
 
   void _openCompressPdfScreen() {
     Navigator.of(context).push(

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'models/models.dart';
 import 'screens/files_tab.dart';
 import 'screens/home_tab.dart';
+import 'screens/image_to_pdf_screen.dart';
 import 'screens/merge_pdf_screen.dart';
 import 'screens/split_pdf_screen.dart';
 import 'screens/settings_tab.dart';
@@ -445,6 +446,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
+  void _openImageToPdf() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => ImageToPdfScreen(
+          historyItems: _historyItems,
+          isDark: widget.isDarkMode,
+          onAddHistoryItem: _addHistoryItem,
+          onDeleteHistoryItem: _deleteHistoryItem,
+        ),
+      ),
+    );
+  }
+
   void _openWordToPdf() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -524,6 +538,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             onSwitchTab: (idx) => setState(() => _currentTabIndex = idx),
             onOpenWordToPdf: _openWordToPdf,
             onBatchDeleteHistoryItems: _batchMoveToTrash,
+            onOpenImageToPdf: _openImageToPdf,
           ),
           FilesTab(
             historyItems: _historyItems,
@@ -539,7 +554,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ToolsTab(
             historyItems: _historyItems,
             isDark: widget.isDarkMode,
-            onTriggerImageToPdf: _pickGalleryImages,
+            onTriggerImageToPdf: _openImageToPdf,
             onAddHistoryItem: _addHistoryItem,
             onDeleteHistoryItem: _deleteHistoryItem,
           ),

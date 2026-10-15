@@ -46,24 +46,50 @@ class PdfEngine {
     required List<SelectedImageItem> images,
     required String docName,
     bool addPageNumbers = false,
+    String orientation = 'Portrait', // 'Portrait', 'Landscape', 'Auto'
+    String pageSize = 'A4', // 'A4', 'Letter'
+    double margin = 16.0,
   }) async {
     final pdf = pw.Document();
 
     for (int i = 0; i < images.length; i++) {
       final imgItem = images[i];
-      final bytes = await File(imgItem.path).readAsBytes();
+      final file = File(imgItem.path);
+      if (!await file.exists()) continue;
+
+      final bytes = await file.readAsBytes();
       final pdfImage = pw.MemoryImage(bytes);
+
+      PdfPageFormat format = pageSize == 'Letter' ? PdfPageFormat.letter : PdfPageFormat.a4;
+
+      if (orientation == 'Landscape') {
+        format = format.landscape;
+      } else if (orientation == 'Auto') {
+        if (pdfImage.width != null && pdfImage.height != null && pdfImage.width! > pdfImage.height!) {
+          format = format.landscape;
+        }
+      }
 
       pdf.addPage(
         pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(16),
+          pageFormat: format,
+          margin: pw.EdgeInsets.all(margin),
           build: (pw.Context ctx) {
+            pw.Widget imageWidget = pw.Center(
+              child: pw.Image(pdfImage, fit: pw.BoxFit.contain),
+            );
+
+            if (imgItem.rotationDegrees % 360 != 0) {
+              final radians = (imgItem.rotationDegrees % 360) * (3.141592653589793 / 180.0);
+              imageWidget = pw.Transform.rotate(
+                angle: radians,
+                child: imageWidget,
+              );
+            }
+
             return pw.Stack(
               children: [
-                pw.Center(
-                  child: pw.Image(pdfImage, fit: pw.BoxFit.contain),
-                ),
+                imageWidget,
                 if (addPageNumbers)
                   pw.Positioned(
                     bottom: 0,

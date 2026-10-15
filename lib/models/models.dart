@@ -4,11 +4,13 @@ class SelectedImageItem {
   final String path;
   final String name;
   final int sizeBytes;
+  int rotationDegrees;
 
   SelectedImageItem({
     required this.path,
     required this.name,
     required this.sizeBytes,
+    this.rotationDegrees = 0,
   });
 
   String get formattedSize {

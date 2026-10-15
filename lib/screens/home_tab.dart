@@ -26,6 +26,7 @@ class HomeTab extends StatefulWidget {
   final Function(int)? onSwitchTab;
   final VoidCallback? onOpenWordToPdf;
   final Function(List<HistoryItem>)? onBatchDeleteHistoryItems;
+  final VoidCallback? onOpenImageToPdf;
 
   const HomeTab({
     super.key,
@@ -45,6 +46,7 @@ class HomeTab extends StatefulWidget {
     this.onSwitchTab,
     this.onOpenWordToPdf,
     this.onBatchDeleteHistoryItems,
+    this.onOpenImageToPdf,
   });
 
   @override
@@ -694,6 +696,28 @@ class _HomeTabState extends State<HomeTab> {
                   _captureCameraAndStartSet();
                 },
               ),
+
+              // 4. Convert Images directly to PDF
+              if (widget.onOpenImageToPdf != null) ...[
+                const Divider(),
+                ListTile(
+                  leading: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB).withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF2563EB), size: 22),
+                  ),
+                  title: const Text('Convert Images to PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  subtitle: const Text('Convert pictures directly into a PDF document', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    widget.onOpenImageToPdf!();
+                  },
+                ),
+              ],
             ],
           ),
         ),
