@@ -329,6 +329,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
+  Future<void> _batchMoveToTrash(List<HistoryItem> items) async {
+    if (items.isEmpty) return;
+    final Set<String> ids = items.map((e) => e.id).toSet();
+    for (final item in items) {
+      final trashItem = await StorageEngine.moveToTrash(item);
+      _trashItems.removeWhere((t) => t.item.id == item.id);
+      _trashItems.insert(0, trashItem);
+    }
+    setState(() {
+      _historyItems.removeWhere((e) => ids.contains(e.id));
+    });
+    await _saveHistory();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Moved ${items.length} item(s) to Trash (30 days left)'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
   Future<void> _restoreTrashItem(TrashItem trashItem) async {
     await StorageEngine.restoreFromTrash(trashItem);
     setState(() {
@@ -501,6 +523,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             onOpenSplitPdf: _openSplitPdf,
             onSwitchTab: (idx) => setState(() => _currentTabIndex = idx),
             onOpenWordToPdf: _openWordToPdf,
+            onBatchDeleteHistoryItems: _batchMoveToTrash,
           ),
           FilesTab(
             historyItems: _historyItems,
@@ -511,6 +534,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             onDeletePermanently: _deleteTrashItemPermanently,
             onEmptyTrash: _emptyTrash,
             onClearAllFiles: _clearAllHistory,
+            onBatchDeleteItems: _batchMoveToTrash,
           ),
           ToolsTab(
             historyItems: _historyItems,

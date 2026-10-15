@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/models.dart';
 import '../services/storage_engine.dart';
 import 'document_set_screen.dart';
@@ -23,6 +25,7 @@ class HomeTab extends StatefulWidget {
   final VoidCallback? onOpenSplitPdf;
   final Function(int)? onSwitchTab;
   final VoidCallback? onOpenWordToPdf;
+  final Function(List<HistoryItem>)? onBatchDeleteHistoryItems;
 
   const HomeTab({
     super.key,
@@ -41,6 +44,7 @@ class HomeTab extends StatefulWidget {
     this.onOpenSplitPdf,
     this.onSwitchTab,
     this.onOpenWordToPdf,
+    this.onBatchDeleteHistoryItems,
   });
 
   @override
@@ -55,6 +59,194 @@ class _HomeTabState extends State<HomeTab> {
 
   // Selected filter: 'all', 'recent', 'favourite', or folder name
   String _selectedFilter = 'all';
+
+  // Multi-selection state
+  bool _isSelectionMode = false;
+  final Set<String> _selectedDocSetIds = {};
+
+  void _enterSelectionMode(DocumentSet docSet) {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _isSelectionMode = true;
+      _selectedDocSetIds.clear();
+      _selectedDocSetIds.add(docSet.id);
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedDocSetIds.clear();
+    });
+  }
+
+  void _toggleSelectDocSet(String id) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      if (_selectedDocSetIds.contains(id)) {
+        _selectedDocSetIds.remove(id);
+        if (_selectedDocSetIds.isEmpty) {
+          _isSelectionMode = false;
+        }
+      } else {
+        _selectedDocSetIds.add(id);
+      }
+    });
+  }
+
+  void _selectAllDocSets() {
+    setState(() {
+      if (_selectedDocSetIds.length == _filteredDocuments.length) {
+        _selectedDocSetIds.clear();
+        _isSelectionMode = false;
+      } else {
+        _selectedDocSetIds.clear();
+        for (final doc in _filteredDocuments) {
+          _selectedDocSetIds.add(doc.id);
+        }
+      }
+    });
+  }
+
+  void _batchDeleteDocSets() {
+    final selectedDocs = _documentSets.where((s) => _selectedDocSetIds.contains(s.id)).toList();
+    if (selectedDocs.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: widget.isDark ? const Color(0xFF1E293B) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
+            const SizedBox(width: 8),
+            Text(
+              'Move ${selectedDocs.length} Set(s) to Trash?',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+            ),
+          ],
+        ),
+        content: Text(
+          'Selected documents will be moved to Trash and retained for 30 days before permanent deletion.',
+          style: TextStyle(color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            onPressed: () {
+              Navigator.pop(ctx);
+              final historyItemsToDelete = selectedDocs.map((set) => HistoryItem(
+                id: set.id,
+                name: '${set.title}.pdf',
+                path: set.generatedPdfPath ?? (set.pages.isNotEmpty ? set.pages.first.imagePath : ''),
+                pages: set.pageCount,
+                size: '${set.pageCount * 130} KB',
+                date: set.formattedDate,
+                toolType: 'Doc Set',
+              )).toList();
+
+              if (widget.onBatchDeleteHistoryItems != null) {
+                widget.onBatchDeleteHistoryItems!(historyItemsToDelete);
+              } else {
+                for (final item in historyItemsToDelete) {
+                  widget.onDeleteHistoryItem(item);
+                }
+              }
+
+              setState(() {
+                _documentSets.removeWhere((s) => _selectedDocSetIds.contains(s.id));
+                _exitSelectionMode();
+              });
+              _saveDocSets();
+            },
+            child: const Text('Move to Trash', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _batchMoveToFolder() {
+    final selectedDocs = _documentSets.where((s) => _selectedDocSetIds.contains(s.id)).toList();
+    if (selectedDocs.isEmpty || _folders.isEmpty) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: widget.isDark ? const Color(0xFF1E2024) : Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Move ${selectedDocs.length} Document(s) to Folder',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+              ),
+              const SizedBox(height: 16),
+              ..._folders.map((folder) => ListTile(
+                leading: Icon(
+                  Icons.folder_rounded,
+                  color: Color(int.parse(folder.colorHex.replaceFirst('#', '0xFF'))),
+                ),
+                title: Text(folder.name),
+                onTap: () {
+                  setState(() {
+                    for (final doc in selectedDocs) {
+                      doc.category = folder.name;
+                    }
+                    _exitSelectionMode();
+                  });
+                  _saveDocSets();
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Moved ${selectedDocs.length} document(s) to ${folder.name}'),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+              )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _batchShareDocSets() async {
+    final selectedDocs = _documentSets.where((s) => _selectedDocSetIds.contains(s.id)).toList();
+    if (selectedDocs.isEmpty) return;
+
+    final List<XFile> filesToShare = [];
+    for (final doc in selectedDocs) {
+      if (doc.generatedPdfPath != null && await File(doc.generatedPdfPath!).exists()) {
+        filesToShare.add(XFile(doc.generatedPdfPath!, mimeType: 'application/pdf'));
+      } else {
+        for (final p in doc.pages) {
+          if (p.imagePath.isNotEmpty && await File(p.imagePath).exists()) {
+            filesToShare.add(XFile(p.imagePath));
+          }
+        }
+      }
+    }
+
+    if (filesToShare.isNotEmpty) {
+      await Share.shareXFiles(filesToShare, text: 'PDFDost Documents');
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No files available to share for selected items')),
+        );
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -585,101 +777,163 @@ class _HomeTabState extends State<HomeTab> {
     final textSecondary = widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
     final dividerColor = widget.isDark ? const Color(0xFF24303C) : const Color(0xFFE2E8F0);
 
-    return Scaffold(
-      backgroundColor: bg,
-      body: Stack(
+    return PopScope(
+      canPop: !_isSelectionMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _isSelectionMode) {
+          _exitSelectionMode();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: bg,
+        body: Stack(
         children: [
           Column(
             children: [
-              // Documents (N) Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          _selectedFilter == 'all'
-                              ? 'Documents (${_filteredDocuments.length})'
-                              : '$_selectedFilter (${_filteredDocuments.length})',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: textPrimary,
+              // Documents (N) Header or Multi-Selection Action Bar
+              _isSelectionMode
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: widget.isDark ? const Color(0xFF1E2838) : const Color(0xFFEFF6FF),
+                        border: Border(bottom: BorderSide(color: dividerColor)),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            tooltip: 'Cancel',
+                            onPressed: _exitSelectionMode,
                           ),
-                        ),
-                        if (_selectedFilter != 'all') ...[
                           const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => setState(() => _selectedFilter = 'all'),
-                            child: Container(
-                              padding: const EdgeInsets.all(3),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.25),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.close_rounded, size: 14),
+                          Text(
+                            '${_selectedDocSetIds.length} Selected',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
                             ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: Icon(
+                              _selectedDocSetIds.length == _filteredDocuments.length
+                                  ? Icons.deselect_rounded
+                                  : Icons.select_all_rounded,
+                              color: const Color(0xFF0288D1),
+                            ),
+                            tooltip: _selectedDocSetIds.length == _filteredDocuments.length
+                                ? 'Deselect All'
+                                : 'Select All',
+                            onPressed: _selectAllDocSets,
+                          ),
+                          if (_folders.isNotEmpty)
+                            IconButton(
+                              icon: const Icon(Icons.drive_file_move_outlined, color: Color(0xFF0288D1)),
+                              tooltip: 'Move to Folder',
+                              onPressed: _batchMoveToFolder,
+                            ),
+                          IconButton(
+                            icon: const Icon(Icons.share_rounded, color: Color(0xFF2563EB)),
+                            tooltip: 'Share',
+                            onPressed: _batchShareDocSets,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
+                            tooltip: 'Move to Trash',
+                            onPressed: _batchDeleteDocSets,
                           ),
                         ],
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        // Folder Filter Dropdown
-                        PopupMenuButton<String>(
-                          icon: Icon(
-                            _selectedFilter == 'all' ? Icons.filter_list_rounded : Icons.filter_alt_rounded,
-                            size: 22,
-                            color: _selectedFilter != 'all' ? const Color(0xFF0288D1) : textSecondary,
-                          ),
-                          tooltip: 'Filter by Folder',
-                          color: widget.isDark ? const Color(0xFF1E2024) : Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          onSelected: (val) => setState(() => _selectedFilter = val),
-                          itemBuilder: (ctx) => [
-                            const PopupMenuItem(value: 'all', child: Text('All Documents')),
-                            const PopupMenuItem(value: 'recent', child: Text('Recent')),
-                            const PopupMenuItem(value: 'favourite', child: Text('Favourites')),
-                            if (_folders.isNotEmpty) const PopupMenuDivider(),
-                            ..._folders.map(
-                              (f) => PopupMenuItem(
-                                value: f.name,
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.folder_rounded,
-                                      size: 18,
-                                      color: Color(int.parse(f.colorHex.replaceFirst('#', '0xFF'))),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(f.name),
-                                  ],
+                      ),
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                _selectedFilter == 'all'
+                                    ? 'Documents (${_filteredDocuments.length})'
+                                    : '$_selectedFilter (${_filteredDocuments.length})',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.create_new_folder_outlined, size: 22),
-                          tooltip: 'Create Folder',
-                          onPressed: _showCreateFolderDialog,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.sort_rounded, size: 22),
-                          tooltip: 'Sort Documents',
-                          onPressed: () {
-                            setState(() {
-                              _documentSets = _documentSets.reversed.toList();
-                            });
-                          },
-                        ),
-                      ],
+                              if (_selectedFilter != 'all') ...[
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: () => setState(() => _selectedFilter = 'all'),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.withOpacity(0.25),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.close_rounded, size: 14),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              // Folder Filter Dropdown
+                              PopupMenuButton<String>(
+                                icon: Icon(
+                                  _selectedFilter == 'all' ? Icons.filter_list_rounded : Icons.filter_alt_rounded,
+                                  size: 22,
+                                  color: _selectedFilter != 'all' ? const Color(0xFF0288D1) : textSecondary,
+                                ),
+                                tooltip: 'Filter by Folder',
+                                color: widget.isDark ? const Color(0xFF1E2024) : Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                onSelected: (val) => setState(() => _selectedFilter = val),
+                                itemBuilder: (ctx) => [
+                                  const PopupMenuItem(value: 'all', child: Text('All Documents')),
+                                  const PopupMenuItem(value: 'recent', child: Text('Recent')),
+                                  const PopupMenuItem(value: 'favourite', child: Text('Favourites')),
+                                  if (_folders.isNotEmpty) const PopupMenuDivider(),
+                                  ..._folders.map(
+                                    (f) => PopupMenuItem(
+                                      value: f.name,
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.folder_rounded,
+                                            size: 18,
+                                            color: Color(int.parse(f.colorHex.replaceFirst('#', '0xFF'))),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(f.name),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.create_new_folder_outlined, size: 22),
+                                tooltip: 'Create Folder',
+                                onPressed: _showCreateFolderDialog,
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.sort_rounded, size: 22),
+                                tooltip: 'Sort Documents',
+                                onPressed: () {
+                                  setState(() {
+                                    _documentSets = _documentSets.reversed.toList();
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
 
               // 4. Documents List (Document Sets)
               Expanded(
@@ -737,12 +991,18 @@ class _HomeTabState extends State<HomeTab> {
                             itemCount: _filteredDocuments.length,
                             itemBuilder: (ctx, index) {
                               final docSet = _filteredDocuments[index];
+                              final isSelected = _selectedDocSetIds.contains(docSet.id);
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 decoration: BoxDecoration(
-                                  color: cardBg,
+                                  color: isSelected
+                                      ? (widget.isDark ? const Color(0xFF1E2838) : const Color(0xFFEFF6FF))
+                                      : cardBg,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: dividerColor),
+                                  border: Border.all(
+                                    color: isSelected ? const Color(0xFF0288D1) : dividerColor,
+                                    width: isSelected ? 2.0 : 1.0,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withOpacity(widget.isDark ? 0.2 : 0.04),
@@ -753,11 +1013,31 @@ class _HomeTabState extends State<HomeTab> {
                                 ),
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
-                                  onTap: () => _openDocumentSet(docSet),
+                                  onLongPress: () {
+                                    if (!_isSelectionMode) {
+                                      _enterSelectionMode(docSet);
+                                    }
+                                  },
+                                  onTap: () {
+                                    if (_isSelectionMode) {
+                                      _toggleSelectDocSet(docSet.id);
+                                    } else {
+                                      _openDocumentSet(docSet);
+                                    }
+                                  },
                                   child: Padding(
                                     padding: const EdgeInsets.all(12),
                                     child: Row(
                                       children: [
+                                        if (_isSelectionMode)
+                                          Padding(
+                                            padding: const EdgeInsets.only(right: 12),
+                                            child: Icon(
+                                              isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                                              color: isSelected ? const Color(0xFF0288D1) : textSecondary.withOpacity(0.5),
+                                              size: 24,
+                                            ),
+                                          ),
                                         // Left: Document Preview Container (Screenshot 1)
                                         ClipRRect(
                                           borderRadius: BorderRadius.circular(8),
@@ -853,9 +1133,10 @@ class _HomeTabState extends State<HomeTab> {
                                           ),
                                         ),
 
-                                        // Right: 3-dots Menu (...)
-                                        PopupMenuButton<String>(
-                                          icon: Icon(Icons.more_horiz_rounded, color: textSecondary, size: 24),
+                                        // Right: 3-dots Menu (...) or hidden in selection mode
+                                        if (!_isSelectionMode)
+                                          PopupMenuButton<String>(
+                                            icon: Icon(Icons.more_horiz_rounded, color: textSecondary, size: 24),
                                           color: widget.isDark ? const Color(0xFF1E2024) : Colors.white,
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                           onSelected: (val) {
@@ -930,10 +1211,11 @@ class _HomeTabState extends State<HomeTab> {
           ),
 
           // 5. Dual Floating Action Button (Screenshot 1: [ 📷 | + ])
-          Positioned(
-            bottom: 24,
-            right: 20,
-            child: Container(
+          if (!_isSelectionMode)
+            Positioned(
+              bottom: 24,
+              right: 20,
+              child: Container(
               height: 56,
               decoration: BoxDecoration(
                 color: const Color(0xFF0288D1), // DocScanner rich blue
@@ -995,6 +1277,6 @@ class _HomeTabState extends State<HomeTab> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
 }
