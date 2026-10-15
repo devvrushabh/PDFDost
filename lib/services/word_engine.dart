@@ -5,27 +5,66 @@ import 'package:archive/archive.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../models/models.dart';
 import 'pdf_engine.dart';
 
+/// Represents an individual styled run of text within a paragraph
 class WordTextRun {
   final String text;
   final bool isBold;
   final bool isItalic;
   final bool isUnderline;
+  final bool isStrike;
+  final double fontSize;
+  final PdfColor? color;
 
   const WordTextRun({
     required this.text,
     this.isBold = false,
     this.isItalic = false,
     this.isUnderline = false,
+    this.isStrike = false,
+    this.fontSize = 11.0,
+    this.color,
   });
 }
 
-class WordParagraph {
+/// Abstract node for document elements (paragraphs, tables, images)
+abstract class WordDocNode {}
+
+/// Represents a paragraph with styling, alignment, headings, and bullet points
+class WordParagraphNode extends WordDocNode {
+  final List<WordTextRun> runs;
   final String fullText;
   final bool isHeading;
   final int headingLevel; // 1, 2, 3
+  final String alignment; // 'left', 'center', 'right', 'justify'
+  final bool isBullet;
+  final int bulletIndent;
+  final double spaceBefore;
+  final double spaceAfter;
+  final bool isPageBreak;
+
+  WordParagraphNode({
+    required this.runs,
+    required this.fullText,
+    this.isHeading = false,
+    this.headingLevel = 0,
+    this.alignment = 'left',
+    this.isBullet = false,
+    this.bulletIndent = 0,
+    this.spaceBefore = 0,
+    this.spaceAfter = 4,
+    this.isPageBreak = false,
+  });
+}
+
+/// Backward compatibility class for WordParagraph
+class WordParagraph {
+  final String fullText;
+  final bool isHeading;
+  final int headingLevel;
   final List<WordTextRun> runs;
 
   const WordParagraph({
@@ -36,6 +75,78 @@ class WordParagraph {
   });
 }
 
+/// Represents a table cell
+class WordTableCellNode {
+  final List<WordParagraphNode> paragraphs;
+  final String text;
+  final PdfColor? backgroundColor;
+  final int colSpan;
+
+  WordTableCellNode({
+    required this.paragraphs,
+    required this.text,
+    this.backgroundColor,
+    this.colSpan = 1,
+  });
+}
+
+/// Represents a row in a table
+class WordTableRowNode {
+  final List<WordTableCellNode> cells;
+  final bool isHeader;
+
+  WordTableRowNode({
+    required this.cells,
+    this.isHeader = false,
+  });
+}
+
+/// Represents a table element
+class WordTableNode extends WordDocNode {
+  final List<WordTableRowNode> rows;
+  final int maxCols;
+
+  WordTableNode({
+    required this.rows,
+    required this.maxCols,
+  });
+}
+
+/// Represents an embedded image in the document
+class WordImageNode extends WordDocNode {
+  final Uint8List bytes;
+  final double widthPt;
+  final double heightPt;
+  final String alignment;
+
+  WordImageNode({
+    required this.bytes,
+    this.widthPt = 300,
+    this.heightPt = 200,
+    this.alignment = 'center',
+  });
+}
+
+/// Structured document representation
+class WordDocModel {
+  final String title;
+  final List<WordDocNode> nodes;
+  final bool isLandscape;
+  final double marginPt;
+  final int totalCharacters;
+  final int totalWords;
+
+  WordDocModel({
+    required this.title,
+    required this.nodes,
+    this.isLandscape = false,
+    this.marginPt = 36.0,
+    required this.totalCharacters,
+    required this.totalWords,
+  });
+}
+
+/// Backward compatibility class for ParsedWordDoc
 class ParsedWordDoc {
   final String title;
   final List<WordParagraph> paragraphs;
@@ -63,16 +174,80 @@ class WordEngine {
         .replaceAll('&gt;', '>')
         .replaceAll('&quot;', '"')
         .replaceAll('&apos;', "'")
-        .replaceAll('&#39;', "'");
+        .replaceAll('&#39;', "'")
+        .replaceAll('&#xA;', '\n')
+        .replaceAll('&#xD;', '')
+        .replaceAll('&#x9;', '    ');
   }
 
-  /// Parses any supported document, spreadsheet, or text file into structured content
-  static Future<ParsedWordDoc> parseWordFile(String filePath) async {
+  /// Sanitizes Unicode characters so standard PDF fonts (e.g. Helvetica) never crash
+  static String _sanitizeForPdf(String input) {
+    if (input.isEmpty) return input;
+    return input
+        .replaceAll('“', '"')
+        .replaceAll('”', '"')
+        .replaceAll('„', '"')
+        .replaceAll('‘', "'")
+        .replaceAll('’', "'")
+        .replaceAll('‚', "'")
+        .replaceAll('—', ' - ')
+        .replaceAll('–', '-')
+        .replaceAll('…', '...')
+        .replaceAll('•', '*')
+        .replaceAll('▪', '*')
+        .replaceAll('▫', '*')
+        .replaceAll('\u00A0', ' ')
+        .replaceAll('\u202F', ' ')
+        .replaceAll('\u2007', ' ')
+        .replaceAll('\u200B', '')
+        .replaceAll('\u200C', '')
+        .replaceAll('\u200D', '')
+        .replaceAll('\uFEFF', '')
+        .replaceAll('\u2011', '-')
+        .replaceAll('™', '(TM)')
+        .replaceAll('©', '(C)')
+        .replaceAll('®', '(R)')
+        .replaceAll('±', '+/-')
+        .replaceAll('≠', '!=')
+        .replaceAll('≤', '<=')
+        .replaceAll('≥', '>=')
+        .replaceAll('×', 'x')
+        .replaceAll('÷', '/')
+        .replaceAll('°', ' deg')
+        .replaceAll('\t', '    ');
+  }
+
+  /// Extracts raw byte content safely from ArchiveFile across archive package versions
+  static Uint8List _getArchiveFileBytes(ArchiveFile f) {
+    try {
+      final content = f.content;
+      if (content is Uint8List) {
+        return content;
+      } else if (content is List<int>) {
+        return Uint8List.fromList(content);
+      } else if (content is InputStream) {
+        return content.toUint8List();
+      }
+      final dynamic dyn = f;
+      if (dyn.rawContent != null) {
+        final rc = dyn.rawContent;
+        if (rc is Uint8List) return rc;
+        if (rc is List<int>) return Uint8List.fromList(rc);
+        if (rc is InputStream) return rc.toUint8List();
+      }
+      return Uint8List(0);
+    } catch (_) {
+      return Uint8List(0);
+    }
+  }
+
+  /// Parses any document into a high-fidelity WordDocModel
+  static Future<WordDocModel> parseToDocModel(String filePath) async {
     final file = File(filePath);
     if (!await file.exists()) {
-      return const ParsedWordDoc(
+      return WordDocModel(
         title: 'Document',
-        paragraphs: [],
+        nodes: [],
         totalCharacters: 0,
         totalWords: 0,
       );
@@ -92,7 +267,7 @@ class WordEngine {
     } else if (ext == 'csv') {
       return _parseCsvBytes(bytes, fileName);
     } else if (['txt', 'prn'].contains(ext)) {
-      return _parseTextBytes(bytes, fileName, ext == 'prn');
+      return _parseTextBytes(bytes, fileName);
     } else if (ext == 'xml') {
       return _parseXmlBytes(bytes, fileName);
     } else if (['xls', 'xlsb', 'xlw', 'xlt'].contains(ext)) {
@@ -100,16 +275,48 @@ class WordEngine {
     } else if (ext == 'doc') {
       return _parseDocBytes(bytes, fileName);
     } else {
-      return _parseTextBytes(bytes, fileName, false);
+      return _parseTextBytes(bytes, fileName);
     }
   }
 
-  /// 1. Parses DOCX (OpenXML ZIP format)
-  static ParsedWordDoc _parseDocxBytes(Uint8List bytes, String fileName) {
+  /// Backward compatible parseWordFile method
+  static Future<ParsedWordDoc> parseWordFile(String filePath) async {
+    final model = await parseToDocModel(filePath);
+    final List<WordParagraph> paragraphs = [];
+    List<List<String>>? tableData;
+
+    for (final node in model.nodes) {
+      if (node is WordParagraphNode) {
+        paragraphs.add(WordParagraph(
+          fullText: node.fullText,
+          isHeading: node.isHeading,
+          headingLevel: node.headingLevel,
+          runs: node.runs,
+        ));
+      } else if (node is WordTableNode && tableData == null) {
+        tableData = [];
+        for (final row in node.rows) {
+          tableData.add(row.cells.map((c) => c.text).toList());
+        }
+      }
+    }
+
+    return ParsedWordDoc(
+      title: model.title,
+      paragraphs: paragraphs,
+      tableData: tableData,
+      totalCharacters: model.totalCharacters,
+      totalWords: model.totalWords,
+      isTable: tableData != null && tableData.isNotEmpty,
+    );
+  }
+
+  /// 1. DOCX Parser with Full Format, Table, and Image Extraction
+  static WordDocModel _parseDocxBytes(Uint8List bytes, String fileName) {
     try {
       final archive = ZipDecoder().decodeBytes(bytes);
-      ArchiveFile? docXmlFile;
 
+      ArchiveFile? docXmlFile;
       for (final f in archive.files) {
         if (f.name == 'word/document.xml' || f.name.endsWith('/document.xml')) {
           docXmlFile = f;
@@ -118,88 +325,127 @@ class WordEngine {
       }
 
       if (docXmlFile == null) {
-        return _fallbackDoc(fileName, 'Document XML structure not found in DOCX archive.');
+        return _fallbackModel(fileName, 'Document XML structure not found in DOCX archive.');
       }
 
-      final content = docXmlFile.content as List<int>;
+      final content = _getArchiveFileBytes(docXmlFile);
       final xml = utf8.decode(content, allowMalformed: true);
 
-      final List<WordParagraph> paragraphs = [];
-      final pRegex = RegExp(r'<w:p[ >](.*?)</w:p>', dotAll: true);
-      final rRegex = RegExp(r'<w:r[ >](.*?)</w:r>', dotAll: true);
-      final tRegex = RegExp(r'<w:t[^>]*>(.*?)</w:t>', dotAll: true);
-      final styleRegex = RegExp(r'<w:pStyle\s+w:val="([^"]+)"');
+      // Parse image relationships from word/_rels/document.xml.rels
+      final Map<String, String> relIdToMediaPath = {};
+      for (final f in archive.files) {
+        if (f.name == 'word/_rels/document.xml.rels' || f.name.endsWith('/document.xml.rels')) {
+          final relsBytes = _getArchiveFileBytes(f);
+          final relsXml = utf8.decode(relsBytes, allowMalformed: true);
+          final relRegex = RegExp(r'<Relationship\s+([^>]+)/>');
+          final idRegex = RegExp(r'Id="([^"]+)"');
+          final targetRegex = RegExp(r'Target="([^"]+)"');
+          final typeRegex = RegExp(r'Type="([^"]+)"');
 
+          for (final m in relRegex.allMatches(relsXml)) {
+            final attrs = m.group(1) ?? '';
+            final idM = idRegex.firstMatch(attrs);
+            final targetM = targetRegex.firstMatch(attrs);
+            final typeM = typeRegex.firstMatch(attrs);
+
+            if (idM != null && targetM != null) {
+              final id = idM.group(1)!;
+              final target = targetM.group(1)!;
+              final type = typeM?.group(1) ?? '';
+              if (type.contains('image')) {
+                final cleanTarget = target.replaceAll('../', '');
+                relIdToMediaPath[id] = cleanTarget.startsWith('word/') ? cleanTarget : 'word/$cleanTarget';
+              }
+            }
+          }
+          break;
+        }
+      }
+
+      // Load image bytes
+      final Map<String, Uint8List> imagesByRelId = {};
+      if (relIdToMediaPath.isNotEmpty) {
+        for (final f in archive.files) {
+          for (final entry in relIdToMediaPath.entries) {
+            final targetFileName = entry.value.split('/').last.toLowerCase();
+            if (f.name == entry.value || f.name.toLowerCase().endsWith(targetFileName)) {
+              final imgBytes = _getArchiveFileBytes(f);
+              if (imgBytes.isNotEmpty) {
+                imagesByRelId[entry.key] = imgBytes;
+              }
+            }
+          }
+        }
+      }
+
+      // Inspect section properties for orientation & margins
+      bool isLandscape = false;
+      double marginPt = 36.0;
+      final sectPrRegex = RegExp(r'<w:sectPr[ >](.*?)</w:sectPr>', dotAll: true);
+      final sectMatch = sectPrRegex.firstMatch(xml);
+      if (sectMatch != null) {
+        final sectXml = sectMatch.group(1) ?? '';
+        final pgSzMatch = RegExp(r'<w:pgSz\s+([^>]+)/>').firstMatch(sectXml);
+        if (pgSzMatch != null) {
+          final attrs = pgSzMatch.group(1) ?? '';
+          if (attrs.contains('orient="landscape"')) {
+            isLandscape = true;
+          } else {
+            final wMatch = RegExp(r'w:w="(\d+)"').firstMatch(attrs);
+            final hMatch = RegExp(r'w:h="(\d+)"').firstMatch(attrs);
+            if (wMatch != null && hMatch != null) {
+              final w = int.tryParse(wMatch.group(1)!) ?? 0;
+              final h = int.tryParse(hMatch.group(1)!) ?? 0;
+              if (w > h) isLandscape = true;
+            }
+          }
+        }
+
+        final pgMarMatch = RegExp(r'<w:pgMar\s+([^>]+)/>').firstMatch(sectXml);
+        if (pgMarMatch != null) {
+          final leftM = RegExp(r'w:left="(\d+)"').firstMatch(pgMarMatch.group(1) ?? '');
+          if (leftM != null) {
+            final dxa = int.tryParse(leftM.group(1)!) ?? 720;
+            marginPt = (dxa / 20.0).clamp(18.0, 54.0);
+          }
+        }
+      }
+
+      // Sequential Body Parsing: preserve exact document order of paragraphs and tables
+      final bodyRegex = RegExp(r'<w:body[ >](.*?)</w:body>', dotAll: true);
+      final bodyMatch = bodyRegex.firstMatch(xml);
+      final bodyContent = bodyMatch != null ? (bodyMatch.group(1) ?? xml) : xml;
+
+      final List<WordDocNode> nodes = [];
       String detectedTitle = '';
+      int totalChars = 0;
+      int totalWords = 0;
 
-      for (final pMatch in pRegex.allMatches(xml)) {
-        final pXml = pMatch.group(1) ?? '';
+      final topLevelRegex = RegExp(r'<(w:p|w:tbl)[ >](.*?)</\1>', dotAll: true);
 
-        bool isHeading = false;
-        int headingLevel = 0;
-        final styleMatch = styleRegex.firstMatch(pXml);
-        if (styleMatch != null) {
-          final styleVal = styleMatch.group(1)?.toLowerCase() ?? '';
-          if (styleVal.contains('heading1') || styleVal.contains('title')) {
-            isHeading = true;
-            headingLevel = 1;
-          } else if (styleVal.contains('heading2') || styleVal.contains('subtitle')) {
-            isHeading = true;
-            headingLevel = 2;
-          } else if (styleVal.contains('heading')) {
-            isHeading = true;
-            headingLevel = 3;
+      for (final match in topLevelRegex.allMatches(bodyContent)) {
+        final tag = match.group(1);
+        final innerXml = match.group(2) ?? '';
+
+        if (tag == 'w:tbl') {
+          final tableNode = _parseDocxTable(innerXml);
+          if (tableNode != null && tableNode.rows.isNotEmpty) {
+            nodes.add(tableNode);
           }
-        }
-
-        final List<WordTextRun> runs = [];
-        final StringBuffer pBuffer = StringBuffer();
-
-        for (final rMatch in rRegex.allMatches(pXml)) {
-          final rXml = rMatch.group(1) ?? '';
-          final bool isBold = rXml.contains('<w:b') &&
-              !rXml.contains('<w:b w:val="0"') &&
-              !rXml.contains('<w:b w:val="false"');
-          final bool isItalic = rXml.contains('<w:i') &&
-              !rXml.contains('<w:i w:val="0"') &&
-              !rXml.contains('<w:i w:val="false"');
-          final bool isUnderline = rXml.contains('<w:u ') || rXml.contains('<w:u/>');
-
-          final StringBuffer rBuffer = StringBuffer();
-          for (final tMatch in tRegex.allMatches(rXml)) {
-            rBuffer.write(_unescapeXml(tMatch.group(1) ?? ''));
+        } else if (tag == 'w:p') {
+          final pNodes = _parseDocxParagraph(innerXml, imagesByRelId);
+          for (final pNode in pNodes) {
+            if (pNode is WordParagraphNode) {
+              if (pNode.fullText.isNotEmpty) {
+                totalChars += pNode.fullText.length;
+                totalWords += pNode.fullText.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length;
+                if (detectedTitle.isEmpty && (pNode.isHeading || pNode.headingLevel == 1)) {
+                  detectedTitle = pNode.fullText;
+                }
+              }
+            }
+            nodes.add(pNode);
           }
-
-          if (rXml.contains('<w:br') || rXml.contains('<w:cr')) {
-            rBuffer.write('\n');
-          }
-          if (rXml.contains('<w:tab')) {
-            rBuffer.write('    ');
-          }
-
-          final runText = rBuffer.toString();
-          if (runText.isNotEmpty) {
-            runs.add(WordTextRun(
-              text: runText,
-              isBold: isBold,
-              isItalic: isItalic,
-              isUnderline: isUnderline,
-            ));
-            pBuffer.write(runText);
-          }
-        }
-
-        final fullText = pBuffer.toString().trim();
-        if (fullText.isNotEmpty) {
-          if (detectedTitle.isEmpty && (isHeading || paragraphs.isEmpty)) {
-            detectedTitle = fullText;
-          }
-          paragraphs.add(WordParagraph(
-            fullText: fullText,
-            isHeading: isHeading,
-            headingLevel: headingLevel,
-            runs: runs.isNotEmpty ? runs : [WordTextRun(text: fullText)],
-          ));
         }
       }
 
@@ -207,27 +453,320 @@ class WordEngine {
         detectedTitle = fileName.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
       }
 
-      int totalChars = 0;
-      int totalWords = 0;
-      for (final p in paragraphs) {
-        totalChars += p.fullText.length;
-        totalWords += p.fullText.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length;
-      }
-
-      return ParsedWordDoc(
+      return WordDocModel(
         title: detectedTitle,
-        paragraphs: paragraphs,
+        nodes: nodes,
+        isLandscape: isLandscape,
+        marginPt: marginPt,
         totalCharacters: totalChars,
         totalWords: totalWords,
-        isTable: false,
       );
     } catch (e) {
-      return _fallbackDoc(fileName, 'Could not decode DOCX archive: $e');
+      return _fallbackModel(fileName, 'Could not decode DOCX archive: $e');
     }
   }
 
-  /// 2. Parses XLSX / XLSM / XLTX / XLTM (OpenXML Spreadsheet)
-  static ParsedWordDoc _parseXlsxBytes(Uint8List bytes, String fileName) {
+  /// Parses a Word DOCX table into a structured WordTableNode
+  static WordTableNode? _parseDocxTable(String tblInnerXml) {
+    try {
+      final List<WordTableRowNode> rows = [];
+      final trRegex = RegExp(r'<w:tr[ >](.*?)</w:tr>', dotAll: true);
+      final tcRegex = RegExp(r'<w:tc[ >](.*?)</w:tc>', dotAll: true);
+
+      int maxCols = 0;
+
+      for (final trMatch in trRegex.allMatches(tblInnerXml)) {
+        final trXml = trMatch.group(1) ?? '';
+        final bool isHeader = trXml.contains('<w:tblHeader/>') || trXml.contains('<w:tblHeader ');
+
+        final List<WordTableCellNode> cells = [];
+        for (final tcMatch in tcRegex.allMatches(trXml)) {
+          final tcXml = tcMatch.group(1) ?? '';
+
+          PdfColor? bgColor;
+          final shdMatch = RegExp(r'<w:shd\s+[^>]*w:fill="([a-fA-F0-9]{6})"').firstMatch(tcXml);
+          if (shdMatch != null) {
+            final hex = shdMatch.group(1)!;
+            if (hex.toLowerCase() != 'ffffff' && hex.toLowerCase() != 'auto') {
+              bgColor = PdfColor.fromInt(0xFF000000 | int.parse(hex, radix: 16));
+            }
+          }
+
+          int colSpan = 1;
+          final gridSpanMatch = RegExp(r'<w:gridSpan\s+[^>]*w:val="(\d+)"').firstMatch(tcXml);
+          if (gridSpanMatch != null) {
+            colSpan = int.tryParse(gridSpanMatch.group(1)!) ?? 1;
+          }
+
+          final pRegex = RegExp(r'<w:p[ >](.*?)</w:p>', dotAll: true);
+          final List<WordParagraphNode> cellParagraphs = [];
+          final StringBuffer cellTextBuffer = StringBuffer();
+
+          for (final pMatch in pRegex.allMatches(tcXml)) {
+            final pNodes = _parseDocxParagraph(pMatch.group(1) ?? '', {});
+            for (final pn in pNodes) {
+              if (pn is WordParagraphNode) {
+                cellParagraphs.add(pn);
+                if (pn.fullText.isNotEmpty) {
+                  if (cellTextBuffer.isNotEmpty) cellTextBuffer.write('\n');
+                  cellTextBuffer.write(pn.fullText);
+                }
+              }
+            }
+          }
+
+          cells.add(WordTableCellNode(
+            paragraphs: cellParagraphs,
+            text: cellTextBuffer.toString(),
+            backgroundColor: bgColor,
+            colSpan: colSpan,
+          ));
+        }
+
+        if (cells.isNotEmpty) {
+          int count = cells.fold(0, (sum, c) => sum + c.colSpan);
+          if (count > maxCols) maxCols = count;
+          rows.add(WordTableRowNode(cells: cells, isHeader: isHeader));
+        }
+      }
+
+      if (rows.isEmpty) return null;
+      return WordTableNode(rows: rows, maxCols: maxCols);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Parses a Word DOCX paragraph with full formatting, styles, headings, bullets, and drawings
+  static List<WordDocNode> _parseDocxParagraph(
+    String pInnerXml,
+    Map<String, Uint8List> imagesByRelId,
+  ) {
+    final List<WordDocNode> result = [];
+
+    // Check page break before
+    if (pInnerXml.contains('<w:pageBreakBefore/>')) {
+      result.add(WordParagraphNode(runs: [], fullText: '', isPageBreak: true));
+    }
+
+    bool isHeading = false;
+    int headingLevel = 0;
+    String alignment = 'left';
+    bool isBullet = false;
+    int bulletIndent = 0;
+    double spaceBefore = 0;
+    double spaceAfter = 3;
+
+    final pPrMatch = RegExp(r'<w:pPr[ >](.*?)</w:pPr>', dotAll: true).firstMatch(pInnerXml);
+    if (pPrMatch != null) {
+      final pPrXml = pPrMatch.group(1) ?? '';
+
+      final styleMatch = RegExp(r'<w:pStyle\s+[^>]*w:val="([^"]+)"').firstMatch(pPrXml);
+      if (styleMatch != null) {
+        final val = styleMatch.group(1)?.toLowerCase() ?? '';
+        if (val.contains('title')) {
+          isHeading = true;
+          headingLevel = 1;
+        } else if (val.contains('subtitle')) {
+          isHeading = true;
+          headingLevel = 2;
+        } else if (val.contains('heading1') || val.contains('heading 1')) {
+          isHeading = true;
+          headingLevel = 1;
+        } else if (val.contains('heading2') || val.contains('heading 2')) {
+          isHeading = true;
+          headingLevel = 2;
+        } else if (val.contains('heading3') || val.contains('heading 3')) {
+          isHeading = true;
+          headingLevel = 3;
+        } else if (val.contains('heading')) {
+          isHeading = true;
+          headingLevel = 3;
+        }
+      }
+
+      final jcMatch = RegExp(r'<w:jc\s+[^>]*w:val="([^"]+)"').firstMatch(pPrXml);
+      if (jcMatch != null) {
+        final jcVal = jcMatch.group(1)?.toLowerCase() ?? '';
+        if (jcVal == 'center') {
+          alignment = 'center';
+        } else if (jcVal == 'right') {
+          alignment = 'right';
+        } else if (jcVal == 'both' || jcVal == 'justify' || jcVal == 'distribute') {
+          alignment = 'justify';
+        }
+      }
+
+      if (pPrXml.contains('<w:numPr')) {
+        isBullet = true;
+        final ilvlMatch = RegExp(r'<w:ilvl\s+[^>]*w:val="(\d+)"').firstMatch(pPrXml);
+        if (ilvlMatch != null) {
+          bulletIndent = int.tryParse(ilvlMatch.group(1)!) ?? 0;
+        }
+      }
+
+      final spMatch = RegExp(r'<w:spacing\s+([^>]+)/>').firstMatch(pPrXml);
+      if (spMatch != null) {
+        final attrs = spMatch.group(1) ?? '';
+        final bfMatch = RegExp(r'w:before="(\d+)"').firstMatch(attrs);
+        final afMatch = RegExp(r'w:after="(\d+)"').firstMatch(attrs);
+        if (bfMatch != null) {
+          spaceBefore = (int.tryParse(bfMatch.group(1)!) ?? 0) / 20.0;
+        }
+        if (afMatch != null) {
+          spaceAfter = (int.tryParse(afMatch.group(1)!) ?? 60) / 20.0;
+        }
+      }
+    }
+
+    final List<WordTextRun> runs = [];
+    final StringBuffer pTextBuffer = StringBuffer();
+
+    final rRegex = RegExp(r'<w:r[ >](.*?)</w:r>', dotAll: true);
+    final tRegex = RegExp(r'<w:t[^>]*>(.*?)</w:t>', dotAll: true);
+
+    for (final rMatch in rRegex.allMatches(pInnerXml)) {
+      final rXml = rMatch.group(1) ?? '';
+
+      // Check Drawing / Image in run
+      if (imagesByRelId.isNotEmpty && (rXml.contains('<w:drawing') || rXml.contains('<w:pict'))) {
+        final embedMatch = RegExp(r'(?:r:embed|r:id)="([^"]+)"').firstMatch(rXml);
+        if (embedMatch != null) {
+          final relId = embedMatch.group(1)!;
+          final imgBytes = imagesByRelId[relId];
+          if (imgBytes != null && imgBytes.isNotEmpty) {
+            double wPt = 320;
+            double hPt = 220;
+            final extentMatch = RegExp(r'<wp:extent\s+[^>]*cx="(\d+)"\s+cy="(\d+)"').firstMatch(rXml);
+            if (extentMatch != null) {
+              final cx = int.tryParse(extentMatch.group(1)!) ?? 0;
+              final cy = int.tryParse(extentMatch.group(2)!) ?? 0;
+              if (cx > 0 && cy > 0) {
+                wPt = (cx / 12700.0).clamp(50.0, 480.0);
+                hPt = (cy / 12700.0).clamp(50.0, 360.0);
+              }
+            }
+
+            if (runs.isNotEmpty && pTextBuffer.isNotEmpty) {
+              result.add(WordParagraphNode(
+                runs: List.from(runs),
+                fullText: pTextBuffer.toString(),
+                isHeading: isHeading,
+                headingLevel: headingLevel,
+                alignment: alignment,
+                isBullet: isBullet,
+                bulletIndent: bulletIndent,
+                spaceBefore: spaceBefore,
+                spaceAfter: spaceAfter,
+              ));
+              runs.clear();
+              pTextBuffer.clear();
+            }
+
+            result.add(WordImageNode(
+              bytes: imgBytes,
+              widthPt: wPt,
+              heightPt: hPt,
+              alignment: alignment,
+            ));
+            continue;
+          }
+        }
+      }
+
+      // Page break in run
+      if (rXml.contains('w:type="page"')) {
+        if (runs.isNotEmpty && pTextBuffer.isNotEmpty) {
+          result.add(WordParagraphNode(
+            runs: List.from(runs),
+            fullText: pTextBuffer.toString(),
+            isHeading: isHeading,
+            headingLevel: headingLevel,
+            alignment: alignment,
+            isBullet: isBullet,
+            bulletIndent: bulletIndent,
+          ));
+          runs.clear();
+          pTextBuffer.clear();
+        }
+        result.add(WordParagraphNode(runs: [], fullText: '', isPageBreak: true));
+        continue;
+      }
+
+      final bool isBold = rXml.contains('<w:b') &&
+          !rXml.contains('<w:b w:val="0"') &&
+          !rXml.contains('<w:b w:val="false"');
+      final bool isItalic = rXml.contains('<w:i') &&
+          !rXml.contains('<w:i w:val="0"') &&
+          !rXml.contains('<w:i w:val="false"');
+      final bool isUnderline = rXml.contains('<w:u ') || rXml.contains('<w:u/>');
+      final bool isStrike = rXml.contains('<w:strike');
+
+      double fontSize = isHeading
+          ? (headingLevel == 1 ? 17.0 : (headingLevel == 2 ? 14.0 : 12.0))
+          : 11.0;
+      final szMatch = RegExp(r'<w:sz\s+[^>]*w:val="(\d+)"').firstMatch(rXml);
+      if (szMatch != null) {
+        final halfPt = int.tryParse(szMatch.group(1)!) ?? 22;
+        fontSize = (halfPt / 2.0).clamp(8.0, 32.0);
+      }
+
+      PdfColor? color;
+      final colorMatch = RegExp(r'<w:color\s+[^>]*w:val="([a-fA-F0-9]{6})"').firstMatch(rXml);
+      if (colorMatch != null) {
+        final hex = colorMatch.group(1)!;
+        if (hex.toLowerCase() != '000000' && hex.toLowerCase() != 'auto') {
+          color = PdfColor.fromInt(0xFF000000 | int.parse(hex, radix: 16));
+        }
+      }
+
+      final StringBuffer rBuffer = StringBuffer();
+      for (final tMatch in tRegex.allMatches(rXml)) {
+        final rawText = tMatch.group(1) ?? '';
+        rBuffer.write(_sanitizeForPdf(_unescapeXml(rawText)));
+      }
+
+      if (rXml.contains('<w:br') || rXml.contains('<w:cr')) {
+        rBuffer.write('\n');
+      }
+      if (rXml.contains('<w:tab')) {
+        rBuffer.write('    ');
+      }
+
+      final runText = rBuffer.toString();
+      if (runText.isNotEmpty) {
+        runs.add(WordTextRun(
+          text: runText,
+          isBold: isBold,
+          isItalic: isItalic,
+          isUnderline: isUnderline,
+          isStrike: isStrike,
+          fontSize: fontSize,
+          color: color,
+        ));
+        pTextBuffer.write(runText);
+      }
+    }
+
+    if (runs.isNotEmpty || pTextBuffer.isNotEmpty) {
+      result.add(WordParagraphNode(
+        runs: runs,
+        fullText: pTextBuffer.toString(),
+        isHeading: isHeading,
+        headingLevel: headingLevel,
+        alignment: alignment,
+        isBullet: isBullet,
+        bulletIndent: bulletIndent,
+        spaceBefore: spaceBefore,
+        spaceAfter: spaceAfter,
+      ));
+    }
+
+    return result;
+  }
+
+  /// 2. XLSX / XLSM / XLTX Parser
+  static WordDocModel _parseXlsxBytes(Uint8List bytes, String fileName) {
     try {
       final archive = ZipDecoder().decodeBytes(bytes);
 
@@ -241,99 +780,115 @@ class WordEngine {
         }
       }
       if (sstFile != null) {
-        final sstXml = utf8.decode(sstFile.content as List<int>, allowMalformed: true);
+        final sstBytes = _getArchiveFileBytes(sstFile);
+        final sstXml = utf8.decode(sstBytes, allowMalformed: true);
         final siRegex = RegExp(r'<si>(.*?)</si>', dotAll: true);
         final tRegex = RegExp(r'<t[^>]*>(.*?)</t>', dotAll: true);
         for (final siMatch in siRegex.allMatches(sstXml)) {
           final siContent = siMatch.group(1) ?? '';
           final StringBuffer sb = StringBuffer();
           for (final tMatch in tRegex.allMatches(siContent)) {
-            sb.write(_unescapeXml(tMatch.group(1) ?? ''));
+            sb.write(_sanitizeForPdf(_unescapeXml(tMatch.group(1) ?? '')));
           }
           sharedStrings.add(sb.toString());
         }
       }
 
-      // First Worksheet
+      // First worksheet
       ArchiveFile? sheetFile;
       for (final f in archive.files) {
-        if (f.name.startsWith('xl/worksheets/sheet') && f.name.endsWith('.xml')) {
+        if (f.name == 'xl/worksheets/sheet1.xml' || f.name.endsWith('/sheet1.xml')) {
           sheetFile = f;
           break;
         }
       }
+      sheetFile ??= archive.files.firstWhere(
+        (f) => f.name.contains('sheet') && f.name.endsWith('.xml'),
+        orElse: () => archive.files.first,
+      );
 
-      if (sheetFile == null) {
-        return _fallbackDoc(fileName, 'Worksheet data not found in spreadsheet.');
-      }
+      final sheetBytes = _getArchiveFileBytes(sheetFile);
+      final sheetXml = utf8.decode(sheetBytes, allowMalformed: true);
 
-      final sheetXml = utf8.decode(sheetFile.content as List<int>, allowMalformed: true);
       final rowRegex = RegExp(r'<row[^>]*>(.*?)</row>', dotAll: true);
       final cellRegex = RegExp(r'<c\s+([^>]*?)>(.*?)</c>', dotAll: true);
-      final valRegex = RegExp(r'<v>(.*?)</v>', dotAll: true);
-      final inlineRegex = RegExp(r'<t[^>]*>(.*?)</t>', dotAll: true);
+      final vRegex = RegExp(r'<v>(.*?)</v>');
+      final tInlineRegex = RegExp(r'<t[^>]*>(.*?)</t>');
 
-      final List<List<String>> tableRows = [];
-      final List<WordParagraph> paragraphs = [];
+      final List<WordTableRowNode> tableRows = [];
+      int maxCols = 0;
+      bool isFirstRow = true;
 
       for (final rowMatch in rowRegex.allMatches(sheetXml)) {
         final rowXml = rowMatch.group(1) ?? '';
-        final List<String> cells = [];
+        final List<WordTableCellNode> cells = [];
 
-        for (final cellMatch in cellRegex.allMatches(rowXml)) {
-          final attr = cellMatch.group(1) ?? '';
-          final body = cellMatch.group(2) ?? '';
-          final isShared = attr.contains('t="s"');
-          final isInline = attr.contains('t="inlineStr"');
+        for (final cMatch in cellRegex.allMatches(rowXml)) {
+          final cAttrs = cMatch.group(1) ?? '';
+          final cInner = cMatch.group(2) ?? '';
+          final isString = cAttrs.contains('t="s"');
+          final isInlineStr = cAttrs.contains('t="inlineStr"');
 
-          String val = '';
-          if (isShared) {
-            final vm = valRegex.firstMatch(body);
-            if (vm != null) {
-              final idx = int.tryParse(vm.group(1) ?? '');
+          String cellVal = '';
+          if (isString) {
+            final vMatch = vRegex.firstMatch(cInner);
+            if (vMatch != null) {
+              final idx = int.tryParse(vMatch.group(1) ?? '');
               if (idx != null && idx >= 0 && idx < sharedStrings.length) {
-                val = sharedStrings[idx];
+                cellVal = sharedStrings[idx];
               }
             }
-          } else if (isInline) {
-            final im = inlineRegex.firstMatch(body);
-            if (im != null) {
-              val = _unescapeXml(im.group(1) ?? '');
+          } else if (isInlineStr) {
+            final tMatch = tInlineRegex.firstMatch(cInner);
+            if (tMatch != null) {
+              cellVal = _sanitizeForPdf(_unescapeXml(tMatch.group(1) ?? ''));
             }
           } else {
-            final vm = valRegex.firstMatch(body);
-            if (vm != null) {
-              val = _unescapeXml(vm.group(1) ?? '');
+            final vMatch = vRegex.firstMatch(cInner);
+            if (vMatch != null) {
+              cellVal = vMatch.group(1)?.trim() ?? '';
             }
           }
-          cells.add(val.trim());
+
+          cells.add(WordTableCellNode(
+            paragraphs: [
+              WordParagraphNode(
+                runs: [WordTextRun(text: cellVal, isBold: isFirstRow)],
+                fullText: cellVal,
+              ),
+            ],
+            text: cellVal,
+          ));
         }
 
-        if (cells.any((c) => c.isNotEmpty)) {
-          tableRows.add(cells);
-          final line = cells.where((c) => c.isNotEmpty).join(' | ');
-          paragraphs.add(WordParagraph(fullText: line, runs: [WordTextRun(text: line)]));
+        if (cells.any((c) => c.text.isNotEmpty)) {
+          if (cells.length > maxCols) maxCols = cells.length;
+          tableRows.add(WordTableRowNode(cells: cells, isHeader: isFirstRow));
+          isFirstRow = false;
         }
       }
 
-      _normalizeTable(tableRows);
-
       final docTitle = fileName.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
-      return ParsedWordDoc(
+      final List<WordDocNode> nodes = [];
+      if (tableRows.isNotEmpty) {
+        nodes.add(WordTableNode(rows: tableRows, maxCols: maxCols));
+      }
+
+      return WordDocModel(
         title: docTitle,
-        paragraphs: paragraphs,
-        tableData: tableRows.isNotEmpty ? tableRows : null,
-        totalCharacters: paragraphs.fold(0, (sum, p) => sum + p.fullText.length),
-        totalWords: paragraphs.fold(0, (sum, p) => sum + p.fullText.split(RegExp(r'\s+')).length),
-        isTable: tableRows.isNotEmpty,
+        nodes: nodes,
+        isLandscape: maxCols > 4,
+        marginPt: 24.0,
+        totalCharacters: tableRows.fold(0, (s, r) => s + r.cells.fold(0, (cs, c) => cs + c.text.length)),
+        totalWords: tableRows.length * maxCols,
       );
     } catch (e) {
-      return _fallbackDoc(fileName, 'Could not parse Excel document: $e');
+      return _fallbackModel(fileName, 'Could not decode XLSX archive: $e');
     }
   }
 
-  /// 3. Parses ODS (OpenDocument Spreadsheet)
-  static ParsedWordDoc _parseOdsBytes(Uint8List bytes, String fileName) {
+  /// 3. ODS (OpenDocument Spreadsheet) Parser
+  static WordDocModel _parseOdsBytes(Uint8List bytes, String fileName) {
     try {
       final archive = ZipDecoder().decodeBytes(bytes);
       ArchiveFile? contentFile;
@@ -343,230 +898,217 @@ class WordEngine {
           break;
         }
       }
-
       if (contentFile == null) {
-        return _fallbackDoc(fileName, 'content.xml not found in ODS archive.');
+        return _fallbackModel(fileName, 'content.xml not found in ODS archive.');
       }
 
-      final xml = utf8.decode(contentFile.content as List<int>, allowMalformed: true);
+      final contentBytes = _getArchiveFileBytes(contentFile);
+      final xml = utf8.decode(contentBytes, allowMalformed: true);
+
       final rowRegex = RegExp(r'<table:table-row[^>]*>(.*?)</table:table-row>', dotAll: true);
       final cellRegex = RegExp(r'<table:table-cell[^>]*>(.*?)</table:table-cell>', dotAll: true);
-      final textRegex = RegExp(r'<text:p[^>]*>(.*?)</text:p>', dotAll: true);
+      final pRegex = RegExp(r'<text:p[^>]*>(.*?)</text:p>', dotAll: true);
 
-      final List<List<String>> tableRows = [];
-      final List<WordParagraph> paragraphs = [];
+      final List<WordTableRowNode> tableRows = [];
+      int maxCols = 0;
+      bool isFirst = true;
 
-      for (final rMatch in rowRegex.allMatches(xml)) {
-        final rXml = rMatch.group(1) ?? '';
-        final List<String> row = [];
+      for (final rowMatch in rowRegex.allMatches(xml)) {
+        final rowXml = rowMatch.group(1) ?? '';
+        final List<WordTableCellNode> cells = [];
 
-        for (final cMatch in cellRegex.allMatches(rXml)) {
-          final cXml = cMatch.group(1) ?? '';
-          final StringBuffer cellBuffer = StringBuffer();
-          for (final tMatch in textRegex.allMatches(cXml)) {
-            cellBuffer.write(_unescapeXml(tMatch.group(1) ?? ''));
+        for (final cellMatch in cellRegex.allMatches(rowXml)) {
+          final cellXml = cellMatch.group(1) ?? '';
+          final StringBuffer sb = StringBuffer();
+          for (final pm in pRegex.allMatches(cellXml)) {
+            sb.write(_sanitizeForPdf(_unescapeXml(pm.group(1) ?? '')));
           }
-          row.add(cellBuffer.toString().trim());
+          final val = sb.toString().trim();
+          cells.add(WordTableCellNode(
+            paragraphs: [WordParagraphNode(runs: [WordTextRun(text: val, isBold: isFirst)], fullText: val)],
+            text: val,
+          ));
         }
 
-        if (row.any((c) => c.isNotEmpty)) {
-          tableRows.add(row);
-          final line = row.where((c) => c.isNotEmpty).join(' | ');
-          paragraphs.add(WordParagraph(fullText: line, runs: [WordTextRun(text: line)]));
+        if (cells.any((c) => c.text.isNotEmpty)) {
+          if (cells.length > maxCols) maxCols = cells.length;
+          tableRows.add(WordTableRowNode(cells: cells, isHeader: isFirst));
+          isFirst = false;
         }
       }
 
-      _normalizeTable(tableRows);
-
       final docTitle = fileName.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
-      return ParsedWordDoc(
+      final List<WordDocNode> nodes = [];
+      if (tableRows.isNotEmpty) {
+        nodes.add(WordTableNode(rows: tableRows, maxCols: maxCols));
+      }
+
+      return WordDocModel(
         title: docTitle,
-        paragraphs: paragraphs,
-        tableData: tableRows.isNotEmpty ? tableRows : null,
-        totalCharacters: paragraphs.fold(0, (sum, p) => sum + p.fullText.length),
-        totalWords: paragraphs.fold(0, (sum, p) => sum + p.fullText.split(RegExp(r'\s+')).length),
-        isTable: tableRows.isNotEmpty,
+        nodes: nodes,
+        isLandscape: maxCols > 4,
+        marginPt: 24.0,
+        totalCharacters: tableRows.fold(0, (s, r) => s + r.cells.fold(0, (cs, c) => cs + c.text.length)),
+        totalWords: tableRows.length * maxCols,
       );
     } catch (e) {
-      return _fallbackDoc(fileName, 'Could not parse ODS document: $e');
+      return _fallbackModel(fileName, 'Could not decode ODS archive: $e');
     }
   }
 
-  /// 4. Parses CSV (Comma / Semicolon / Tab Delimited)
-  static ParsedWordDoc _parseCsvBytes(Uint8List bytes, String fileName) {
+  /// 4. CSV Parser
+  static WordDocModel _parseCsvBytes(Uint8List bytes, String fileName) {
     try {
-      String text = '';
-      try {
-        text = utf8.decode(bytes);
-      } catch (_) {
-        text = latin1.decode(bytes);
-      }
+      final docTitle = fileName.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
+      final content = _sanitizeForPdf(utf8.decode(bytes, allowMalformed: true));
+      final rawLines = content.split(RegExp(r'\r?\n'));
 
-      final rawLines = text.split(RegExp(r'\r?\n+'));
-      final List<List<String>> tableRows = [];
-      final List<WordParagraph> paragraphs = [];
+      final delimiter = rawLines.isNotEmpty && rawLines[0].contains('\t') ? '\t' : ',';
+      final List<WordTableRowNode> tableRows = [];
+      int maxCols = 0;
+      bool isFirst = true;
 
       for (final line in rawLines) {
         if (line.trim().isEmpty) continue;
+        final cells = _splitCsvLine(line, delimiter).map((val) {
+          return WordTableCellNode(
+            paragraphs: [WordParagraphNode(runs: [WordTextRun(text: val, isBold: isFirst)], fullText: val)],
+            text: val,
+          );
+        }).toList();
 
-        String delimiter = ',';
-        if (!line.contains(',') && line.contains(';')) {
-          delimiter = ';';
-        } else if (!line.contains(',') && line.contains('\t')) {
-          delimiter = '\t';
-        }
-
-        final cells = _splitCsvLine(line, delimiter);
-        if (cells.any((c) => c.isNotEmpty)) {
-          tableRows.add(cells);
-          final str = cells.join(' | ');
-          paragraphs.add(WordParagraph(fullText: str, runs: [WordTextRun(text: str)]));
-        }
+        if (cells.length > maxCols) maxCols = cells.length;
+        tableRows.add(WordTableRowNode(cells: cells, isHeader: isFirst));
+        isFirst = false;
       }
 
-      _normalizeTable(tableRows);
+      final List<WordDocNode> nodes = [];
+      if (tableRows.isNotEmpty) {
+        nodes.add(WordTableNode(rows: tableRows, maxCols: maxCols));
+      }
 
-      final docTitle = fileName.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
-      return ParsedWordDoc(
+      return WordDocModel(
         title: docTitle,
-        paragraphs: paragraphs,
-        tableData: tableRows.isNotEmpty ? tableRows : null,
-        totalCharacters: text.length,
-        totalWords: text.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length,
-        isTable: tableRows.isNotEmpty,
+        nodes: nodes,
+        isLandscape: maxCols > 4,
+        marginPt: 24.0,
+        totalCharacters: content.length,
+        totalWords: content.split(RegExp(r'\s+')).length,
       );
     } catch (e) {
-      return _fallbackDoc(fileName, 'Could not parse CSV file: $e');
+      return _fallbackModel(fileName, 'Could not parse CSV: $e');
     }
   }
 
-  /// 5. Parses Text and PRN files
-  static ParsedWordDoc _parseTextBytes(Uint8List bytes, String fileName, bool isPrn) {
+  /// 5. Plain Text (.txt, .prn) Parser
+  static WordDocModel _parseTextBytes(Uint8List bytes, String fileName) {
     try {
-      String text = '';
-      try {
-        text = utf8.decode(bytes);
-      } catch (_) {
-        text = latin1.decode(bytes);
-      }
-
-      final lines = text.split(RegExp(r'\r?\n+'));
-      final List<WordParagraph> paragraphs = [];
-      final List<List<String>> tableRows = [];
-
-      for (int i = 0; i < lines.length; i++) {
-        final line = lines[i];
-        final trimmed = line.trim();
-        if (trimmed.isEmpty) continue;
-
-        if (isPrn && (line.contains('   ') || line.contains('\t'))) {
-          final cells = line.split(RegExp(r'\s{2,}|\t')).map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-          if (cells.length >= 2) {
-            tableRows.add(cells);
-          }
-        }
-
-        paragraphs.add(WordParagraph(
-          fullText: trimmed,
-          isHeading: i == 0 && trimmed.length < 50,
-          headingLevel: (i == 0 && trimmed.length < 50) ? 1 : 0,
-          runs: [WordTextRun(text: trimmed, isBold: i == 0 && trimmed.length < 50)],
-        ));
-      }
-
-      if (tableRows.length >= 2) {
-        _normalizeTable(tableRows);
-      }
-
       final docTitle = fileName.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
-      return ParsedWordDoc(
+      final content = _sanitizeForPdf(utf8.decode(bytes, allowMalformed: true));
+      final rawLines = content.split(RegExp(r'\r?\n'));
+
+      final List<WordDocNode> nodes = [];
+      for (final line in rawLines) {
+        final t = line.trim();
+        if (t.isNotEmpty) {
+          nodes.add(WordParagraphNode(
+            runs: [WordTextRun(text: line)],
+            fullText: line,
+            spaceAfter: 2,
+          ));
+        } else {
+          nodes.add(WordParagraphNode(runs: [], fullText: '', spaceAfter: 6));
+        }
+      }
+
+      return WordDocModel(
         title: docTitle,
-        paragraphs: paragraphs,
-        tableData: tableRows.length >= 2 ? tableRows : null,
-        totalCharacters: text.length,
-        totalWords: text.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length,
-        isTable: tableRows.length >= 2,
+        nodes: nodes,
+        isLandscape: false,
+        marginPt: 36.0,
+        totalCharacters: content.length,
+        totalWords: content.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length,
       );
     } catch (e) {
-      return _fallbackDoc(fileName, 'Could not parse text file: $e');
+      return _fallbackModel(fileName, 'Could not parse text document: $e');
     }
   }
 
-  /// 6. Parses XML and Excel 2003 SpreadsheetML files
-  static ParsedWordDoc _parseXmlBytes(Uint8List bytes, String fileName) {
+  /// 6. XML Parser
+  static WordDocModel _parseXmlBytes(Uint8List bytes, String fileName) {
     try {
+      final docTitle = fileName.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
       final xml = utf8.decode(bytes, allowMalformed: true);
-      final docTitle = fileName.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
 
       // Check if Excel 2003 XML SpreadsheetML
       if (xml.contains('<Workbook') && xml.contains('<Row')) {
         final rowRegex = RegExp(r'<Row[^>]*>(.*?)</Row>', dotAll: true);
         final cellRegex = RegExp(r'<Cell[^>]*>.*?<Data[^>]*>(.*?)</Data>.*?</Cell>', dotAll: true);
-        final List<List<String>> tableRows = [];
-        final List<WordParagraph> paragraphs = [];
+        final List<WordTableRowNode> tableRows = [];
+        int maxCols = 0;
+        bool isFirst = true;
 
         for (final rMatch in rowRegex.allMatches(xml)) {
           final rXml = rMatch.group(1) ?? '';
-          final List<String> row = [];
+          final List<WordTableCellNode> cells = [];
           for (final cMatch in cellRegex.allMatches(rXml)) {
-            row.add(_unescapeXml(cMatch.group(1) ?? '').trim());
+            final val = _sanitizeForPdf(_unescapeXml(cMatch.group(1) ?? '').trim());
+            cells.add(WordTableCellNode(
+              paragraphs: [WordParagraphNode(runs: [WordTextRun(text: val, isBold: isFirst)], fullText: val)],
+              text: val,
+            ));
           }
-          if (row.any((c) => c.isNotEmpty)) {
-            tableRows.add(row);
-            final line = row.join(' | ');
-            paragraphs.add(WordParagraph(fullText: line, runs: [WordTextRun(text: line)]));
+          if (cells.any((c) => c.text.isNotEmpty)) {
+            if (cells.length > maxCols) maxCols = cells.length;
+            tableRows.add(WordTableRowNode(cells: cells, isHeader: isFirst));
+            isFirst = false;
           }
         }
 
         if (tableRows.isNotEmpty) {
-          _normalizeTable(tableRows);
-          return ParsedWordDoc(
+          return WordDocModel(
             title: docTitle,
-            paragraphs: paragraphs,
-            tableData: tableRows,
-            totalCharacters: paragraphs.fold(0, (s, p) => s + p.fullText.length),
-            totalWords: paragraphs.fold(0, (s, p) => s + p.fullText.split(RegExp(r'\s+')).length),
-            isTable: true,
+            nodes: [WordTableNode(rows: tableRows, maxCols: maxCols)],
+            isLandscape: maxCols > 4,
+            marginPt: 24.0,
+            totalCharacters: xml.length,
+            totalWords: tableRows.length * maxCols,
           );
         }
       }
 
-      // Standard XML: extract key-value nodes
-      final List<WordParagraph> paragraphs = [];
+      // Standard XML
+      final List<WordDocNode> nodes = [];
       final tagRegex = RegExp(r'<([a-zA-Z0-9_\-]+)([^>]*)>(.*?)</\1>', dotAll: true);
       for (final m in tagRegex.allMatches(xml)) {
         final tag = m.group(1) ?? '';
-        final content = _unescapeXml(m.group(3) ?? '').replaceAll(RegExp(r'<[^>]+>'), '').trim();
+        final content = _sanitizeForPdf(_unescapeXml(m.group(3) ?? '').replaceAll(RegExp(r'<[^>]+>'), '').trim());
         if (content.isNotEmpty && !content.contains('\n')) {
-          paragraphs.add(WordParagraph(
-            fullText: '$tag: $content',
+          nodes.add(WordParagraphNode(
             runs: [
               WordTextRun(text: '$tag: ', isBold: true),
               WordTextRun(text: content),
             ],
+            fullText: '$tag: $content',
           ));
         }
       }
 
-      if (paragraphs.isEmpty) {
-        final stripped = xml.replaceAll(RegExp(r'<[^>]+>'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-        paragraphs.add(WordParagraph(fullText: stripped, runs: [WordTextRun(text: stripped)]));
-      }
-
-      return ParsedWordDoc(
+      return WordDocModel(
         title: docTitle,
-        paragraphs: paragraphs,
-        totalCharacters: paragraphs.fold(0, (s, p) => s + p.fullText.length),
-        totalWords: paragraphs.fold(0, (s, p) => s + p.fullText.split(RegExp(r'\s+')).length),
-        isTable: false,
+        nodes: nodes,
+        isLandscape: false,
+        marginPt: 36.0,
+        totalCharacters: xml.length,
+        totalWords: nodes.length * 4,
       );
     } catch (e) {
-      return _fallbackDoc(fileName, 'Could not parse XML document: $e');
+      return _fallbackModel(fileName, 'Could not parse XML document: $e');
     }
   }
 
-  /// 7. Parses Binary Excel XLS / XLSB / XLW / XLT
-  static ParsedWordDoc _parseBinaryXlsBytes(Uint8List bytes, String fileName) {
+  /// 7. Binary XLS Parser
+  static WordDocModel _parseBinaryXlsBytes(Uint8List bytes, String fileName) {
     try {
       final docTitle = fileName.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
       final List<String> extracted = [];
@@ -601,46 +1143,50 @@ class WordEngine {
           return false;
         }
         return s.trim().length >= 2;
-      }).map((s) => s.trim()).toList();
+      }).map((s) => _sanitizeForPdf(s.trim())).toList();
 
-      final List<List<String>> tableRows = [];
-      final List<WordParagraph> paragraphs = [];
-
+      final List<WordTableRowNode> tableRows = [];
       if (cleanStrings.length >= 4) {
         int cols = 4;
         if (cleanStrings.length % 3 == 0 && cleanStrings.length % 4 != 0) cols = 3;
         for (int idx = 0; idx < cleanStrings.length; idx += cols) {
           final row = cleanStrings.skip(idx).take(cols).toList();
-          tableRows.add(row);
-          final line = row.join(' | ');
-          paragraphs.add(WordParagraph(fullText: line, runs: [WordTextRun(text: line)]));
-        }
-        _normalizeTable(tableRows);
-      } else {
-        for (final s in cleanStrings) {
-          paragraphs.add(WordParagraph(fullText: s, runs: [WordTextRun(text: s)]));
+          final cells = row.map((val) => WordTableCellNode(
+            paragraphs: [WordParagraphNode(runs: [WordTextRun(text: val)], fullText: val)],
+            text: val,
+          )).toList();
+          tableRows.add(WordTableRowNode(cells: cells, isHeader: idx == 0));
         }
       }
 
-      return ParsedWordDoc(
+      final List<WordDocNode> nodes = [];
+      if (tableRows.isNotEmpty) {
+        nodes.add(WordTableNode(rows: tableRows, maxCols: 4));
+      } else {
+        for (final s in cleanStrings) {
+          nodes.add(WordParagraphNode(runs: [WordTextRun(text: s)], fullText: s));
+        }
+      }
+
+      return WordDocModel(
         title: docTitle,
-        paragraphs: paragraphs,
-        tableData: tableRows.isNotEmpty ? tableRows : null,
-        totalCharacters: paragraphs.fold(0, (s, p) => s + p.fullText.length),
-        totalWords: paragraphs.fold(0, (s, p) => s + p.fullText.split(RegExp(r'\s+')).length),
-        isTable: tableRows.isNotEmpty,
+        nodes: nodes,
+        isLandscape: true,
+        marginPt: 24.0,
+        totalCharacters: cleanStrings.fold(0, (sum, s) => sum + s.length),
+        totalWords: cleanStrings.length * 2,
       );
     } catch (e) {
-      return _fallbackDoc(fileName, 'Could not parse Excel binary file: $e');
+      return _fallbackModel(fileName, 'Could not parse Excel binary file: $e');
     }
   }
 
-  /// 8. Parses Legacy Word DOC (RTF, CFBF binary, or plain text)
-  static ParsedWordDoc _parseDocBytes(Uint8List bytes, String fileName) {
+  /// 8. Legacy Word DOC (RTF or Binary CFBF) Parser
+  static WordDocModel _parseDocBytes(Uint8List bytes, String fileName) {
     try {
       final docTitle = fileName.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
 
-      // Check if RTF format
+      // RTF format check
       if (bytes.length >= 5 &&
           bytes[0] == 0x7B &&
           bytes[1] == 0x5C &&
@@ -648,32 +1194,33 @@ class WordEngine {
           bytes[3] == 0x74 &&
           bytes[4] == 0x66) {
         final rtfStr = latin1.decode(bytes);
-        final cleanText = rtfStr
+        final cleanText = _sanitizeForPdf(rtfStr
             .replaceAll(RegExp(r'\\[a-zA-Z]+(-?\d+)? ?'), '')
             .replaceAll(RegExp(r'[{}]'), '')
-            .trim();
+            .trim());
         final rawLines = cleanText.split(RegExp(r'\r?\n+'));
-        final List<WordParagraph> paragraphs = [];
+        final List<WordDocNode> nodes = [];
         for (final line in rawLines) {
           final t = line.trim();
           if (t.isNotEmpty) {
-            paragraphs.add(WordParagraph(
-              fullText: t,
+            nodes.add(WordParagraphNode(
               runs: [WordTextRun(text: t)],
+              fullText: t,
             ));
           }
         }
-        return ParsedWordDoc(
+        return WordDocModel(
           title: docTitle,
-          paragraphs: paragraphs,
+          nodes: nodes,
+          isLandscape: false,
+          marginPt: 36.0,
           totalCharacters: cleanText.length,
           totalWords: cleanText.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length,
-          isTable: false,
         );
       }
 
-      // Check if Binary OLE CFBF (Word 97-2004)
-      final List<WordParagraph> paragraphs = [];
+      // Binary CFBF (Word 97-2004)
+      final List<WordDocNode> nodes = [];
       final StringBuffer currentWord = StringBuffer();
       final List<String> extractedStrings = [];
 
@@ -713,61 +1260,25 @@ class WordEngine {
       }).toList();
 
       for (final s in filteredStrings) {
-        final t = s.trim();
+        final t = _sanitizeForPdf(s.trim());
         if (t.isNotEmpty) {
-          paragraphs.add(WordParagraph(
-            fullText: t,
+          nodes.add(WordParagraphNode(
             runs: [WordTextRun(text: t)],
+            fullText: t,
           ));
         }
       }
 
-      if (paragraphs.isEmpty) {
-        final plain = utf8.decode(bytes, allowMalformed: true);
-        final lines = plain.split(RegExp(r'[\r\n\x00-\x08\x0B\x0C\x0E-\x1F]+'));
-        for (final line in lines) {
-          final t = line.trim();
-          if (t.length >= 4 && t.codeUnits.every((c) => c >= 32 && c <= 126)) {
-            paragraphs.add(WordParagraph(
-              fullText: t,
-              runs: [WordTextRun(text: t)],
-            ));
-          }
-        }
-      }
-
-      int totalChars = 0;
-      int totalWords = 0;
-      for (final p in paragraphs) {
-        totalChars += p.fullText.length;
-        totalWords += p.fullText.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length;
-      }
-
-      return ParsedWordDoc(
+      return WordDocModel(
         title: docTitle,
-        paragraphs: paragraphs,
-        totalCharacters: totalChars,
-        totalWords: totalWords,
-        isTable: false,
+        nodes: nodes,
+        isLandscape: false,
+        marginPt: 36.0,
+        totalCharacters: filteredStrings.fold(0, (s, w) => s + w.length),
+        totalWords: filteredStrings.length,
       );
     } catch (e) {
-      return _fallbackDoc(fileName, 'Could not parse binary DOC file: $e');
-    }
-  }
-
-  static void _normalizeTable(List<List<String>> table) {
-    if (table.isEmpty) return;
-    int maxCols = 0;
-    for (final row in table) {
-      if (row.length > maxCols) maxCols = row.length;
-    }
-    if (maxCols > 8) maxCols = 8;
-    for (final row in table) {
-      if (row.length < maxCols) {
-        row.addAll(List.filled(maxCols - row.length, ''));
-      } else if (row.length > maxCols) {
-        row.removeRange(maxCols, row.length);
-      }
+      return _fallbackModel(fileName, 'Could not parse binary DOC file: $e');
     }
   }
 
@@ -791,42 +1302,66 @@ class WordEngine {
     return cells;
   }
 
-  static ParsedWordDoc _fallbackDoc(String fileName, String note) {
+  static WordDocModel _fallbackModel(String fileName, String note) {
     final title = fileName.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
-    return ParsedWordDoc(
+    return WordDocModel(
       title: title,
-      paragraphs: [
-        WordParagraph(
+      nodes: [
+        WordParagraphNode(
+          runs: [WordTextRun(text: title, isBold: true, fontSize: 16)],
           fullText: title,
           isHeading: true,
           headingLevel: 1,
-          runs: [WordTextRun(text: title, isBold: true)],
         ),
-        WordParagraph(
-          fullText: 'Document imported from: $fileName',
-          runs: [WordTextRun(text: 'Document imported from: $fileName')],
+        WordParagraphNode(
+          runs: [WordTextRun(text: 'Document: $fileName')],
+          fullText: 'Document: $fileName',
         ),
-        WordParagraph(
-          fullText: note,
+        WordParagraphNode(
           runs: [WordTextRun(text: note)],
+          fullText: note,
         ),
       ],
       totalCharacters: title.length,
       totalWords: 5,
-      isTable: false,
     );
   }
 
-  /// Converts one or multiple Word/Spreadsheet/Data documents into a polished, high quality PDF
+  /// Converts one or multiple Word/Spreadsheet/Data documents into a high-fidelity PDF
   static Future<PdfEngineResult> convertWordFilesToPdf({
     required List<SelectedWordItem> items,
     String? customName,
+    String orientation = 'Auto', // 'Auto', 'Portrait', 'Landscape'
+    double pageMargin = 36.0,
+    bool addPageNumbers = true,
   }) async {
     if (items.isEmpty) {
       throw Exception('No files provided for conversion');
     }
 
     final pdf = pw.Document();
+
+    // Load Unicode fonts with timeout; gracefully fall back to standard fonts
+    pw.Font? regularFont;
+    pw.Font? boldFont;
+    pw.Font? italicFont;
+    pw.Font? boldItalicFont;
+    try {
+      regularFont = await PdfGoogleFonts.robotoRegular().timeout(const Duration(seconds: 2));
+      boldFont = await PdfGoogleFonts.robotoBold().timeout(const Duration(seconds: 2));
+      italicFont = await PdfGoogleFonts.robotoItalic().timeout(const Duration(seconds: 2));
+      boldItalicFont = await PdfGoogleFonts.robotoBoldItalic().timeout(const Duration(seconds: 2));
+    } catch (_) {
+      // Safe fallback: standard Helvetica fonts with Unicode sanitized characters
+    }
+
+    final theme = pw.ThemeData.withFont(
+      base: regularFont,
+      bold: boldFont,
+      italic: italicFont,
+      boldItalic: boldItalicFont,
+    );
+
     final primaryName = customName?.trim().isNotEmpty == true
         ? customName!.trim()
         : items.first.name.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
@@ -837,188 +1372,225 @@ class WordEngine {
             ? '${primaryName}_converted'
             : 'ConvertedDocs_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}');
 
-    final wordBlue = PdfColor.fromInt(0xFF185ABD);
-    final excelGreen = PdfColor.fromInt(0xFF107C41);
-    final accentDark = PdfColor.fromInt(0xFF0F172A);
+    final darkTextColor = PdfColor.fromInt(0xFF1E293B);
+    final heading1Color = PdfColor.fromInt(0xFF0F172A);
+    final heading2Color = PdfColor.fromInt(0xFF1E3A8A);
 
     for (int docIdx = 0; docIdx < items.length; docIdx++) {
       final item = items[docIdx];
-      final parsed = await parseWordFile(item.path);
-      final isSpreadsheet = parsed.isTable && parsed.tableData != null && parsed.tableData!.isNotEmpty;
+      final model = await parseToDocModel(item.path);
+
+      PdfPageFormat pageFormat;
+      if (orientation == 'Landscape') {
+        pageFormat = PdfPageFormat.a4.landscape;
+      } else if (orientation == 'Portrait') {
+        pageFormat = PdfPageFormat.a4;
+      } else {
+        pageFormat = model.isLandscape ? PdfPageFormat.a4.landscape : PdfPageFormat.a4;
+      }
+
+      final double appliedMargin = pageMargin;
 
       pdf.addPage(
         pw.MultiPage(
-          pageFormat: isSpreadsheet ? PdfPageFormat.a4.landscape : PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.symmetric(horizontal: 36, vertical: 36),
-          header: (ctx) => pw.Container(
-            alignment: pw.Alignment.centerRight,
-            padding: const pw.EdgeInsets.only(bottom: 10),
-            decoration: const pw.BoxDecoration(
-              border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.5)),
-            ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(
-                  parsed.title,
-                  style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 9),
-                ),
-                pw.Text(
-                  'PDFDost Document Engine',
-                  style: const pw.TextStyle(color: PdfColors.grey500, fontSize: 9),
-                ),
-              ],
-            ),
-          ),
-          footer: (ctx) => pw.Container(
-            alignment: pw.Alignment.center,
-            padding: const pw.EdgeInsets.only(top: 10),
-            decoration: const pw.BoxDecoration(
-              border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300, width: 0.5)),
-            ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(
-                  'Generated on ${DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now())}',
-                  style: const pw.TextStyle(color: PdfColors.grey500, fontSize: 8),
-                ),
-                pw.Text(
-                  'Page ${ctx.pageNumber} of ${ctx.pagesCount}',
-                  style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 9),
-                ),
-              ],
-            ),
-          ),
+          theme: theme,
+          pageFormat: pageFormat,
+          margin: pw.EdgeInsets.all(appliedMargin),
+          maxPages: 1000,
+          footer: addPageNumbers
+              ? (ctx) => pw.Container(
+                    alignment: pw.Alignment.centerRight,
+                    padding: const pw.EdgeInsets.only(top: 8),
+                    child: pw.Text(
+                      'Page ${ctx.pageNumber} of ${ctx.pagesCount}',
+                      style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 8.5),
+                    ),
+                  )
+              : null,
           build: (pw.Context ctx) {
             final List<pw.Widget> widgets = [];
-            final primaryColor = isSpreadsheet ? excelGreen : wordBlue;
 
-            // Document Header Banner
-            widgets.add(
-              pw.Container(
-                margin: const pw.EdgeInsets.only(bottom: 18),
-                padding: const pw.EdgeInsets.all(12),
-                decoration: pw.BoxDecoration(
-                  color: PdfColor.fromInt(0xFFF1F5F9),
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-                  border: pw.Border.all(color: PdfColor.fromInt(0xFFE2E8F0), width: 1),
+            if (model.nodes.isEmpty) {
+              widgets.add(
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(vertical: 24),
+                  child: pw.Text(
+                    'No readable text or content found in ${item.name}.',
+                    style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 11),
+                  ),
                 ),
-                child: pw.Row(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.Container(
-                      width: 32,
-                      height: 32,
-                      decoration: pw.BoxDecoration(
-                        color: primaryColor,
-                        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+              );
+              return widgets;
+            }
+
+            for (final node in model.nodes) {
+              if (node is WordParagraphNode) {
+                if (node.isPageBreak) {
+                  widgets.add(pw.NewPage());
+                  continue;
+                }
+
+                if (node.fullText.trim().isEmpty) {
+                  widgets.add(pw.SizedBox(height: 8));
+                  continue;
+                }
+
+                pw.TextAlign textAlign;
+                switch (node.alignment) {
+                  case 'center':
+                    textAlign = pw.TextAlign.center;
+                    break;
+                  case 'right':
+                    textAlign = pw.TextAlign.right;
+                    break;
+                  case 'justify':
+                    textAlign = pw.TextAlign.justify;
+                    break;
+                  default:
+                    textAlign = pw.TextAlign.left;
+                }
+
+                if (node.isHeading) {
+                  final double fontSize = node.headingLevel == 1
+                      ? 18.0
+                      : (node.headingLevel == 2 ? 15.0 : 13.0);
+                  final color = node.headingLevel == 1 ? heading1Color : heading2Color;
+
+                  widgets.add(
+                    pw.Padding(
+                      padding: pw.EdgeInsets.only(
+                        top: node.spaceBefore > 0 ? node.spaceBefore : 12,
+                        bottom: node.spaceAfter > 0 ? node.spaceAfter : 4,
                       ),
-                      alignment: pw.Alignment.center,
                       child: pw.Text(
-                        item.extension.toUpperCase(),
+                        node.fullText,
+                        textAlign: textAlign,
                         style: pw.TextStyle(
-                          color: PdfColors.white,
-                          fontSize: 9,
+                          fontSize: fontSize,
                           fontWeight: pw.FontWeight.bold,
+                          color: color,
                         ),
                       ),
                     ),
-                    pw.SizedBox(width: 10),
-                    pw.Expanded(
-                      child: pw.Column(
+                  );
+                } else if (node.isBullet) {
+                  final spans = node.runs.map((r) {
+                    return pw.TextSpan(
+                      text: r.text,
+                      style: pw.TextStyle(
+                        fontWeight: r.isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+                        fontStyle: r.isItalic ? pw.FontStyle.italic : pw.FontStyle.normal,
+                        decoration: r.isUnderline ? pw.TextDecoration.underline : null,
+                        fontSize: r.fontSize,
+                        color: r.color ?? darkTextColor,
+                        lineSpacing: 2.0,
+                      ),
+                    );
+                  }).toList();
+
+                  widgets.add(
+                    pw.Padding(
+                      padding: pw.EdgeInsets.only(
+                        left: (node.bulletIndent * 14.0) + 4,
+                        top: node.spaceBefore,
+                        bottom: node.spaceAfter,
+                      ),
+                      child: pw.Row(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
-                          pw.Text(
-                            parsed.title.isNotEmpty ? parsed.title : item.name,
-                            style: pw.TextStyle(
-                              fontSize: 15,
-                              fontWeight: pw.FontWeight.bold,
-                              color: accentDark,
+                          pw.Text('*  ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                          pw.Expanded(
+                            child: pw.RichText(
+                              textAlign: textAlign,
+                              text: pw.TextSpan(children: spans),
                             ),
-                          ),
-                          pw.SizedBox(height: 3),
-                          pw.Text(
-                            'Source: ${item.name} (${item.formattedSize})  •  Format: .${item.extension}',
-                            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            );
+                  );
+                } else {
+                  final spans = node.runs.map((r) {
+                    return pw.TextSpan(
+                      text: r.text,
+                      style: pw.TextStyle(
+                        fontWeight: r.isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+                        fontStyle: r.isItalic ? pw.FontStyle.italic : pw.FontStyle.normal,
+                        decoration: r.isUnderline ? pw.TextDecoration.underline : null,
+                        fontSize: r.fontSize,
+                        color: r.color ?? darkTextColor,
+                        lineSpacing: 2.0,
+                      ),
+                    );
+                  }).toList();
 
-            // Table rendering for spreadsheets & CSV
-            if (isSpreadsheet) {
-              final tableData = parsed.tableData!;
-              widgets.add(
-                pw.TableHelper.fromTextArray(
-                  context: ctx,
-                  headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 9),
-                  headerDecoration: pw.BoxDecoration(color: primaryColor),
-                  rowDecoration: const pw.BoxDecoration(color: PdfColors.grey100),
-                  oddRowDecoration: const pw.BoxDecoration(color: PdfColors.white),
-                  cellStyle: const pw.TextStyle(fontSize: 8.5),
-                  cellAlignment: pw.Alignment.centerLeft,
-                  cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-                  data: tableData,
-                ),
-              );
-            } else {
-              // Paragraph rendering for documents and text
-              if (parsed.paragraphs.isEmpty) {
-                widgets.add(
-                  pw.Padding(
-                    padding: const pw.EdgeInsets.symmetric(vertical: 20),
-                    child: pw.Text(
-                      'No readable text extracted from ${item.name}.',
-                      style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey600),
+                  widgets.add(
+                    pw.Padding(
+                      padding: pw.EdgeInsets.only(
+                        top: node.spaceBefore,
+                        bottom: node.spaceAfter,
+                      ),
+                      child: pw.RichText(
+                        textAlign: textAlign,
+                        text: pw.TextSpan(children: spans),
+                      ),
                     ),
-                  ),
-                );
-              } else {
-                for (final p in parsed.paragraphs) {
-                  if (p.isHeading) {
-                    final double fontSize = p.headingLevel == 1
-                        ? 17
-                        : (p.headingLevel == 2 ? 14 : 12);
-                    widgets.add(
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.only(top: 12, bottom: 4),
-                        child: pw.Text(
-                          p.fullText,
-                          style: pw.TextStyle(
-                            fontSize: fontSize,
-                            fontWeight: pw.FontWeight.bold,
-                            color: p.headingLevel == 1 ? wordBlue : accentDark,
-                          ),
-                        ),
+                  );
+                }
+              } else if (node is WordTableNode) {
+                if (node.rows.isNotEmpty) {
+                  widgets.add(
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.symmetric(vertical: 8),
+                      child: pw.Table(
+                        border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+                        defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
+                        children: node.rows.map((row) {
+                          return pw.TableRow(
+                            decoration: row.isHeader
+                                ? const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F5F9))
+                                : null,
+                            children: row.cells.map((cell) {
+                              return pw.Container(
+                                color: cell.backgroundColor,
+                                padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                                child: pw.Text(
+                                  cell.text,
+                                  style: pw.TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: row.isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+                                    color: darkTextColor,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        }).toList(),
                       ),
-                    );
-                  } else {
-                    final spans = p.runs.map((r) {
-                      return pw.TextSpan(
-                        text: r.text,
-                        style: pw.TextStyle(
-                          fontWeight: r.isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-                          fontStyle: r.isItalic ? pw.FontStyle.italic : pw.FontStyle.normal,
-                          decoration: r.isUnderline ? pw.TextDecoration.underline : null,
-                          fontSize: 10.5,
-                          color: accentDark,
-                          lineSpacing: 2.5,
-                        ),
-                      );
-                    }).toList();
+                    ),
+                  );
+                }
+              } else if (node is WordImageNode) {
+                try {
+                  final memImg = pw.MemoryImage(node.bytes);
+                  pw.Alignment align = pw.Alignment.center;
+                  if (node.alignment == 'left') align = pw.Alignment.centerLeft;
+                  if (node.alignment == 'right') align = pw.Alignment.centerRight;
 
-                    widgets.add(
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.only(bottom: 6),
-                        child: pw.RichText(text: pw.TextSpan(children: spans)),
+                  widgets.add(
+                    pw.Container(
+                      alignment: align,
+                      padding: const pw.EdgeInsets.symmetric(vertical: 8),
+                      child: pw.Image(
+                        memImg,
+                        width: node.widthPt.clamp(50.0, 480.0),
+                        height: node.heightPt.clamp(50.0, 360.0),
+                        fit: pw.BoxFit.contain,
                       ),
-                    );
-                  }
+                    ),
+                  );
+                } catch (_) {
+                  // Skip invalid/unsupported image encoding gracefully
                 }
               }
             }

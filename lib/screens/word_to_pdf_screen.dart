@@ -36,6 +36,12 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
 
   final List<SelectedWordItem> _selectedFiles = [];
 
+  // PDF Document Settings
+  late TextEditingController _docNameController;
+  String _pageOrientation = 'Auto'; // Auto, Portrait, Landscape
+  double _pageMargin = 36.0; // 36.0 (Standard), 18.0 (Compact), 8.0 (None)
+  bool _addPageNumbers = true;
+
   late AnimationController _fabAnimController;
   late Animation<double> _fabRotationAnim;
 
@@ -60,6 +66,10 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
   @override
   void initState() {
     super.initState();
+    _docNameController = TextEditingController(
+      text: 'Word_Doc_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}',
+    );
+
     _fabAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
@@ -72,6 +82,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
   @override
   void dispose() {
     _fabAnimController.dispose();
+    _docNameController.dispose();
     super.dispose();
   }
 
@@ -205,7 +216,6 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
             final lower = filePath.toLowerCase();
             final ext = lower.contains('.') ? lower.split('.').last : '';
 
-            // Check if extension is supported
             if (!supportedExtensions.contains(ext)) {
               if (forceAny) continue;
             }
@@ -236,7 +246,11 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                 _selectedFiles.add(item);
               }
             }
-            _activeChip = 0; // Focus on selected files
+            if (_selectedFiles.isNotEmpty) {
+              final baseName = _selectedFiles.first.name.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
+              _docNameController.text = '${baseName}_converted';
+            }
+            _activeChip = 0;
           });
 
           if (mounted) {
@@ -282,6 +296,10 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
       final removed = _selectedFiles[index];
       setState(() {
         _selectedFiles.removeAt(index);
+        if (_selectedFiles.isNotEmpty) {
+          final baseName = _selectedFiles.first.name.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
+          _docNameController.text = '${baseName}_converted';
+        }
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -308,7 +326,14 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
     setState(() => _isConverting = true);
 
     try {
-      final result = await WordEngine.convertWordFilesToPdf(items: _selectedFiles);
+      final docName = _docNameController.text.trim();
+      final result = await WordEngine.convertWordFilesToPdf(
+        items: _selectedFiles,
+        customName: docName.isNotEmpty ? docName : null,
+        orientation: _pageOrientation,
+        pageMargin: _pageMargin,
+        addPageNumbers: _addPageNumbers,
+      );
 
       // Save to public storage
       try {
@@ -438,7 +463,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color: _activeChip == 0
-                                    ? (widget.isDark ? const Color(0xFF4B5563) : const Color(0xFF94A3B8))
+                                    ? const Color(0xFF185ABD)
                                     : Colors.transparent,
                                 width: 1.5,
                               ),
@@ -513,7 +538,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color: _activeChip == 1
-                                    ? (widget.isDark ? const Color(0xFF4B5563) : const Color(0xFF94A3B8))
+                                    ? const Color(0xFF10B981)
                                     : Colors.transparent,
                                 width: 1.5,
                               ),
@@ -577,6 +602,10 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                 Expanded(
                   child: _activeChip == 0 ? _buildSelectedFilesContent() : _buildConvertedPdfsContent(),
                 ),
+
+                // Sticky Convert Action Bar (Part of Column layout - NEVER occluded by SnackBar)
+                if (_selectedFiles.isNotEmpty && _activeChip == 0)
+                  _buildConvertBottomBar(),
               ],
             ),
 
@@ -585,36 +614,31 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
               Positioned.fill(
                 child: GestureDetector(
                   onTap: _closeSpeedDial,
-                  child: Container(color: Colors.black.withOpacity(0.35)),
+                  child: Container(color: Colors.black.withOpacity(0.45)),
                 ),
               ),
 
-            // Expandable Speed Dial (Positioned right above convert button on the right side)
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              bottom: (_selectedFiles.isNotEmpty && _activeChip == 0) ? 92 : 24,
+            // Speed Dial Options & Floating Action Button
+            Positioned(
               right: 20,
+              bottom: (_selectedFiles.isNotEmpty && _activeChip == 0) ? 84 : 20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (_isSpeedDialOpen) ...[
-                    // Browse All Formats
                     _buildSpeedDialOption(
                       icon: Icons.folder_open_rounded,
                       label: 'Import All Supported Formats',
                       onTap: () => _pickWordFilesFromDevice(),
                     ),
                     const SizedBox(height: 10),
-                    // Word DOC / DOCX
                     _buildSpeedDialOption(
                       icon: Icons.description_rounded,
                       label: 'Word (.doc, .docx)',
                       onTap: () => _pickWordFilesFromDevice(specificExtensions: ['doc', 'docx']),
                     ),
                     const SizedBox(height: 10),
-                    // Excel & Sheets
                     _buildSpeedDialOption(
                       icon: Icons.table_chart_rounded,
                       label: 'Excel (.xlsx, .xls, .csv, .ods)',
@@ -623,14 +647,12 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                       ]),
                     ),
                     const SizedBox(height: 10),
-                    // Text & XML
                     _buildSpeedDialOption(
                       icon: Icons.article_rounded,
                       label: 'Text & XML (.txt, .xml)',
                       onTap: () => _pickWordFilesFromDevice(specificExtensions: ['txt', 'xml', 'prn']),
                     ),
                     const SizedBox(height: 10),
-                    // All Documents Fallback
                     _buildSpeedDialOption(
                       icon: Icons.file_present_rounded,
                       label: 'Browse All Documents',
@@ -639,14 +661,14 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                     const SizedBox(height: 14),
                   ],
 
-                  // Main Coral Action Button
+                  // Main Coral FAB
                   GestureDetector(
                     onTap: _toggleSpeedDial,
                     child: Container(
-                      width: 58,
-                      height: 58,
+                      width: 56,
+                      height: 56,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFA9282), // Coral theme
+                        color: const Color(0xFFFA9282),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -664,7 +686,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                           child: const Icon(
                             Icons.add_rounded,
                             color: Colors.white,
-                            size: 32,
+                            size: 30,
                           ),
                         ),
                       ),
@@ -673,64 +695,6 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                 ],
               ),
             ),
-
-            // Bottom Convert Action Bar
-            if (_selectedFiles.isNotEmpty && _activeChip == 0)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 90, 16),
-                  decoration: BoxDecoration(
-                    color: widget.isDark ? const Color(0xFF16171B) : Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
-                        blurRadius: 12,
-                        offset: const Offset(0, -3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF185ABD),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            elevation: 2,
-                          ),
-                          onPressed: _isConverting ? null : _convertToPdf,
-                          icon: _isConverting
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
-                          label: Text(
-                            _isConverting
-                                ? 'Converting...'
-                                : 'Convert to PDF (${_selectedFiles.length})',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
 
             // Converting Loading Overlay
             if (_isConverting)
@@ -758,16 +722,16 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                         const CircularProgressIndicator(color: Color(0xFF185ABD)),
                         const SizedBox(height: 18),
                         Text(
-                          'Converting Documents to PDF...',
+                          'Converting & Formatting Document...',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 15,
                             color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Extracting tables, text & compiling vector pages...',
+                          'Preserving headings, tables, fonts & layout',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,
@@ -785,6 +749,60 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
     );
   }
 
+  Widget _buildConvertBottomBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      decoration: BoxDecoration(
+        color: widget.isDark ? const Color(0xFF16171B) : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: widget.isDark ? const Color(0xFF2A2D35) : const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 12,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF185ABD),
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          onPressed: _isConverting ? null : _convertToPdf,
+          child: _isConverting
+              ? const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                    SizedBox(width: 12),
+                    Text('Converting Documents to PDF...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 22),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Convert ${_selectedFiles.length} File${_selectedFiles.length == 1 ? '' : 's'} to PDF',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSpeedDialOption({
     required IconData icon,
     required String label,
@@ -793,10 +811,10 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: widget.isDark ? const Color(0xFF1A1B20) : Colors.white,
-          borderRadius: BorderRadius.circular(30),
+          color: widget.isDark ? const Color(0xFF1E2026) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: widget.isDark ? const Color(0xFF2E303A) : const Color(0xFFCBD5E1),
             width: 1.2,
@@ -851,12 +869,11 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                 onPressed: () => _pickWordFilesFromDevice(),
                 icon: const Icon(Icons.file_open_rounded, color: Colors.white),
                 label: const Text(
-                  'Browse Files (.doc, .xlsx, .csv, .txt)',
+                  'Browse Files (.doc, .docx, .xlsx, .txt)',
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(height: 16),
-              // Supported formats badge pills
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
@@ -891,137 +908,287 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
       );
     }
 
-    return Column(
+    final cardBg = widget.isDark ? const Color(0xFF1E2026) : Colors.white;
+    final borderColor = widget.isDark ? const Color(0xFF2E303A) : const Color(0xFFE2E8F0);
+    final primaryTextColor = widget.isDark ? Colors.white : const Color(0xFF0F172A);
+    final secondaryTextColor = widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       children: [
         // Header with count & clear
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${_selectedFiles.length} File(s) in Conversion Order',
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${_selectedFiles.length} File(s) in Conversion Order',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: primaryTextColor,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _clearSelectedFiles,
+              icon: const Icon(Icons.delete_sweep_rounded, size: 18, color: Color(0xFFEF4444)),
+              label: const Text('Clear', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        // List of selected files
+        ...List.generate(_selectedFiles.length, (index) {
+          final item = _selectedFiles[index];
+          final formatColor = _getFormatColor(item.extension);
+          final formatIcon = _getFormatIcon(item.extension);
+          final categoryName = _getFormatCategory(item.extension);
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              leading: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: formatColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(formatIcon, color: Colors.white, size: 24),
+                  ),
+                  Positioned(
+                    right: -4,
+                    bottom: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        item.extension.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              title: Text(
+                item.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 14,
+                  color: primaryTextColor,
                 ),
               ),
-              TextButton.icon(
-                onPressed: _clearSelectedFiles,
-                icon: const Icon(Icons.delete_sweep_rounded, size: 18, color: Color(0xFFEF4444)),
-                label: const Text('Clear', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13)),
+              subtitle: Text(
+                '${item.formattedSize}  •  $categoryName',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: secondaryTextColor,
+                ),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Remove',
+                    icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF94A3B8)),
+                    onPressed: () => _removeFile(index),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+
+        const SizedBox(height: 12),
+
+        // PDF Document Settings Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.tune_rounded, color: Color(0xFF185ABD), size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'PDF Document Settings',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: primaryTextColor),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Document Name Input
+              Text('Document Name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: secondaryTextColor)),
+              const SizedBox(height: 6),
+              Container(
+                decoration: BoxDecoration(
+                  color: widget.isDark ? const Color(0xFF141518) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: borderColor),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _docNameController,
+                        style: TextStyle(color: primaryTextColor, fontSize: 13),
+                        decoration: const InputDecoration(border: InputBorder.none, hintText: 'Enter PDF name'),
+                      ),
+                    ),
+                    const Text('.pdf', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF185ABD))),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // Page Orientation
+              Text('Page Orientation', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: secondaryTextColor)),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  _buildOptionChip(
+                    label: 'Auto',
+                    selected: _pageOrientation == 'Auto',
+                    onTap: () => setState(() => _pageOrientation = 'Auto'),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildOptionChip(
+                    label: 'Portrait',
+                    selected: _pageOrientation == 'Portrait',
+                    onTap: () => setState(() => _pageOrientation = 'Portrait'),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildOptionChip(
+                    label: 'Landscape',
+                    selected: _pageOrientation == 'Landscape',
+                    onTap: () => setState(() => _pageOrientation = 'Landscape'),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // Page Margins
+              Text('Page Margins', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: secondaryTextColor)),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  _buildOptionChip(
+                    label: 'Standard',
+                    selected: _pageMargin == 36.0,
+                    onTap: () => setState(() => _pageMargin = 36.0),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildOptionChip(
+                    label: 'Compact',
+                    selected: _pageMargin == 18.0,
+                    onTap: () => setState(() => _pageMargin = 18.0),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildOptionChip(
+                    label: 'None',
+                    selected: _pageMargin == 8.0,
+                    onTap: () => setState(() => _pageMargin = 8.0),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // Add Page Numbers Toggle
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Page Numbers', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: primaryTextColor)),
+                      Text('Show page numbers in footer', style: TextStyle(fontSize: 11, color: secondaryTextColor)),
+                    ],
+                  ),
+                  Switch(
+                    value: _addPageNumbers,
+                    activeColor: const Color(0xFF185ABD),
+                    onChanged: (val) => setState(() => _addPageNumbers = val),
+                  ),
+                ],
               ),
             ],
           ),
         ),
 
-        // Reorderable list of files
-        Expanded(
-          child: ReorderableListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-            itemCount: _selectedFiles.length,
-            onReorder: (int oldIndex, int newIndex) {
-              setState(() {
-                if (oldIndex < newIndex) {
-                  newIndex -= 1;
-                }
-                final item = _selectedFiles.removeAt(oldIndex);
-                _selectedFiles.insert(newIndex, item);
-              });
-            },
-            itemBuilder: (ctx, index) {
-              final item = _selectedFiles[index];
-              final formatColor = _getFormatColor(item.extension);
-              final formatIcon = _getFormatIcon(item.extension);
-              final categoryName = _getFormatCategory(item.extension);
+        const SizedBox(height: 32),
+      ],
+    );
+  }
 
-              return Container(
-                key: ValueKey(item.path),
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  color: widget.isDark ? const Color(0xFF1E2026) : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: widget.isDark ? const Color(0xFF2A2D35) : const Color(0xFFE2E8F0),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  leading: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: formatColor,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(formatIcon, color: Colors.white, size: 24),
-                      ),
-                      Positioned(
-                        right: -4,
-                        bottom: -4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.75),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            item.extension.toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  title: Text(
-                    item.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
-                    ),
-                  ),
-                  subtitle: Text(
-                    '${item.formattedSize}  •  $categoryName',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                    ),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: 'Remove',
-                        icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF94A3B8)),
-                        onPressed: () => _removeFile(index),
-                      ),
-                      const Icon(Icons.drag_handle_rounded, color: Color(0xFF94A3B8), size: 22),
-                    ],
-                  ),
-                ),
-              );
-            },
+  Widget _buildOptionChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected
+                ? const Color(0xFF185ABD)
+                : (widget.isDark ? const Color(0xFF141518) : const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF185ABD)
+                  : (widget.isDark ? const Color(0xFF2E303A) : const Color(0xFFCBD5E1)),
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+              color: selected ? Colors.white : (widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569)),
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 
