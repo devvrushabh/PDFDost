@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../services/scanner_engine.dart';
 import '../models/models.dart';
@@ -120,18 +121,23 @@ class _SignatureScannerScreenState extends State<SignatureScannerScreen> {
 
     if (widget.onAddHistoryItem != null) {
       final file = File(_extractedSignaturePath!);
-      final size = await file.length();
-      widget.onAddHistoryItem!(
-        HistoryItem(
-          id: 'sign_${DateTime.now().millisecondsSinceEpoch}',
-          title: 'Signature_${DateTime.now().millisecondsSinceEpoch}.png',
-          toolName: 'Signature Scanner',
-          timestamp: DateTime.now(),
-          filePath: _extractedSignaturePath!,
-          fileSizeBytes: size,
-          actionType: 'signature',
-        ),
+      final sizeBytes = await file.length();
+      final sizeStr = sizeBytes < 1024
+          ? '$sizeBytes B'
+          : sizeBytes < 1024 * 1024
+              ? '${(sizeBytes / 1024).toStringAsFixed(1)} KB'
+              : '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+
+      final historyEntry = HistoryItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: 'Signature_${DateTime.now().millisecondsSinceEpoch}.png',
+        path: _extractedSignaturePath!,
+        pages: 1,
+        size: sizeStr,
+        date: DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now()),
+        toolType: 'Signature Scanner',
       );
+      widget.onAddHistoryItem!(historyEntry);
     }
 
     if (mounted) {

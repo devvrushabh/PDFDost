@@ -519,10 +519,10 @@ class ScannerEngine {
     if (byteData == null) throw Exception('Failed to read image pixel data');
     final pixels = Uint8List.fromList(byteData.buffer.asUint8List());
 
-    final penR = penColor.red;
-    final penG = penColor.green;
-    final penB = penColor.blue;
-    final penA = penColor.alpha;
+    final penA = (penColor.value >> 24) & 0xFF;
+    final penR = (penColor.value >> 16) & 0xFF;
+    final penG = (penColor.value >> 8) & 0xFF;
+    final penB = penColor.value & 0xFF;
 
     // Threshold cutoff (0-255)
     final lumCutoff = (threshold * 255).clamp(20, 250).toInt();
