@@ -14,6 +14,7 @@ import 'image_to_pdf_screen.dart';
 import 'merge_pdf_screen.dart';
 import 'split_pdf_screen.dart';
 import 'word_to_pdf_screen.dart';
+import 'scanner_camera_screen.dart';
 
 class ToolsTab extends StatefulWidget {
   final List<HistoryItem> historyItems;
@@ -96,6 +97,17 @@ class _ToolsTabState extends State<ToolsTab> {
   }
 
   // --- TOOL IMPLEMENTATIONS ---
+
+  void _openScannerScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => ScannerCameraScreen(
+          isDark: widget.isDark,
+          onAddHistoryItem: widget.onAddHistoryItem,
+        ),
+      ),
+    );
+  }
 
   void _openImageToPdfScreen() {
     Navigator.of(context).push(
@@ -1030,9 +1042,121 @@ class _ToolsTabState extends State<ToolsTab> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // 3-Column Grid matching Screenshot 5
-        GridView.builder(
-          padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
+        ListView(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 32),
+          children: [
+            // Featured Doc Scanner Hero Card
+            GestureDetector(
+              onTap: _openScannerScreen,
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: widget.isDark
+                        ? [const Color(0xFF1E2028), const Color(0xFF261D22)]
+                        : [Colors.white, const Color(0xFFFFF1F0)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFFFA9282).withOpacity(0.4),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFA9282).withOpacity(0.15),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFA9282), Color(0xFFE5322D)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFA9282).withOpacity(0.4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.document_scanner_rounded, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Doc Scanner Studio',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFA9282).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'PRO',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFFA9282),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Smart 4-corner crop, Magic Color, ID card & book split scanner',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFA9282).withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFFA9282), size: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // 3-Column Grid matching Screenshot 5
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             mainAxisSpacing: 14,
@@ -1084,6 +1208,8 @@ class _ToolsTabState extends State<ToolsTab> {
             );
           },
         ),
+      ],
+    ),
 
         // Processing Overlay
         if (_isProcessing)

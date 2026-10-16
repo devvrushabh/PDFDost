@@ -15,3 +15,4 @@ build/
 android/local.properties
 android/.gradle/
 scratch/
+*.apk

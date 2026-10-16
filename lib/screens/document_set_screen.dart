@@ -10,6 +10,10 @@ import '../models/models.dart';
 import '../services/pdf_engine.dart';
 import '../services/storage_engine.dart';
 import '../widgets/export_modal.dart';
+import '../services/scanner_engine.dart';
+import 'document_crop_screen.dart';
+import 'document_filter_screen.dart';
+import 'scanner_camera_screen.dart';
 
 class DocumentSetScreen extends StatefulWidget {
   final DocumentSet documentSet;
@@ -105,41 +109,92 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
   }
 
   Future<void> _pickCameraPage() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 95,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => ScannerCameraScreen(
+          isDark: widget.isDark,
+          onSaveDocumentSet: (newSet) {
+            setState(() {
+              _set.pages.addAll(newSet.pages);
+              for (int i = 0; i < _set.pages.length; i++) {
+                _set.pages[i].name = '${i + 1}';
+              }
+            });
+            _notifyUpdate();
+          },
+          onAddHistoryItem: widget.onAddHistoryItem,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _cropPage(DocPage page, int index) async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => DocumentCropScreen(
+          imagePath: page.imagePath,
+          isDark: widget.isDark,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      final quad = result['quad'] as QuadPoints;
+      final rot = result['rotation'] as int;
+      final outPath = await ScannerEngine.renderAndSavePage(
+        sourcePath: page.imagePath,
+        quad: quad,
+        filter: DocScanFilter.original,
+        rotationDegrees: rot,
       );
-      if (image != null) {
-        final file = File(image.path);
-        final size = await file.exists() ? await file.length() : 0;
-        _set.pages.add(
-          DocPage(
-            id: 'page_${DateTime.now().millisecondsSinceEpoch}_${_set.pages.length + 1}',
-            imagePath: image.path,
-            name: '${_set.pages.length + 1}',
-            sizeBytes: size,
-            date: DateTime.now(),
-            isNew: true,
-          ),
-        );
-        _notifyUpdate();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Added camera page to ${_set.title}'),
-              duration: const Duration(seconds: 1),
-              backgroundColor: const Color(0xFF10B981),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Camera error: $e')),
-        );
-      }
+      final f = File(outPath);
+      final size = await f.exists() ? await f.length() : page.sizeBytes;
+      setState(() {
+        page.imagePath = outPath;
+        page.sizeBytes = size;
+      });
+      _notifyUpdate();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✓ Page cropped successfully')),
+      );
+    }
+  }
+
+  Future<void> _filterPage(DocPage page, int index) async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => DocumentFilterScreen(
+          imagePath: page.imagePath,
+          isDark: widget.isDark,
+          showApplyToAll: false,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      final filter = result['filter'] as DocScanFilter;
+      final brightness = result['brightness'] as double;
+      final contrast = result['contrast'] as double;
+      final outPath = await ScannerEngine.renderAndSavePage(
+        sourcePath: page.imagePath,
+        quad: QuadPoints.full(),
+        filter: filter,
+        rotationDegrees: 0,
+        brightness: brightness,
+        contrast: contrast,
+      );
+      final f = File(outPath);
+      final size = await f.exists() ? await f.length() : page.sizeBytes;
+      setState(() {
+        page.imagePath = outPath;
+        page.sizeBytes = size;
+      });
+      _notifyUpdate();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✓ Filter applied successfully')),
+      );
     }
   }
 
@@ -734,6 +789,10 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
                                 onSelected: (val) {
                                   if (val == 'preview') {
                                     _previewPage(page, index);
+                                  } else if (val == 'crop') {
+                                    _cropPage(page, index);
+                                  } else if (val == 'filter') {
+                                    _filterPage(page, index);
                                   } else if (val == 'up' && index > 0) {
                                     _movePage(index, index - 1);
                                   } else if (val == 'down' && index < _set.pages.length - 1) {
@@ -750,6 +809,26 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
                                         Icon(Icons.fullscreen_rounded, size: 18),
                                         SizedBox(width: 8),
                                         Text('View Page'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'crop',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.crop_rounded, size: 18, color: Color(0xFFFA9282)),
+                                        SizedBox(width: 8),
+                                        Text('Crop & Adjust Edges'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'filter',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.auto_awesome_rounded, size: 18, color: Color(0xFF0288D1)),
+                                        SizedBox(width: 8),
+                                        Text('Color Filters'),
                                       ],
                                     ),
                                   ),

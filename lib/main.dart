@@ -1,10 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 import 'models/models.dart';
 import 'screens/files_tab.dart';
-import 'screens/home_tab.dart';
 import 'screens/image_to_pdf_screen.dart';
 import 'screens/merge_pdf_screen.dart';
 import 'screens/split_pdf_screen.dart';
@@ -128,11 +125,9 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentTabIndex = 0; // 0: Home, 1: Files, 2: Tools, 3: Settings
-  final List<SelectedImageItem> _selectedImages = [];
+  int _currentTabIndex = 0; // 0: Files, 1: Tools, 2: Settings
   final List<HistoryItem> _historyItems = [];
   final List<TrashItem> _trashItems = [];
-  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -155,118 +150,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   Future<void> _saveHistory() async {
     await StorageEngine.saveHistory(_historyItems);
-  }
-
-  Future<void> _pickGalleryImages() async {
-    try {
-      final List<XFile> images = await _picker.pickMultiImage();
-      if (images.isNotEmpty) {
-        final List<SelectedImageItem> newItems = [];
-        for (final img in images) {
-          final file = File(img.path);
-          if (await file.exists()) {
-            final size = await file.length();
-            final name = img.name.isNotEmpty ? img.name : file.path.split('/').last;
-            newItems.add(SelectedImageItem(path: file.path, name: name, sizeBytes: size));
-          }
-        }
-        setState(() {
-          for (final item in newItems) {
-            if (!_selectedImages.any((e) => e.path == item.path)) {
-              _selectedImages.add(item);
-            }
-          }
-          _currentTabIndex = 0; // Switch to Home to view selected images
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to pick images: $e')),
-      );
-    }
-  }
-
-  Future<void> _pickCameraImage() async {
-    try {
-      final XFile? image = await _picker.pickImage(source: ImageSource.camera, imageQuality: 95);
-      if (image != null) {
-        final file = File(image.path);
-        if (await file.exists()) {
-          final size = await file.length();
-          final name = image.name.isNotEmpty ? image.name : file.path.split('/').last;
-          setState(() {
-            _selectedImages.add(SelectedImageItem(path: file.path, name: name, sizeBytes: size));
-            _currentTabIndex = 0;
-          });
-        }
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Camera error: $e')),
-      );
-    }
-  }
-
-  void _removeSelectedImage(int index) {
-    setState(() {
-      _selectedImages.removeAt(index);
-    });
-  }
-
-  void _moveSelectedImage(int oldIndex, int newIndex) {
-    if (newIndex < 0 || newIndex >= _selectedImages.length) return;
-    setState(() {
-      final item = _selectedImages.removeAt(oldIndex);
-      _selectedImages.insert(newIndex, item);
-    });
-  }
-
-  void _changeSelectedImagePosition(int currentIndex) {
-    final controller = TextEditingController(text: '${currentIndex + 1}');
-    final cardBg = widget.isDarkMode ? const Color(0xFF1E293B) : Colors.white;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cardBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Change Position', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Move image to new position (1 to ${_selectedImages.length}):'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Page number'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE5322D)),
-            onPressed: () {
-              final target = int.tryParse(controller.text.trim());
-              Navigator.pop(ctx);
-              if (target != null && target >= 1 && target <= _selectedImages.length) {
-                _moveSelectedImage(currentIndex, target - 1);
-              }
-            },
-            child: const Text('Apply', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _clearSelectedImages() {
-    setState(() {
-      _selectedImages.clear();
-    });
   }
 
   void _addHistoryItem(HistoryItem item) {
@@ -486,9 +369,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search_rounded, size: 24),
-            onPressed: () => setState(() => _currentTabIndex = 1),
+            onPressed: () => setState(() => _currentTabIndex = 0),
           ),
-          if (_currentTabIndex == 2)
+          if (_currentTabIndex == 1)
             IconButton(
               icon: const Icon(Icons.view_agenda_outlined, size: 22),
               onPressed: () {},
@@ -521,25 +404,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       body: IndexedStack(
         index: _currentTabIndex,
         children: [
-          HomeTab(
-            selectedImages: _selectedImages,
-            historyItems: _historyItems,
-            isDark: widget.isDarkMode,
-            onPickGallery: _pickGalleryImages,
-            onPickCamera: _pickCameraImage,
-            onRemoveImage: _removeSelectedImage,
-            onMoveImage: _moveSelectedImage,
-            onChangePosition: _changeSelectedImagePosition,
-            onClearImages: _clearSelectedImages,
-            onDeleteHistoryItem: _deleteHistoryItem,
-            onAddHistoryItem: _addHistoryItem,
-            onOpenMergePdf: _openMergePdf,
-            onOpenSplitPdf: _openSplitPdf,
-            onSwitchTab: (idx) => setState(() => _currentTabIndex = idx),
-            onOpenWordToPdf: _openWordToPdf,
-            onBatchDeleteHistoryItems: _batchMoveToTrash,
-            onOpenImageToPdf: _openImageToPdf,
-          ),
           FilesTab(
             historyItems: _historyItems,
             trashItems: _trashItems,
@@ -550,6 +414,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             onEmptyTrash: _emptyTrash,
             onClearAllFiles: _clearAllHistory,
             onBatchDeleteItems: _batchMoveToTrash,
+            onAddHistoryItem: _addHistoryItem,
+            onOpenImageToPdf: _openImageToPdf,
           ),
           ToolsTab(
             historyItems: _historyItems,
@@ -578,10 +444,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
-              _buildNavItem(1, Icons.folder_outlined, Icons.folder_rounded, 'Files'),
-              _buildNavItem(2, Icons.handyman_outlined, Icons.handyman_rounded, 'Tools'),
-              _buildNavItem(3, Icons.settings_outlined, Icons.settings_rounded, 'Settings'),
+              _buildNavItem(0, Icons.folder_outlined, Icons.folder_rounded, 'Files'),
+              _buildNavItem(1, Icons.handyman_outlined, Icons.handyman_rounded, 'Tools'),
+              _buildNavItem(2, Icons.settings_outlined, Icons.settings_rounded, 'Settings'),
             ],
           ),
         ),
