@@ -59,7 +59,8 @@ jobs:
         run: |
           TAG="${GITHUB_REF_NAME}"
           if [[ "${GITHUB_REF}" == refs/heads/* ]] || [[ -z "${TAG}" ]]; then
-            TAG="v1.0.0"
+            PUBSPEC_VER=$(grep '^version:' pubspec.yaml | head -n 1 | awk '{print $2}' | cut -d'+' -f1)
+            TAG="v${PUBSPEC_VER}"
           fi
           APK_NAME="PDFDost-${TAG}.apk"
           cp build/app/outputs/flutter-apk/app-release.apk "${APK_NAME}"
@@ -80,11 +81,12 @@ jobs:
             ---
             
             ### 🚀 What's New in this Release
-            - 🖼️ **Dedicated Image to PDF Screen**: Multi-image picker, reorder pages, rotate scans, and direct export.
-            - 📝 **Enhanced Word & Office to PDF Engine**: Preserves document formatting, tables, images, and spreadsheets.
-            - ✨ **Multi-Selection Mode**: Long-press to select multiple document sets for bulk delete, share, and export.
-            - 📁 **Streamlined File Management**: Added Clear All option and fast 1-second undo for trash operations.
-            - 🎨 **UI & Typography Improvements**: Refined buttons, contrast, and dark mode aesthetic.
+            - 📷 **Full Document Scanner Studio**: Camera scanner with holographic laser sweep animation, flash, reticle corner brackets, and grid controls.
+            - 📐 **Perspective 4-Corner Crop**: Interactive Quad Corner distortion correction with 2.5x magnification loupe.
+            - 🎨 **Pro Color Filter Engine**: Magic Color, B&W, Grayscale, Sharp, Warm, Cool, and High Contrast presets with real-time brightness & contrast sliders.
+            - 📑 **Multi-Page Batch Review & Editor**: Reorder pages, apply filters to all pages, rotate, replace, and export directly to PDF or Document Sets.
+            - 🪪 **Smart Scan Modes**: Dedicated modes for Documents, ID Cards (Front & Back composite), Book Spreads (automatic two-page split), and Photos.
+            - 📁 **Enhanced Document Sets**: Integrated direct camera capture and per-page crop & filter editing from within sets.
             
             ### 📑 Complete 12-Tool PDF & Office Suite
             - **Images to PDF**: Convert photos/scans to PDF with custom margins and page sizes.

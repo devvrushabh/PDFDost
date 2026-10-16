@@ -684,7 +684,7 @@ class _SettingsTabState extends State<SettingsTab> {
               AppLogo(fontSize: 22, isDark: widget.isDark),
               const SizedBox(height: 8),
               Text(
-                'Version 1.0.2',
+                'Version 1.1.0',
                 style: TextStyle(
                   color: headerTextColor,
                   fontSize: 12,
