@@ -5,9 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/scanner_engine.dart';
-import '../services/storage_engine.dart';
 import 'document_crop_screen.dart';
 import 'scanner_batch_editor_screen.dart';
+import 'signature_scanner_screen.dart';
 
 class ScannerTab extends StatefulWidget {
   final bool isDark;
@@ -127,7 +127,25 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
         return;
       }
 
-      // 3. SINGLE PAGE MODE
+      // 3. SIGNATURE MODE
+      if (_selectedMode == DocScanMode.signature) {
+        setState(() => _isProcessing = false);
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (ctx) => SignatureScannerScreen(
+                initialImagePath: file.path,
+                isDark: widget.isDark,
+                onAddHistoryItem: widget.onAddHistoryItem,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      // 4. SINGLE PAGE MODE
       if (_selectedMode == DocScanMode.single) {
         setState(() => _isProcessing = false);
         final initialPage = ScannedPageData(
@@ -532,6 +550,7 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                 children: [
                   _buildModePill(DocScanMode.document, 'DOCUMENT'),
                   _buildModePill(DocScanMode.idCard, 'ID CARD'),
+                  _buildModePill(DocScanMode.signature, 'SIGNATURE'),
                   _buildModePill(DocScanMode.book, 'BOOK / SPREAD'),
                   _buildModePill(DocScanMode.batch, 'BATCH SCAN'),
                   _buildModePill(DocScanMode.single, 'SINGLE PAGE'),
@@ -730,6 +749,8 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
         return Icons.document_scanner_rounded;
       case DocScanMode.idCard:
         return Icons.badge_rounded;
+      case DocScanMode.signature:
+        return Icons.draw_rounded;
       case DocScanMode.book:
         return Icons.menu_book_rounded;
       case DocScanMode.batch:
@@ -747,6 +768,8 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
             : '${_scannedPages.length} Page(s) scanned • Tap shutter to add more';
       case DocScanMode.idCard:
         return _idCardFrontPath == null ? 'Scan ID Front Side' : 'Scan ID Back Side';
+      case DocScanMode.signature:
+        return 'Frame signature on paper & capture';
       case DocScanMode.book:
         return 'Center open book spine on blue line';
       case DocScanMode.batch:

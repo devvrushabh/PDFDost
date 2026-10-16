@@ -10,12 +10,16 @@ enum DocScanMode {
   document,
   idCard,
   book,
+  signature,
   batch,
   single,
 }
 
 enum DocScanFilter {
+  vividLight,
   magicColor,
+  sharpBw,
+  contrastBw,
   bw,
   grayscale,
   vibrant,
@@ -97,6 +101,15 @@ class ScannerEngine {
     0, 0, 0, 1, 0,
   ];
 
+  /// Doc Scanner's Default "Vivid Light":
+  /// Subtle background whitening, gentle text contrast enhancement, vibrant ink
+  static const List<double> matrixVividLight = <double>[
+    1.30, -0.08, -0.06, 0, 22,
+    -0.06, 1.30, -0.08, 0, 22,
+    -0.08, -0.06, 1.30, 0, 22,
+    0,     0,     0,    1, 0,
+  ];
+
   /// CamScanner / DocScanner signature Magic Color
   /// Whitens background, increases contrast, boosts ink vibrancy
   static const List<double> matrixMagicColor = <double>[
@@ -104,6 +117,22 @@ class ScannerEngine {
     -0.10, 1.45, -0.15, 0, 18,
     -0.15, -0.10, 1.45, 0, 18,
     0,     0,     0,    1, 0,
+  ];
+
+  /// Sharp Black & White for maximum text punch
+  static const List<double> matrixSharpBw = <double>[
+    2.2, 2.2, 2.2, 0, -250,
+    2.2, 2.2, 2.2, 0, -250,
+    2.2, 2.2, 2.2, 0, -250,
+    0,   0,   0,   1, 0,
+  ];
+
+  /// Contrast B&W (crisp text with anti-aliasing)
+  static const List<double> matrixContrastBw = <double>[
+    1.8, 1.8, 1.8, 0, -195,
+    1.8, 1.8, 1.8, 0, -195,
+    1.8, 1.8, 1.8, 0, -195,
+    0,   0,   0,   1, 0,
   ];
 
   /// High-contrast black and white for crisp text documents
@@ -140,8 +169,14 @@ class ScannerEngine {
 
   static List<double> getFilterMatrix(DocScanFilter filter) {
     switch (filter) {
+      case DocScanFilter.vividLight:
+        return matrixVividLight;
       case DocScanFilter.magicColor:
         return matrixMagicColor;
+      case DocScanFilter.sharpBw:
+        return matrixSharpBw;
+      case DocScanFilter.contrastBw:
+        return matrixContrastBw;
       case DocScanFilter.bw:
         return matrixBlackAndWhite;
       case DocScanFilter.grayscale:
@@ -172,8 +207,14 @@ class ScannerEngine {
 
   static String getFilterTitle(DocScanFilter filter) {
     switch (filter) {
+      case DocScanFilter.vividLight:
+        return 'Vivid Light';
       case DocScanFilter.magicColor:
         return 'Magic Color';
+      case DocScanFilter.sharpBw:
+        return 'Sharp B & W';
+      case DocScanFilter.contrastBw:
+        return 'Contrast B&W';
       case DocScanFilter.bw:
         return 'B & W';
       case DocScanFilter.grayscale:
@@ -189,8 +230,14 @@ class ScannerEngine {
 
   static IconData getFilterIcon(DocScanFilter filter) {
     switch (filter) {
+      case DocScanFilter.vividLight:
+        return Icons.light_mode_rounded;
       case DocScanFilter.magicColor:
         return Icons.auto_awesome_rounded;
+      case DocScanFilter.sharpBw:
+        return Icons.filter_sharp;
+      case DocScanFilter.contrastBw:
+        return Icons.tonality_rounded;
       case DocScanFilter.bw:
         return Icons.contrast_rounded;
       case DocScanFilter.grayscale:
@@ -448,5 +495,105 @@ class ScannerEngine {
     }
 
     return paths;
+  }
+
+  /// Isolates ink strokes from paper background and outputs a transparent PNG.
+  /// Replaces ink color with selected pen color (e.g. Royal Blue, Classic Black).
+  static Future<String> extractTransparentSignature({
+    required String sourcePath,
+    required Color penColor,
+    double threshold = 0.68,
+    double contrast = 1.25,
+    int rotationDegrees = 0,
+  }) async {
+    final rawBytes = await File(sourcePath).readAsBytes();
+    final codec = await ui.instantiateImageCodec(rawBytes);
+    final frame = await codec.getNextFrame();
+    final ui.Image srcImage = frame.image;
+
+    final origW = srcImage.width;
+    final origH = srcImage.height;
+
+    // Read raw RGBA bytes
+    final byteData = await srcImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+    if (byteData == null) throw Exception('Failed to read image pixel data');
+    final pixels = Uint8List.fromList(byteData.buffer.asUint8List());
+
+    final penR = penColor.red;
+    final penG = penColor.green;
+    final penB = penColor.blue;
+    final penA = penColor.alpha;
+
+    // Threshold cutoff (0-255)
+    final lumCutoff = (threshold * 255).clamp(20, 250).toInt();
+
+    for (int i = 0; i < pixels.length; i += 4) {
+      final r = pixels[i];
+      final g = pixels[i + 1];
+      final b = pixels[i + 2];
+
+      // Luminance formula (ITU-R BT.601)
+      final lum = (0.299 * r + 0.587 * g + 0.114 * b).toInt();
+
+      if (lum >= lumCutoff) {
+        // Paper background -> completely transparent
+        pixels[i + 3] = 0;
+      } else {
+        // Ink stroke -> antialiased opacity + pen tint
+        final darknessFactor = (1.0 - (lum / lumCutoff)).clamp(0.0, 1.0);
+        final boostedFactor = math.pow(darknessFactor, 1.0 / contrast).toDouble();
+
+        pixels[i] = penR;
+        pixels[i + 1] = penG;
+        pixels[i + 2] = penB;
+        pixels[i + 3] = (penA * boostedFactor).round().clamp(0, 255);
+      }
+    }
+
+    // Decode pixels back to ui.Image
+    final completer = Completer<ui.Image>();
+    ui.decodeImageFromPixels(
+      pixels,
+      origW,
+      origH,
+      ui.PixelFormat.rgba8888,
+      (ui.Image img) => completer.complete(img),
+    );
+    final ui.Image transparentImg = await completer.future;
+
+    // If rotation is required, render through canvas
+    ui.Image finalImage = transparentImg;
+    if (rotationDegrees % 360 != 0) {
+      final is90or270 = (rotationDegrees % 180) != 0;
+      final rotW = is90or270 ? origH.toDouble() : origW.toDouble();
+      final rotH = is90or270 ? origW.toDouble() : origH.toDouble();
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, rotW, rotH));
+
+      canvas.save();
+      canvas.translate(rotW / 2, rotH / 2);
+      canvas.rotate((rotationDegrees * math.pi) / 180.0);
+      canvas.translate(-origW / 2, -origH / 2);
+      canvas.drawImage(transparentImg, Offset.zero, Paint());
+      canvas.restore();
+
+      final picture = recorder.endRecording();
+      finalImage = await picture.toImage(rotW.round(), rotH.round());
+    }
+
+    final pngBytes = await finalImage.toByteData(format: ui.ImageByteFormat.png);
+    if (pngBytes == null) throw Exception('Failed to encode transparent PNG');
+
+    final outputDir = await getApplicationDocumentsDirectory();
+    final signDir = Directory('${outputDir.path}/signatures');
+    if (!await signDir.exists()) {
+      await signDir.create(recursive: true);
+    }
+
+    final outputPath = '${signDir.path}/sign_${DateTime.now().millisecondsSinceEpoch}.png';
+    await File(outputPath).writeAsBytes(pngBytes.buffer.asUint8List());
+
+    return outputPath;
   }
 }

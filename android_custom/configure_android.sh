@@ -11,7 +11,7 @@ cp android_custom/MainActivity.kt android/app/src/main/kotlin/com/devvrushabh/pd
 cp -r android_custom/res/* android/app/src/main/res/
 
 # 3. Inject storage permissions and legacy storage into AndroidManifest.xml
-sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>' android/app/src/main/AndroidManifest.xml
+sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-feature android:name="android.hardware.camera" android:required="false"/>\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>' android/app/src/main/AndroidManifest.xml
 sed -i 's/<application/<application android:requestLegacyExternalStorage="true"/' android/app/src/main/AndroidManifest.xml
 sed -i 's/android:label="[^"]*"/android:label="PDFDost"/' android/app/src/main/AndroidManifest.xml
 sed -i '/<\/manifest>/i \    <queries>\n        <intent>\n            <action android:name="android.intent.action.VIEW" />\n            <data android:scheme="upi" />\n        </intent>\n    </queries>' android/app/src/main/AndroidManifest.xml

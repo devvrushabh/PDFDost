@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../services/scanner_engine.dart';
 import 'document_crop_screen.dart';
 import 'scanner_batch_editor_screen.dart';
+import 'signature_scanner_screen.dart';
 
 class ScannerCameraScreen extends StatefulWidget {
   final bool isDark;
@@ -32,6 +33,7 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
   // Camera settings
   bool _isFlashOn = false;
   bool _showGrid = false;
+  bool _showSpiritLevel = true;
   bool _autoCropImmediate = true;
   bool _isProcessing = false;
 
@@ -135,7 +137,25 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
         return;
       }
 
-      // 3. SINGLE PAGE OR BATCH/DOCUMENT WORKFLOW
+      // 3. SIGNATURE WORKFLOW
+      if (_selectedMode == DocScanMode.signature) {
+        setState(() => _isProcessing = false);
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (ctx) => SignatureScannerScreen(
+                initialImagePath: file.path,
+                isDark: widget.isDark,
+                onAddHistoryItem: widget.onAddHistoryItem,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      // 4. SINGLE PAGE OR BATCH/DOCUMENT WORKFLOW
       final initialPage = ScannedPageData(
         id: 'p_${DateTime.now().millisecondsSinceEpoch}_${_scannedPages.length}',
         rawImagePath: file.path,
@@ -282,6 +302,15 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
                   const Spacer(),
                   IconButton(
                     icon: Icon(
+                      _showSpiritLevel ? Icons.trip_origin_rounded : Icons.radio_button_unchecked_rounded,
+                      color: _showSpiritLevel ? const Color(0xFF00E676) : Colors.white70,
+                      size: 22,
+                    ),
+                    tooltip: 'Document Spirit Level',
+                    onPressed: () => setState(() => _showSpiritLevel = !_showSpiritLevel),
+                  ),
+                  IconButton(
+                    icon: Icon(
                       _showGrid ? Icons.grid_on_rounded : Icons.grid_off_rounded,
                       color: _showGrid ? const Color(0xFFFA9282) : Colors.white70,
                       size: 22,
@@ -350,6 +379,14 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
                         _buildReticleCorner(top: 18, right: 18, isTR: true),
                         _buildReticleCorner(bottom: 18, left: 18, isBL: true),
                         _buildReticleCorner(bottom: 18, right: 18, isBR: true),
+
+                        // Spirit Level Reticle (Doc Scanner Balance indicator)
+                        if (_showSpiritLevel)
+                          Positioned(
+                            top: 24,
+                            right: 24,
+                            child: _buildSpiritLevelIndicator(),
+                          ),
 
                         // Center Book Split Line if in Book Mode
                         if (_selectedMode == DocScanMode.book)
@@ -451,6 +488,7 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
                 children: [
                   _buildModePill(DocScanMode.document, 'DOCUMENT'),
                   _buildModePill(DocScanMode.idCard, 'ID CARD'),
+                  _buildModePill(DocScanMode.signature, 'SIGNATURE'),
                   _buildModePill(DocScanMode.book, 'BOOK / SPREAD'),
                   _buildModePill(DocScanMode.batch, 'BATCH SCAN'),
                   _buildModePill(DocScanMode.single, 'SINGLE PAGE'),
@@ -644,6 +682,8 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
         return Icons.document_scanner_rounded;
       case DocScanMode.idCard:
         return Icons.badge_rounded;
+      case DocScanMode.signature:
+        return Icons.draw_rounded;
       case DocScanMode.book:
         return Icons.menu_book_rounded;
       case DocScanMode.batch:
@@ -661,6 +701,8 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
             : '${_scannedPages.length} Page(s) scanned • Tap shutter to add more';
       case DocScanMode.idCard:
         return _idCardFrontPath == null ? 'Scan ID Front Side' : 'Scan ID Back Side';
+      case DocScanMode.signature:
+        return 'Frame signature on paper & capture';
       case DocScanMode.book:
         return 'Center open book spine on blue line';
       case DocScanMode.batch:
@@ -668,6 +710,36 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
       case DocScanMode.single:
         return 'Single Page Mode • Auto crop & filter';
     }
+  }
+
+  Widget _buildSpiritLevelIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.65),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF00E676).withOpacity(0.6),
+          width: 1.5,
+        ),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle_rounded, color: Color(0xFF00E676), size: 14),
+          SizedBox(width: 5),
+          Text(
+            'LEVEL',
+            style: TextStyle(
+              color: Color(0xFF00E676),
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
