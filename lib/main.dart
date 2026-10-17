@@ -443,7 +443,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(0, Icons.folder_outlined, Icons.folder_rounded, 'Files'),
+              _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
               _buildNavItem(1, Icons.handyman_outlined, Icons.handyman_rounded, 'Tools'),
               _buildNavItem(2, Icons.settings_outlined, Icons.settings_rounded, 'Settings'),
             ],
