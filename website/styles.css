@@ -1,113 +1,80 @@
 /* ==========================================================================
-   PDFDost - Exact iLovePDF Interface Replica
-   Crafted with dedication by Vrushabh Dhote
+   PDFDost - Exact iLovePDF Stylesheet
+   Modern, Pixel-Perfect, High Performance CSS Design System
    ========================================================================== */
 
 :root {
   --primary-red: #E5322D;
-  --primary-red-hover: #D0241F;
-  --bg-page: #F7F7FA;
-  --bg-card: #FFFFFF;
-  --border-card: #E5E5ED;
-  --border-card-hover: #D5D5E2;
+  --primary-red-hover: #D32520;
+  --primary-red-light: #FEE2E2;
   --text-heading: #1A1A24;
   --text-subheading: #47474F;
-  --text-body: #636370;
-  --text-nav: #33333B;
-  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.03);
-  --shadow-card-hover: 0 10px 24px rgba(0, 0, 0, 0.07);
-  --radius-card: 16px;
-  --radius-btn: 6px;
-  --radius-pill: 30px;
+  --text-body: #64748B;
+  --text-nav: #1A1A24;
+  --bg-body: #F4F5FA;
+  --bg-card: #FFFFFF;
+  --border-card: #E5E5ED;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 24px -5px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 20px 32px -8px rgba(0, 0, 0, 0.12), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
   --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --radius-card: 14px;
+  --radius-btn: 8px;
 }
 
 [data-theme="dark"] {
-  --bg-page: #101116;
-  --bg-card: #181920;
-  --border-card: #282936;
-  --border-card-hover: #3C3E50;
+  --primary-red: #FF3B30;
+  --primary-red-hover: #E5322D;
+  --primary-red-light: #3A1D1D;
   --text-heading: #F8FAFC;
   --text-subheading: #94A3B8;
-  --text-body: #CBD5E1;
+  --text-body: #64748B;
   --text-nav: #E2E8F0;
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-card-hover: 0 12px 28px rgba(0, 0, 0, 0.5);
+  --bg-body: #0F1015;
+  --bg-card: #181922;
+  --border-card: #282936;
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 16px 36px rgba(0, 0, 0, 0.6);
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
+* {
   margin: 0;
   padding: 0;
-}
-
-html {
-  font-family: var(--font-family);
-  font-size: 15px;
-  scroll-behavior: smooth;
-  color-scheme: light dark;
+  box-sizing: border-box;
 }
 
 body {
-  background-color: var(--bg-page);
+  font-family: var(--font-family);
+  background-color: var(--bg-body);
   color: var(--text-body);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  position: relative;
+  -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
 
-/* Background Soft Ambient Waves */
-body::before {
-  content: '';
-  position: absolute;
-  top: 180px;
-  left: -200px;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(254, 226, 226, 0.6) 0%, rgba(254, 226, 226, 0) 70%);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-body::after {
-  content: '';
-  position: absolute;
-  top: 600px;
-  right: -200px;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(254, 237, 236, 0.5) 0%, rgba(254, 237, 236, 0) 70%);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-}
-
 /* ==========================================================================
-   Header & Navbar (Identical to iLovePDF)
+   Header & Navbar (Identical to iLovePDF Screenshot)
    ========================================================================== */
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 200;
+  z-index: 900;
   background-color: #FFFFFF;
   border-bottom: 1px solid #ECECF2;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 [data-theme="dark"] .site-header {
-  background-color: #16171E;
-  border-bottom: 1px solid #262734;
+  background-color: #14151D;
+  border-color: #282936;
 }
 
 .header-inner {
-  max-width: 1480px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 0 28px;
-  height: 68px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -129,6 +96,7 @@ body::after {
   font-weight: 900;
   letter-spacing: -0.5px;
   color: #1A1A24;
+  cursor: pointer;
 }
 
 [data-theme="dark"] .brand-logo {
@@ -166,17 +134,195 @@ body::after {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 2px;
+  padding: 6px 4px;
   transition: color 0.15s ease;
+  cursor: pointer;
 }
 
 .nav-link:hover {
   color: var(--primary-red);
 }
 
+.nav-link.open,
+.nav-link.active-tool {
+  color: var(--primary-red) !important;
+}
+
 .nav-dropdown-arrow {
   font-size: 0.65rem;
-  opacity: 0.7;
+  opacity: 0.85;
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+
+.nav-link.open .nav-dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.nav-item-dropdown {
+  position: relative;
+}
+
+/* Base Dropdown Card */
+.dropdown-popover {
+  position: absolute;
+  top: calc(100% + 14px);
+  background-color: #FFFFFF;
+  border: 1px solid #E5E5ED;
+  border-radius: 14px;
+  box-shadow: 0 20px 48px -4px rgba(0, 0, 0, 0.14), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
+  z-index: 1000;
+  display: none;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .dropdown-popover {
+  background-color: #191A23;
+  border-color: #2D2E3E;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6);
+}
+
+.dropdown-popover.open {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Caret pointing upwards to nav link */
+.dropdown-caret-arrow {
+  position: absolute;
+  top: -8px;
+  width: 14px;
+  height: 14px;
+  background-color: #FFFFFF;
+  border-top: 1px solid #E5E5ED;
+  border-left: 1px solid #E5E5ED;
+  transform: rotate(45deg);
+  z-index: 1001;
+  transition: left 0.15s ease;
+}
+
+[data-theme="dark"] .dropdown-caret-arrow {
+  background-color: #191A23;
+  border-color: #2D2E3E;
+}
+
+/* 1. "CONVERT PDF" 2-Column Dropdown */
+.dropdown-convert {
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  width: 530px;
+  padding: 24px 28px;
+}
+
+.dropdown-convert.open {
+  transform: translateX(-50%) translateY(0);
+}
+
+.dropdown-convert .dropdown-caret-arrow {
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.convert-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+/* 2. "ALL PDF TOOLS" Mega-Dropdown (7 Columns across page) */
+.dropdown-all-tools {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  width: min(1440px, 96vw);
+  padding: 26px 32px 30px;
+}
+
+.dropdown-all-tools.open {
+  display: block;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.dropdown-all-tools .dropdown-caret-arrow {
+  left: 200px;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.all-tools-grid-7col {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 16px;
+}
+
+/* Column Header Titles */
+.menu-column-header {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #71717A;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 12px;
+  padding-left: 6px;
+}
+
+[data-theme="dark"] .menu-column-header {
+  color: #94A3B8;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  list-style: none;
+}
+
+/* Dropdown Menu Item Link */
+.menu-item-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #272730;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .menu-item-link {
+  color: #E2E8F0;
+}
+
+.menu-item-link:hover {
+  background-color: #F8FAFC;
+  color: var(--primary-red);
+  transform: translateX(2px);
+}
+
+[data-theme="dark"] .menu-item-link:hover {
+  background-color: #242533;
+  color: #FF5E57;
+}
+
+.menu-item-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.menu-item-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
 }
 
 /* Header Right Actions */
@@ -239,7 +385,7 @@ body::after {
 }
 
 /* ==========================================================================
-   Hero Section
+   1. HOME VIEW: Hero Section + Filter Pills + 32 Card Grid
    ========================================================================== */
 .hero-wrapper {
   max-width: 960px;
@@ -280,50 +426,46 @@ body::after {
 
 .pill-item {
   background-color: #FFFFFF;
-  border: 1px solid #E1E1EA;
-  color: #474752;
+  border: 1px solid #E5E5ED;
+  color: #374151;
+  padding: 8px 18px;
+  border-radius: 9999px;
   font-size: 0.9rem;
   font-weight: 600;
-  padding: 7px 18px;
-  border-radius: var(--radius-pill);
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
 }
 
 [data-theme="dark"] .pill-item {
-  background-color: #1C1D26;
-  border-color: #2F3142;
-  color: #CBD5E1;
+  background-color: #191A23;
+  border-color: #2D2E3E;
+  color: #E2E8F0;
 }
 
 .pill-item:hover {
-  border-color: #C8C8D6;
-  color: #1A1A24;
+  border-color: #CBD5E1;
+  background-color: #F8FAFC;
 }
 
 .pill-item.active {
-  background-color: #1F1F26;
+  background-color: #1E293B;
   color: #FFFFFF;
-  border-color: #1F1F26;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-color: #1E293B;
 }
 
 [data-theme="dark"] .pill-item.active {
   background-color: #FFFFFF;
-  color: #101116;
+  color: #0F1015;
   border-color: #FFFFFF;
 }
 
-/* ==========================================================================
-   Tool Cards Grid (Exact 5-Column Grid across desktop)
-   ========================================================================== */
+/* Main Container: 5 Column Grid */
 .main-container {
-  max-width: 1480px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 28px 72px;
-  position: relative;
-  z-index: 1;
+  padding: 0 28px 64px;
+  width: 100%;
 }
 
 .tools-grid-5col {
@@ -332,99 +474,73 @@ body::after {
   gap: 20px;
 }
 
-.card-item {
+/* Individual Tool Card */
+.tool-card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-card);
   border-radius: var(--radius-card);
-  padding: 24px 20px;
-  min-height: 190px;
+  padding: 24px 20px 22px;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+  cursor: pointer;
+  position: relative;
   display: flex;
   flex-direction: column;
-  position: relative;
-  cursor: pointer;
-  box-shadow: var(--shadow-card);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
-  text-decoration: none;
 }
 
-.card-item:hover {
+.tool-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-card-hover);
-  border-color: var(--border-card-hover);
+  border-color: rgba(229, 50, 45, 0.3);
 }
 
-/* Tool Card Icon */
-.card-icon {
-  width: 44px;
-  height: 44px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.card-icon img, .card-icon svg {
-  width: 44px;
-  height: 44px;
-  display: block;
-}
-
-/* Card Title */
-.card-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text-heading);
-  letter-spacing: -0.3px;
-  margin-bottom: 8px;
-}
-
-/* Card Description */
-.card-desc {
-  font-size: 0.85rem;
-  color: var(--text-body);
-  line-height: 1.45;
-  flex-grow: 1;
-}
-
-/* New! Badge on Top Right */
 .card-new-badge {
   position: absolute;
   top: 14px;
   right: 14px;
-  background-color: #E0F2FE;
-  color: #0284C7;
-  font-size: 0.7rem;
+  background-color: #FEE2E2;
+  color: var(--primary-red);
+  font-size: 0.72rem;
   font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 6px;
-  letter-spacing: 0.3px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Special "Create a workflow" card (Peach Tinted with Dashed Border) */
+.card-icon {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: 8px;
+  line-height: 1.25;
+}
+
+.card-desc {
+  font-size: 0.85rem;
+  color: var(--text-subheading);
+  line-height: 1.45;
+  margin-top: auto;
+}
+
+/* Workflow Promo Cards */
 .card-workflow {
-  background: linear-gradient(135deg, #FFF5F2 0%, #FEECE7 100%);
-  border: 1.5px dashed #FCA5A5;
-  color: #1A1A24;
+  background: linear-gradient(135deg, #FFF1F2 0%, #FFFFFF 100%);
+  border-color: #FECDD3;
 }
 
 [data-theme="dark"] .card-workflow {
-  background: linear-gradient(135deg, #2A1C1C 0%, #201717 100%);
-  border: 1.5px dashed #7F2D2D;
-  color: #FFFFFF;
-}
-
-.card-workflow .card-title {
-  color: #1A1A24;
-}
-
-[data-theme="dark"] .card-workflow .card-title {
-  color: #FFFFFF;
+  background: linear-gradient(135deg, #2D1418 0%, #191A23 100%);
+  border-color: #4C1D24;
 }
 
 .card-workflow .workflow-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
   margin-top: 14px;
   font-size: 0.85rem;
   font-weight: 700;
@@ -436,12 +552,448 @@ body::after {
 }
 
 /* ==========================================================================
-   Interactive Tool Workspace Modal
+   2. DEDICATED TOOL PAGE VIEW (Exact match to iLovePDF screenshot)
+   ========================================================================== */
+.tool-hero-container {
+  min-height: calc(100vh - 145px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px 80px;
+  background-color: var(--bg-body);
+  position: relative;
+}
+
+.tool-page-title {
+  font-size: clamp(2rem, 3.5vw + 1rem, 2.75rem);
+  font-weight: 800;
+  color: var(--text-heading);
+  text-align: center;
+  letter-spacing: -0.6px;
+  margin-bottom: 14px;
+}
+
+.tool-page-subtitle {
+  font-size: clamp(1rem, 1.2vw + 0.4rem, 1.25rem);
+  font-weight: 400;
+  color: var(--text-subheading);
+  text-align: center;
+  max-width: 780px;
+  margin-bottom: 44px;
+  line-height: 1.45;
+}
+
+/* Upload Button Cluster (Select PDF files + Drive + Dropbox) */
+.tool-upload-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.tool-btn-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.tool-select-btn {
+  background-color: var(--primary-red);
+  color: #FFFFFF;
+  font-size: 1.4rem;
+  font-weight: 700;
+  padding: 20px 52px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(229, 50, 45, 0.32);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: -0.2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-select-btn:hover {
+  background-color: var(--primary-red-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(229, 50, 45, 0.44);
+}
+
+.tool-select-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 6px 16px rgba(229, 50, 45, 0.3);
+}
+
+.cloud-icons-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cloud-icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: var(--primary-red);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(229, 50, 45, 0.3);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.cloud-icon-btn:hover {
+  background-color: var(--primary-red-hover);
+  transform: scale(1.1);
+}
+
+.tool-drop-text {
+  font-size: 0.95rem;
+  color: #71717A;
+  margin-top: 22px;
+  text-align: center;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .tool-drop-text {
+  color: #94A3B8;
+}
+
+/* Staged Files Workspace Card */
+.tool-staged-area {
+  width: 100%;
+  max-width: 860px;
+  margin-top: 20px;
+}
+
+.tool-workspace-card {
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E5E5ED;
+  box-shadow: 0 20px 48px -4px rgba(0, 0, 0, 0.08);
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+[data-theme="dark"] .tool-workspace-card {
+  background-color: #1A1B24;
+  border-color: #2D2E3E;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5);
+}
+
+.workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #ECECF2;
+}
+
+[data-theme="dark"] .workspace-header {
+  border-color: #2D2E3E;
+}
+
+.workspace-files-count {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.add-more-btn {
+  background: transparent;
+  border: 1.5px dashed #CBD5E1;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--primary-red);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.add-more-btn:hover {
+  background-color: #FFF5F5;
+  border-color: var(--primary-red);
+}
+
+[data-theme="dark"] .add-more-btn:hover {
+  background-color: #2A1515;
+}
+
+/* Files Chips */
+.tool-files-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.file-staged-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  font-size: 0.88rem;
+}
+
+[data-theme="dark"] .file-staged-chip {
+  background-color: #12131A;
+  border-color: #2D2E3E;
+}
+
+.chip-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.chip-name {
+  font-weight: 600;
+  color: var(--text-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.chip-size {
+  font-size: 0.78rem;
+  color: #64748B;
+}
+
+.chip-remove-btn {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.chip-remove-btn:hover {
+  color: var(--primary-red);
+}
+
+/* Dynamic Options */
+.tool-dynamic-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.option-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.option-group label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.option-group input[type="text"],
+.option-group input[type="password"],
+.option-group select {
+  padding: 8px 14px;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+/* Tool Action Bar */
+.tool-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #ECECF2;
+}
+
+[data-theme="dark"] .tool-action-bar {
+  border-color: #2D2E3E;
+}
+
+.back-tool-btn {
+  background: transparent;
+  border: 1px solid #CBD5E1;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-body);
+}
+
+.execute-action-btn {
+  background-color: var(--primary-red);
+  color: #FFFFFF;
+  border: none;
+  padding: 14px 36px;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(229, 50, 45, 0.3);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.execute-action-btn:hover {
+  background-color: var(--primary-red-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(229, 50, 45, 0.4);
+}
+
+/* Result Box */
+.tool-result-box {
+  background: #F0FDF4;
+  border: 1.5px solid #86EFAC;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+[data-theme="dark"] .tool-result-box {
+  background: #064E3B;
+  border-color: #059669;
+}
+
+.result-badge-icon {
+  width: 48px;
+  height: 48px;
+  background: #16A34A;
+  color: #FFF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.result-badge-heading {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #14532D;
+}
+
+[data-theme="dark"] .result-badge-heading {
+  color: #A7F3D0;
+}
+
+.result-badge-sub {
+  font-size: 0.9rem;
+  color: #15803D;
+}
+
+[data-theme="dark"] .result-badge-sub {
+  color: #6EE7B7;
+}
+
+.result-actions-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.download-final-btn {
+  background-color: var(--primary-red);
+  color: #FFFFFF;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(229, 50, 45, 0.3);
+}
+
+.download-final-btn:hover {
+  background-color: var(--primary-red-hover);
+}
+
+.cloud-save-btn {
+  background-color: #FFFFFF;
+  color: #1E293B;
+  border: 1.5px solid #CBD5E1;
+  padding: 13px 26px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cloud-save-btn:hover {
+  background-color: #F8FAFC;
+}
+
+/* ==========================================================================
+   Site Footer (© iLovePDF 2026 ® - Your PDF Editor)
+   ========================================================================== */
+.site-footer {
+  background-color: #FFFFFF;
+  border-top: 1px solid #ECECF2;
+  padding: 22px 32px;
+  margin-top: auto;
+}
+
+[data-theme="dark"] .site-footer {
+  background-color: #14151D;
+  border-color: #2D2E3E;
+}
+
+.footer-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.88rem;
+  color: #64748B;
+}
+
+.footer-copyright {
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Modals
    ========================================================================== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 2000;
   background-color: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -512,31 +1064,6 @@ body::after {
   gap: 22px;
 }
 
-/* Drag & Drop Box */
-.upload-dropzone {
-  border: 2px dashed #D5D5E2;
-  border-radius: 16px;
-  background-color: #F8F9FC;
-  padding: 40px 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-[data-theme="dark"] .upload-dropzone {
-  background-color: #12131A;
-  border-color: #2F3142;
-}
-
-.upload-dropzone:hover, .upload-dropzone.dragover {
-  border-color: var(--primary-red);
-  background-color: #FFF5F5;
-}
-
-[data-theme="dark"] .upload-dropzone:hover, [data-theme="dark"] .upload-dropzone.dragover {
-  background-color: #241414;
-}
-
 .upload-btn-main {
   background-color: var(--primary-red);
   color: #FFFFFF;
@@ -569,10 +1096,16 @@ body::after {
   .tools-grid-5col {
     grid-template-columns: repeat(4, 1fr);
   }
+  .all-tools-grid-7col {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 @media (max-width: 1024px) {
   .tools-grid-5col {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .all-tools-grid-7col {
     grid-template-columns: repeat(3, 1fr);
   }
   .nav-menu {
@@ -594,10 +1127,20 @@ body::after {
   .hero-wrapper {
     padding: 36px 16px 24px;
   }
+  .tool-btn-cluster {
+    flex-direction: column;
+  }
+  .cloud-icons-cluster {
+    flex-direction: row;
+  }
 }
 
 @media (max-width: 480px) {
   .tools-grid-5col {
     grid-template-columns: 1fr;
+  }
+  .tool-select-btn {
+    padding: 16px 32px;
+    font-size: 1.2rem;
   }
 }
