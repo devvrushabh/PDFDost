@@ -669,10 +669,13 @@ function openToolPage(tool, pushHistory = true) {
   fileInput.multiple = tool.multiple !== false;
   fileInput.value = '';
 
-  // Reset workspace areas
-  document.getElementById('tool-upload-initial').style.display = 'flex';
-  document.getElementById('tool-staged-area').style.display = 'none';
-  document.getElementById('tool-result-box').style.display = 'none';
+  // Reset workspace views
+  const initialView = document.getElementById('tool-initial-view');
+  const processingView = document.getElementById('tool-processing-view');
+  const resultBox = document.getElementById('tool-result-box');
+  if (initialView) initialView.style.display = 'block';
+  if (processingView) processingView.style.display = 'none';
+  if (resultBox) resultBox.style.display = 'none';
 
   // Highlight active nav item
   updateNavbarActiveState(tool);
@@ -884,6 +887,10 @@ function handleFileSelection(filesList) {
   if (!filesList || filesList.length === 0) return;
   const filesArray = Array.from(filesList);
 
+  filesArray.forEach(f => {
+    f._rotation = 0;
+  });
+
   if (App.activeTool && App.activeTool.multiple === false) {
     App.selectedFiles = [filesArray[0]];
   } else {
@@ -899,81 +906,387 @@ function updateStagedWorkspaceView() {
     return;
   }
 
-  document.getElementById('tool-upload-initial').style.display = 'none';
-  document.getElementById('tool-staged-area').style.display = 'block';
-  document.getElementById('tool-result-box').style.display = 'none';
+  const initialView = document.getElementById('tool-initial-view');
+  const processingView = document.getElementById('tool-processing-view');
+  const resultBox = document.getElementById('tool-result-box');
 
-  // Update counter
-  document.getElementById('workspace-files-count').textContent = `Selected Files (${App.selectedFiles.length})`;
+  if (initialView) initialView.style.display = 'none';
+  if (processingView) processingView.style.display = 'flex';
+  if (resultBox) resultBox.style.display = 'none';
 
-  // Render file chips
-  const list = document.getElementById('tool-files-list');
-  list.innerHTML = App.selectedFiles.map((file, idx) => `
-    <div class="file-staged-chip">
-      <div class="chip-info">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E5322D" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        <div>
-          <div class="chip-name" title="${file.name}">${file.name}</div>
-          <div class="chip-size">${formatFileSize(file.size)}</div>
-        </div>
-      </div>
-      <button type="button" class="chip-remove-btn" onclick="removeStagedFile(${idx})" title="Remove file">&times;</button>
-    </div>
-  `).join('');
+  // Update floating badge count
+  const badge = document.getElementById('floating-badge-count');
+  if (badge) badge.textContent = App.selectedFiles.length;
 
-  // Render tool specific options
+  // Render file preview cards on the canvas
+  renderFileCards();
+
+  // Render tool options on the right sidebar
   renderToolOptions();
 
   // Update Action button text
   const actionBtnText = document.getElementById('execute-action-btn-text');
-  actionBtnText.innerHTML = `${(App.activeTool && App.activeTool.actionBtnText) || 'Process PDF'} &rarr;`;
+  if (actionBtnText && App.activeTool) {
+    actionBtnText.textContent = App.activeTool.actionBtnText || 'Convert to PDF';
+  }
+}
+
+function renderFileCards() {
+  const grid = document.getElementById('tool-files-grid');
+  if (!grid) return;
+
+  grid.innerHTML = App.selectedFiles.map((file, idx) => {
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|bmp|gif)$/i.test(file.name);
+    let previewHtml = '';
+
+    if (isImage) {
+      const objUrl = URL.createObjectURL(file);
+      previewHtml = `
+        <img src="${objUrl}" alt="${file.name}" class="file-card-thumb-img" style="transform: rotate(${file._rotation || 0}deg);" />
+      `;
+    } else {
+      previewHtml = `
+        <div class="file-card-pdf-mock" style="transform: rotate(${file._rotation || 0}deg);">
+          <div class="file-card-pdf-badge">PDF</div>
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#E5322D" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <line x1="10" y1="9" x2="8" y2="9"/>
+          </svg>
+          <div style="font-size:0.75rem; color:#64748B; font-weight:700;">1 page</div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="file-card-preview" id="file-card-${idx}">
+        <button type="button" class="file-card-btn-rotate" onclick="rotateCardFile(${idx})" title="Rotate 90°">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </button>
+        <button type="button" class="file-card-btn-remove" onclick="removeStagedFile(${idx})" title="Remove file">&times;</button>
+        <div class="file-card-thumb-wrap">
+          ${previewHtml}
+        </div>
+        <div class="file-card-info">
+          <span class="file-card-name" title="${file.name}">${file.name}</span>
+          <span class="file-card-meta">${formatFileSize(file.size)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function rotateCardFile(index) {
+  if (!App.selectedFiles[index]) return;
+  App.selectedFiles[index]._rotation = ((App.selectedFiles[index]._rotation || 0) + 90) % 360;
+  renderFileCards();
 }
 
 function removeStagedFile(index) {
   App.selectedFiles.splice(index, 1);
-  updateStagedWorkspaceView();
+  if (App.selectedFiles.length === 0) {
+    resetToolFiles();
+  } else {
+    updateStagedWorkspaceView();
+  }
 }
 
 function resetToolFiles() {
   App.selectedFiles = [];
   App.resultBytes = null;
   App.resultFilename = '';
-  document.getElementById('tool-upload-initial').style.display = 'flex';
-  document.getElementById('tool-staged-area').style.display = 'none';
-  document.getElementById('tool-result-box').style.display = 'none';
+
+  const initialView = document.getElementById('tool-initial-view');
+  const processingView = document.getElementById('tool-processing-view');
+  const resultBox = document.getElementById('tool-result-box');
+
+  if (initialView) initialView.style.display = 'block';
+  if (processingView) processingView.style.display = 'none';
+  if (resultBox) resultBox.style.display = 'none';
+
+  const fileInput = document.getElementById('tool-file-input');
+  if (fileInput) fileInput.value = '';
+}
+
+function sortStagedFiles(ascending = true) {
+  App.selectedFiles.sort((a, b) => {
+    return ascending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+  });
+  renderFileCards();
+}
+
+function selectTileOption(groupName, value, element) {
+  const parent = element.closest('.sidebar-tiles-row');
+  if (parent) {
+    parent.querySelectorAll('.sidebar-tile-btn').forEach(btn => btn.classList.remove('active'));
+    element.classList.add('active');
+  }
 }
 
 function renderToolOptions() {
   const container = document.getElementById('tool-dynamic-options');
+  const heading = document.getElementById('sidebar-options-heading');
   if (!container || !App.activeTool) return;
-  container.innerHTML = '';
 
-  if (App.activeTool.optionsType === 'watermark') {
+  const tool = App.activeTool;
+  const toolId = tool.id;
+
+  let optionsTitle = `${tool.title} options`;
+  if (toolId === 'jpg_to_pdf') optionsTitle = 'Image to PDF options';
+  if (heading) heading.textContent = optionsTitle;
+
+  // 1. JPG TO PDF (Exact match to screenshot!)
+  if (toolId === 'jpg_to_pdf') {
     container.innerHTML = `
-      <div class="option-group">
-        <label>Watermark Text:</label>
-        <input type="text" id="opt-watermark-text" value="CONFIDENTIAL" placeholder="Enter watermark text">
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Page orientation</label>
+        <div class="sidebar-tiles-row">
+          <button type="button" class="sidebar-tile-btn active" onclick="selectTileOption('orientation', 'portrait', this)">
+            <span class="sidebar-tile-icon">
+              <svg width="24" height="32" viewBox="0 0 24 32" fill="none"><rect x="1.5" y="1.5" width="21" height="29" rx="2" stroke="#E5322D" stroke-width="2"/></svg>
+            </span>
+            <span class="sidebar-tile-label">Portrait</span>
+          </button>
+          <button type="button" class="sidebar-tile-btn" onclick="selectTileOption('orientation', 'landscape', this)">
+            <span class="sidebar-tile-icon">
+              <svg width="32" height="24" viewBox="0 0 32 24" fill="none"><rect x="1.5" y="1.5" width="29" height="21" rx="2" stroke="#64748B" stroke-width="2"/></svg>
+            </span>
+            <span class="sidebar-tile-label">Landscape</span>
+          </button>
+        </div>
       </div>
-    `;
-  } else if (App.activeTool.optionsType === 'rotate') {
-    container.innerHTML = `
-      <div class="option-group">
-        <label>Rotation Angle:</label>
-        <select id="opt-rotate-angle">
-          <option value="90">90° Clockwise</option>
-          <option value="180">180° Half Turn</option>
-          <option value="270">270° Counter-Clockwise</option>
+
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Page size</label>
+        <select class="sidebar-select" id="opt-page-size">
+          <option value="a4" selected>A4 (297x210 mm)</option>
+          <option value="letter">US Letter</option>
+          <option value="fit">Fit (same page size as image)</option>
         </select>
       </div>
+
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Margin</label>
+        <div class="sidebar-tiles-row">
+          <button type="button" class="sidebar-tile-btn active" onclick="selectTileOption('margin', 'none', this)">
+            <span class="sidebar-tile-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E5322D" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="#E5322D"/><polyline points="21 15 16 10 5 21"/></svg>
+            </span>
+            <span class="sidebar-tile-label">No margin</span>
+          </button>
+          <button type="button" class="sidebar-tile-btn" onclick="selectTileOption('margin', 'small', this)">
+            <span class="sidebar-tile-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="3 3"/><rect x="6" y="6" width="12" height="12" rx="1.5"/><circle cx="9.5" cy="9.5" r="1" fill="#64748B"/><polyline points="18 14 14 10 6 18"/></svg>
+            </span>
+            <span class="sidebar-tile-label">Small</span>
+          </button>
+          <button type="button" class="sidebar-tile-btn" onclick="selectTileOption('margin', 'big', this)">
+            <span class="sidebar-tile-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="2 2"/><rect x="8" y="8" width="8" height="8" rx="1"/><circle cx="10" cy="10" r="0.8" fill="#64748B"/><polyline points="16 14 13 11 8 16"/></svg>
+            </span>
+            <span class="sidebar-tile-label">Big</span>
+          </button>
+        </div>
+      </div>
+
+      <label class="sidebar-checkbox-row">
+        <input type="checkbox" id="opt-merge-all" checked>
+        <span>Merge all images in one PDF file</span>
+      </label>
     `;
-  } else if (App.activeTool.optionsType === 'password') {
+  }
+  // 2. MERGE PDF
+  else if (toolId === 'merge_pdf') {
     container.innerHTML = `
-      <div class="option-group">
-        <label>Enter Password:</label>
-        <input type="password" id="opt-password-input" placeholder="Type document password">
+      <div class="sidebar-option-section">
+        <p style="font-size:0.92rem; color:#64748B; line-height:1.5;">
+          To change the order of your PDFs, use the quick sort buttons below or drag files.
+        </p>
+        <div style="display:flex; gap:10px; margin-top:8px;">
+          <button type="button" class="sidebar-tile-btn" style="flex:1;" onclick="sortStagedFiles(true)">
+            <span class="sidebar-tile-label">Order A &rarr; Z</span>
+          </button>
+          <button type="button" class="sidebar-tile-btn" style="flex:1;" onclick="sortStagedFiles(false)">
+            <span class="sidebar-tile-label">Order Z &rarr; A</span>
+          </button>
+        </div>
+      </div>
+      <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:14px; margin-top:8px;">
+        <div style="font-size:0.9rem; font-weight:700; color:#1E202A;">Total Files: ${App.selectedFiles.length}</div>
+        <div style="font-size:0.8rem; color:#64748B; margin-top:4px;">All files will be merged in sequential order into a single PDF document.</div>
       </div>
     `;
   }
+  // 3. COMPRESS PDF
+  else if (toolId === 'compress_pdf') {
+    container.innerHTML = `
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Compression level</label>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <button type="button" class="sidebar-tile-btn" style="align-items:flex-start; padding:14px;" onclick="selectTileOption('comp', 'extreme', this)">
+            <div style="font-size:0.95rem; font-weight:800; color:#1E202A;">Extreme Compression</div>
+            <div style="font-size:0.8rem; color:#64748B; margin-top:2px;">Less quality, high compression</div>
+          </button>
+          <button type="button" class="sidebar-tile-btn active" style="align-items:flex-start; padding:14px;" onclick="selectTileOption('comp', 'recommended', this)">
+            <div style="font-size:0.95rem; font-weight:800; color:#E5322D;">Recommended Compression</div>
+            <div style="font-size:0.8rem; color:#64748B; margin-top:2px;">Good quality, good compression</div>
+          </button>
+          <button type="button" class="sidebar-tile-btn" style="align-items:flex-start; padding:14px;" onclick="selectTileOption('comp', 'less', this)">
+            <div style="font-size:0.95rem; font-weight:800; color:#1E202A;">Less Compression</div>
+            <div style="font-size:0.8rem; color:#64748B; margin-top:2px;">High quality, less compression</div>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+  // 4. SPLIT PDF
+  else if (toolId === 'split_pdf') {
+    container.innerHTML = `
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Split range</label>
+        <div class="sidebar-tiles-row">
+          <button type="button" class="sidebar-tile-btn active" onclick="selectTileOption('split_mode', 'range', this)">
+            <span class="sidebar-tile-label">Custom ranges</span>
+          </button>
+          <button type="button" class="sidebar-tile-btn" onclick="selectTileOption('split_mode', 'pages', this)">
+            <span class="sidebar-tile-label">Extract pages</span>
+          </button>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:12px; align-items:center;">
+          <div style="flex:1;">
+            <label style="font-size:0.8rem; color:#64748B; display:block; margin-bottom:4px;">from page</label>
+            <input type="number" id="opt-split-from" value="1" min="1" class="sidebar-select" style="padding:8px 12px;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:0.8rem; color:#64748B; display:block; margin-bottom:4px;">to page</label>
+            <input type="number" id="opt-split-to" value="5" min="1" class="sidebar-select" style="padding:8px 12px;">
+          </div>
+        </div>
+        <label class="sidebar-checkbox-row" style="margin-top:14px;">
+          <input type="checkbox" id="opt-merge-ranges" checked>
+          <span>Merge all ranges in one PDF file</span>
+        </label>
+      </div>
+    `;
+  }
+  // 5. ROTATE PDF
+  else if (toolId === 'rotate_pdf') {
+    container.innerHTML = `
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Rotate all pages</label>
+        <div class="sidebar-tiles-row">
+          <button type="button" class="sidebar-tile-btn" onclick="rotateAllFiles(90)">
+            <span class="sidebar-tile-icon">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#E5322D" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            </span>
+            <span class="sidebar-tile-label">Right 90°</span>
+          </button>
+          <button type="button" class="sidebar-tile-btn" onclick="rotateAllFiles(270)">
+            <span class="sidebar-tile-icon">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#64748B" stroke-width="2"><path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38L-2.44 1.52"/></svg>
+            </span>
+            <span class="sidebar-tile-label">Left 90°</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+  // 6. PROTECT PDF
+  else if (toolId === 'protect_pdf') {
+    container.innerHTML = `
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Set document password</label>
+        <input type="password" id="opt-password" placeholder="Enter password to protect PDF" class="sidebar-select">
+        <input type="password" id="opt-password-repeat" placeholder="Repeat password" class="sidebar-select" style="margin-top:8px;">
+        <p style="font-size:0.8rem; color:#64748B; margin-top:6px;">Your file will be encrypted with strong AES-256 standard encryption.</p>
+      </div>
+    `;
+  }
+  // 7. UNLOCK PDF
+  else if (toolId === 'unlock_pdf') {
+    container.innerHTML = `
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Document password</label>
+        <input type="password" id="opt-password-input" placeholder="Type document password to unlock" class="sidebar-select">
+        <p style="font-size:0.8rem; color:#64748B; margin-top:6px;">Password will be stripped so the document can be opened freely without prompts.</p>
+      </div>
+    `;
+  }
+  // 8. WATERMARK
+  else if (toolId === 'watermark') {
+    container.innerHTML = `
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Watermark text</label>
+        <input type="text" id="opt-watermark-text" value="CONFIDENTIAL" class="sidebar-select">
+      </div>
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Position</label>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; max-width:180px;">
+          ${['TL','TC','TR','ML','MC','MR','BL','BC','BR'].map((pos) => `
+            <button type="button" class="sidebar-tile-btn ${pos==='MC'?'active':''}" style="padding:10px 4px; font-size:0.75rem;" onclick="selectTileOption('wm_pos','${pos}',this)">${pos}</button>
+          `).join('')}
+        </div>
+      </div>
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Transparency</label>
+        <input type="range" id="opt-watermark-opacity" min="10" max="100" value="40" style="width:100%; accent-color:#E5322D;">
+      </div>
+    `;
+  }
+  // 9. PDF TO JPG
+  else if (toolId === 'pdf_to_jpg') {
+    container.innerHTML = `
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Extraction mode</label>
+        <div class="sidebar-tiles-row">
+          <button type="button" class="sidebar-tile-btn active" onclick="selectTileOption('jpg_mode', 'pages', this)">
+            <span class="sidebar-tile-label">Page to JPG</span>
+          </button>
+          <button type="button" class="sidebar-tile-btn" onclick="selectTileOption('jpg_mode', 'extract', this)">
+            <span class="sidebar-tile-label">Extract Images</span>
+          </button>
+        </div>
+      </div>
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Image Quality</label>
+        <select class="sidebar-select">
+          <option selected>High (300 DPI)</option>
+          <option>Normal (150 DPI)</option>
+        </select>
+      </div>
+    `;
+  }
+  // 10. DEFAULT / CONVERT TOOLS (PDF to Word, Excel, PPT, etc.)
+  else {
+    container.innerHTML = `
+      <div class="sidebar-option-section">
+        <label class="sidebar-option-title">Conversion Mode</label>
+        <div class="sidebar-tiles-row">
+          <button type="button" class="sidebar-tile-btn active" onclick="selectTileOption('mode', 'standard', this)">
+            <span class="sidebar-tile-label">Standard</span>
+          </button>
+          <button type="button" class="sidebar-tile-btn" onclick="selectTileOption('mode', 'ocr', this)">
+            <span class="sidebar-tile-label">OCR Mode</span>
+          </button>
+        </div>
+      </div>
+      <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:14px; margin-top:8px;">
+        <div style="font-size:0.9rem; font-weight:700; color:#1E202A;">Ready to Process</div>
+        <div style="font-size:0.8rem; color:#64748B; margin-top:4px;">100% private in-browser engine. Files are processed locally without third-party uploads.</div>
+      </div>
+    `;
+  }
+}
+
+function rotateAllFiles(degrees) {
+  App.selectedFiles.forEach(f => {
+    f._rotation = ((f._rotation || 0) + degrees) % 360;
+  });
+  renderFileCards();
 }
 
 // Drag & Drop Handling
@@ -1056,8 +1369,14 @@ async function executeCurrentToolAction(saveToDrive = false) {
     App.resultFilename = outName;
 
     // Show Success Result Area
-    document.getElementById('tool-result-box').style.display = 'flex';
-    document.getElementById('result-status-text').textContent = `Generated ${outName} successfully.`;
+    const resultBox = document.getElementById('tool-result-box');
+    if (resultBox) {
+      resultBox.style.display = 'flex';
+      const statusText = document.getElementById('result-status-text');
+      if (statusText) statusText.textContent = `Generated ${outName} successfully.`;
+      const dlBtn = document.getElementById('download-final-btn');
+      if (dlBtn) dlBtn.textContent = `Download ${outName}`;
+    }
 
     if (saveToDrive) {
       saveResultToGoogleDrive();
@@ -1137,6 +1456,8 @@ async function executeWatermark(file, text) {
 // 6. Images to PDF
 async function executeImagesToPdf(files) {
   const pdfDoc = await PDFLib.PDFDocument.create();
+  const pageSizeOpt = document.getElementById('opt-page-size')?.value || 'a4';
+
   for (const file of files) {
     const bytes = await file.arrayBuffer();
     let img;
@@ -1145,8 +1466,49 @@ async function executeImagesToPdf(files) {
     } else {
       img = await pdfDoc.embedJpg(bytes);
     }
-    const page = pdfDoc.addPage([img.width, img.height]);
-    page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+
+    let pageWidth = img.width;
+    let pageHeight = img.height;
+
+    if (pageSizeOpt === 'a4') {
+      pageWidth = 595.28;
+      pageHeight = 841.89;
+    } else if (pageSizeOpt === 'letter') {
+      pageWidth = 612;
+      pageHeight = 792;
+    }
+
+    const page = pdfDoc.addPage([pageWidth, pageHeight]);
+
+    let drawWidth = pageWidth;
+    let drawHeight = pageHeight;
+    let xOffset = 0;
+    let yOffset = 0;
+
+    if (pageSizeOpt !== 'fit') {
+      const imgRatio = img.width / img.height;
+      const pageRatio = pageWidth / pageHeight;
+      if (imgRatio > pageRatio) {
+        drawWidth = pageWidth;
+        drawHeight = pageWidth / imgRatio;
+        yOffset = (pageHeight - drawHeight) / 2;
+      } else {
+        drawHeight = pageHeight;
+        drawWidth = pageHeight * imgRatio;
+        xOffset = (pageWidth - drawWidth) / 2;
+      }
+    }
+
+    if (file._rotation) {
+      page.setRotation(PDFLib.degrees(file._rotation));
+    }
+
+    page.drawImage(img, {
+      x: xOffset,
+      y: yOffset,
+      width: drawWidth,
+      height: drawHeight
+    });
   }
   return await pdfDoc.save();
 }

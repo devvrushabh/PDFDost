@@ -471,14 +471,13 @@
        2. DEDICATED TOOL PAGE VIEW (Exact match to User Screenshot)
        ====================================================================== -->
   <main id="tool-view" class="view-section" style="display:none;">
-    <section class="tool-hero-container">
-      <!-- Title & Subtitle -->
+    <!-- 1. Initial File Upload Screen -->
+    <section id="tool-initial-view" class="tool-hero-container">
       <h1 id="tool-page-title" class="tool-page-title">Merge PDF files</h1>
       <p id="tool-page-subtitle" class="tool-page-subtitle">
         Combine PDFs in the order you want with the easiest PDF merger available.
       </p>
 
-      <!-- Exact Upload Button Cluster from Screenshot -->
       <div class="tool-upload-wrapper" id="tool-upload-initial">
         <div class="tool-btn-cluster">
           <button type="button" class="tool-select-btn" id="tool-select-btn" onclick="triggerFilePicker()">
@@ -487,13 +486,11 @@
 
           <!-- Stacked Red Circle Buttons: Google Drive & Dropbox -->
           <div class="cloud-icons-cluster">
-            <!-- Google Drive Button -->
             <button type="button" class="cloud-icon-btn" onclick="openGoogleDrivePicker()" title="Select from Google Drive" aria-label="Google Drive">
               <svg viewBox="0 0 24 24" width="22" height="22">
                 <path d="M7.71 3.5L1.15 15l3.43 6 6.55-11.5L7.71 3.5zm3.72 6.5l3.43 6H22.85l-3.43-6H11.43zm1.14 8l-3.43 6h13.71l3.43-6H12.57z" fill="#FFF"/>
               </svg>
             </button>
-            <!-- Dropbox Button -->
             <button type="button" class="cloud-icon-btn" onclick="openDropboxPicker()" title="Select from Dropbox" aria-label="Dropbox">
               <svg viewBox="0 0 24 24" width="22" height="22">
                 <path d="M6 3.5l6 3.93-6 3.93-6-3.93 6-3.93zm12 0l6 3.93-6 3.93-6-3.93 6-3.93zm-6 7.86l6 3.93-6 3.93-6-3.93 6-3.93zm-6 5.24l6 3.93 6-3.93v2.62l-6 3.93-6-3.93v-2.62z" fill="#FFF"/>
@@ -505,48 +502,99 @@
         <p class="tool-drop-text" id="tool-drop-text">or drop PDFs here</p>
         <input type="file" id="tool-file-input" style="display:none;" onchange="handleFileSelection(this.files)">
       </div>
+    </section>
 
-      <!-- Staged Files & Processing Workspace Area (Appears once files are added) -->
-      <div id="tool-staged-area" class="tool-staged-area" style="display:none;">
-        <div class="tool-workspace-card">
-          <div class="workspace-header">
-            <div class="workspace-files-count" id="workspace-files-count">Selected Files (0)</div>
-            <button type="button" class="add-more-btn" onclick="triggerFilePicker()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              <span>Add more files</span>
+    <!-- 2. Active File Processing Interface (Exact match to User Screenshot) -->
+    <section id="tool-processing-view" class="tool-processing-layout" style="display:none;">
+      
+      <!-- Left: File Cards Canvas Pane -->
+      <div class="processing-canvas-pane">
+        <!-- Grid of uploaded file preview cards (photo thumbnails / PDF visual cards) -->
+        <div id="tool-files-grid" class="files-preview-grid"></div>
+
+        <!-- Vertical Floating Red Buttons (Pinned to Right Edge of Canvas) -->
+        <div class="canvas-floating-toolbar">
+          <!-- Add More Files (+ with count badge) -->
+          <div class="floating-btn-item">
+            <button type="button" class="canvas-fab-btn fab-add-btn" onclick="triggerFilePicker()" title="Add more files" aria-label="Add more files">
+              <span class="fab-badge-count" id="floating-badge-count">1</span>
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#FFFFFF" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <div class="fab-tooltip">Add more files</div>
+          </div>
+
+          <!-- Computer Upload -->
+          <div class="floating-btn-item">
+            <button type="button" class="canvas-fab-btn" onclick="triggerFilePicker()" title="Upload from computer" aria-label="Upload from computer">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FFFFFF" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                <line x1="8" y1="21" x2="16" y2="21"/>
+                <line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
             </button>
           </div>
 
-          <!-- Selected Files List -->
-          <div id="tool-files-list" class="tool-files-list"></div>
-
-          <!-- Dynamic Options (e.g. Password, Rotation Degree, Watermark text) -->
-          <div id="tool-dynamic-options" class="tool-dynamic-options"></div>
-
-          <!-- Action Buttons Bar -->
-          <div class="tool-action-bar">
-            <button type="button" class="back-tool-btn" onclick="resetToolFiles()">Cancel</button>
-            <button type="button" class="execute-action-btn" id="execute-action-btn" onclick="executeCurrentToolAction(false)">
-              <span id="execute-action-btn-text">Merge PDF &rarr;</span>
+          <!-- Google Drive -->
+          <div class="floating-btn-item">
+            <button type="button" class="canvas-fab-btn" onclick="openGoogleDrivePicker()" title="Add from Google Drive" aria-label="Google Drive">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M7.71 3.5L1.15 15l3.43 6 6.55-11.5L7.71 3.5zm3.72 6.5l3.43 6H22.85l-3.43-6H11.43zm1.14 8l-3.43 6h13.71l3.43-6H12.57z" fill="#FFF"/>
+              </svg>
             </button>
           </div>
 
-          <!-- Processing Progress / Result Box -->
-          <div id="tool-result-box" class="tool-result-box" style="display:none;">
-            <div class="result-badge-icon">✓</div>
-            <h3 class="result-badge-heading">Your PDF is ready!</h3>
-            <p class="result-badge-sub" id="result-status-text">Operation completed successfully.</p>
-            <div class="result-actions-cluster">
-              <button type="button" class="download-final-btn" id="download-final-btn" onclick="downloadResultFile()">
+          <!-- Dropbox -->
+          <div class="floating-btn-item">
+            <button type="button" class="canvas-fab-btn" onclick="openDropboxPicker()" title="Add from Dropbox" aria-label="Dropbox">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M6 3.5l6 3.93-6 3.93-6-3.93 6-3.93zm12 0l6 3.93-6 3.93-6-3.93 6-3.93zm-6 7.86l6 3.93-6 3.93-6-3.93 6-3.93zm-6 5.24l6 3.93 6-3.93v2.62l-6 3.93-6-3.93v-2.62z" fill="#FFF"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Fixed Options Sidebar -->
+      <aside class="processing-options-sidebar">
+        <div class="sidebar-scrollable-content">
+          <h2 class="sidebar-options-heading" id="sidebar-options-heading">Image to PDF options</h2>
+          
+          <!-- Tool-Specific Controls (Orientation, Page size, Margin, Password, etc.) -->
+          <div id="tool-dynamic-options" class="sidebar-options-body"></div>
+        </div>
+
+        <!-- Sidebar Bottom: Large Action Button & Results -->
+        <div class="sidebar-action-footer">
+          <button type="button" class="sidebar-action-btn" id="execute-action-btn" onclick="executeCurrentToolAction(false)">
+            <span id="execute-action-btn-text">Convert to PDF</span>
+            <span class="action-btn-arrow-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+              </svg>
+            </span>
+          </button>
+
+          <a href="javascript:void(0)" class="sidebar-back-link" onclick="resetToolFiles()">
+            &larr; Back to select files
+          </a>
+
+          <!-- Download / Result Panel (Shows when complete) -->
+          <div id="tool-result-box" class="sidebar-result-panel" style="display:none;">
+            <div class="result-success-badge">✓</div>
+            <h3 class="result-success-title" id="result-success-title">Your file is ready!</h3>
+            <p class="result-success-desc" id="result-status-text">Processing completed successfully.</p>
+            <div class="result-buttons-cluster">
+              <button type="button" class="sidebar-download-btn" id="download-final-btn" onclick="downloadResultFile()">
                 Download File
               </button>
-              <button type="button" class="cloud-save-btn" onclick="saveResultToGoogleDrive()">
+              <button type="button" class="sidebar-drive-btn" onclick="saveResultToGoogleDrive()">
                 Save to Google Drive
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </aside>
+
     </section>
   </main>
 
