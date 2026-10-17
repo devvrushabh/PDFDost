@@ -168,7 +168,13 @@ body {
   display: inline-block;
 }
 
+/* Nav Link Active & Open State (Exact match to screenshot) */
+.nav-link.open {
+  color: var(--primary-red) !important;
+}
+
 .nav-link.open .nav-dropdown-arrow {
+  color: var(--primary-red) !important;
   transform: rotate(180deg);
 }
 
@@ -181,20 +187,20 @@ body {
   position: absolute;
   top: calc(100% + 14px);
   background-color: #FFFFFF;
-  border: 1px solid #E5E5ED;
-  border-radius: 14px;
-  box-shadow: 0 20px 48px -4px rgba(0, 0, 0, 0.14), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
   z-index: 1000;
   display: none;
   opacity: 0;
-  transform: translateY(-8px);
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(-6px);
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-theme="dark"] .dropdown-popover {
-  background-color: #191A23;
+  background-color: #181922;
   border-color: #2D2E3E;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
 }
 
 .dropdown-popover.open {
@@ -206,26 +212,27 @@ body {
 /* Caret pointing upwards to nav link */
 .dropdown-caret-arrow {
   position: absolute;
-  top: -8px;
+  top: -7px;
   width: 14px;
   height: 14px;
   background-color: #FFFFFF;
-  border-top: 1px solid #E5E5ED;
-  border-left: 1px solid #E5E5ED;
-  transform: rotate(45deg);
+  border-top: 1px solid #E5E7EB;
+  border-left: 1px solid #E5E7EB;
+  border-right: none;
+  border-bottom: none;
+  transform: translateX(-50%) rotate(45deg);
   z-index: 1001;
-  transition: left 0.15s ease;
 }
 
 [data-theme="dark"] .dropdown-caret-arrow {
-  background-color: #191A23;
+  background-color: #181922;
   border-color: #2D2E3E;
 }
 
 /* 1. "CONVERT PDF" 2-Column Dropdown */
 .dropdown-convert {
   left: 50%;
-  transform: translateX(-50%) translateY(-8px);
+  transform: translateX(-50%) translateY(-6px);
   width: 530px;
   padding: 24px 28px;
 }
@@ -236,7 +243,6 @@ body {
 
 .dropdown-convert .dropdown-caret-arrow {
   left: 50%;
-  transform: translateX(-50%) rotate(45deg);
 }
 
 .convert-grid-2col {
@@ -245,13 +251,14 @@ body {
   gap: 28px;
 }
 
-/* 2. "ALL PDF TOOLS" Mega-Dropdown (7 Columns across page) */
+/* 2. "ALL PDF TOOLS" Mega-Dropdown (7 Columns across page - Exact match to Screenshot) */
 .dropdown-all-tools {
   position: fixed;
+  top: 68px;
   left: 50%;
-  transform: translateX(-50%) translateY(-8px);
-  width: min(1440px, 96vw);
-  padding: 26px 32px 30px;
+  transform: translateX(-50%) translateY(-6px);
+  width: min(1380px, calc(100vw - 48px));
+  padding: 28px 36px 32px;
 }
 
 .dropdown-all-tools.open {
@@ -261,8 +268,7 @@ body {
 }
 
 .dropdown-all-tools .dropdown-caret-arrow {
-  left: 200px;
-  transform: translateX(-50%) rotate(45deg);
+  left: 50%;
 }
 
 .all-tools-grid-7col {
@@ -273,13 +279,13 @@ body {
 
 /* Column Header Titles */
 .menu-column-header {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 800;
   color: #71717A;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  margin-bottom: 12px;
-  padding-left: 6px;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+  padding-left: 4px;
 }
 
 [data-theme="dark"] .menu-column-header {
@@ -289,7 +295,7 @@ body {
 .menu-list {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   list-style: none;
 }
 
@@ -299,13 +305,14 @@ body {
   align-items: center;
   gap: 10px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: 6px;
   text-decoration: none;
-  color: #272730;
-  font-size: 0.85rem;
+  color: #2E303D;
+  font-size: 0.86rem;
   font-weight: 600;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  transition: color 0.15s ease, background-color 0.15s ease;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 [data-theme="dark"] .menu-item-link {
@@ -315,7 +322,6 @@ body {
 .menu-item-link:hover {
   background-color: #F8FAFC;
   color: var(--primary-red);
-  transform: translateX(2px);
 }
 
 [data-theme="dark"] .menu-item-link:hover {
