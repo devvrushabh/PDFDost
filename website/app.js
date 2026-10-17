@@ -633,7 +633,7 @@ function showHomeView(pushHistory = true) {
   // Clear active state on nav links
   document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active-tool'));
 
-  document.title = 'iLovePDF | Online PDF tools for PDF lovers';
+  document.title = 'PDFDost | Online PDF tools for PDF lovers';
   if (pushHistory && window.location.pathname !== '/') {
     window.history.pushState(null, '', '/');
   }
@@ -673,7 +673,7 @@ function openToolPage(tool, pushHistory = true) {
   const initialView = document.getElementById('tool-initial-view');
   const processingView = document.getElementById('tool-processing-view');
   const resultBox = document.getElementById('tool-result-box');
-  if (initialView) initialView.style.display = 'block';
+  if (initialView) initialView.style.display = 'flex';
   if (processingView) processingView.style.display = 'none';
   if (resultBox) resultBox.style.display = 'none';
 
@@ -681,7 +681,7 @@ function openToolPage(tool, pushHistory = true) {
   updateNavbarActiveState(tool);
 
   // Update browser URL
-  document.title = `${tool.title} - iLovePDF`;
+  document.title = `${tool.title} - PDFDost`;
   if (pushHistory) {
     const slug = tool.id;
     window.history.pushState(null, '', `/${slug}`);
@@ -1004,7 +1004,7 @@ function resetToolFiles() {
   const processingView = document.getElementById('tool-processing-view');
   const resultBox = document.getElementById('tool-result-box');
 
-  if (initialView) initialView.style.display = 'block';
+  if (initialView) initialView.style.display = 'flex';
   if (processingView) processingView.style.display = 'none';
   if (resultBox) resultBox.style.display = 'none';
 

@@ -610,15 +610,23 @@ body {
 /* ==========================================================================
    2. DEDICATED TOOL PAGE VIEW (Exact match to iLovePDF screenshot)
    ========================================================================== */
+#tool-view {
+  width: 100%;
+}
+
 .tool-hero-container {
   min-height: calc(100vh - 145px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
   padding: 60px 24px 80px;
   background-color: var(--bg-body);
   position: relative;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .tool-page-title {
@@ -627,7 +635,9 @@ body {
   color: var(--text-heading);
   text-align: center;
   letter-spacing: -0.6px;
-  margin-bottom: 14px;
+  margin: 0 auto 14px auto;
+  max-width: 900px;
+  width: 100%;
 }
 
 .tool-page-subtitle {
@@ -636,8 +646,10 @@ body {
   color: var(--text-subheading);
   text-align: center;
   max-width: 780px;
-  margin-bottom: 44px;
+  margin: 0 auto 44px auto;
   line-height: 1.45;
+  width: 100%;
+  display: block;
 }
 
 /* Upload Button Cluster (Select PDF files + Drive + Dropbox) */
@@ -647,6 +659,7 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%;
+  margin: 0 auto;
 }
 
 .tool-btn-cluster {
@@ -654,6 +667,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 12px;
+  margin: 0 auto;
 }
 
 .tool-select-btn {
