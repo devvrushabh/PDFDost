@@ -10,34 +10,18 @@ permissions:
 
 jobs:
   deploy:
-    name: Build & Deploy Flutter Web to Netlify
+    name: Deploy PDFDost Web to Netlify
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      - name: Install Dependencies
-        run: flutter pub get
-
-      - name: Build Web Release
-        run: flutter build web --release
-
-      - name: Copy Netlify Redirects
-        run: |
-          cp web/_redirects build/web/_redirects || true
-
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v3.0
         with:
-          publish-dir: './build/web'
+          publish-dir: './website'
           production-branch: main
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message: "Automated Deploy from GitHub Actions [${{ github.sha }}]"
