@@ -86,34 +86,41 @@ body {
   gap: 36px;
 }
 
-/* I ❤️ PDF Brand Logo */
+/* Official iLovePDF Brand Vector Logo */
 .brand-logo {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   text-decoration: none;
-  font-size: 1.65rem;
-  font-weight: 900;
-  letter-spacing: -0.5px;
-  color: #1A1A24;
   cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-[data-theme="dark"] .brand-logo {
-  color: #FFFFFF;
+.brand-logo:hover {
+  opacity: 0.92;
+  transform: scale(1.01);
 }
 
-.brand-heart {
-  color: var(--primary-red);
-  margin: 0 1px;
-  font-size: 1.5rem;
-  display: inline-block;
-  transform: translateY(-1px);
+.brand-logo-svg {
+  height: 32px;
+  width: auto;
+  display: block;
 }
 
-.brand-dost {
-  color: var(--primary-red);
-  font-weight: 900;
+.brand-logo-svg .logo-text {
+  fill: #1A1A24;
+  transition: fill 0.2s ease;
+}
+
+[data-theme="dark"] .brand-logo-svg .logo-text {
+  fill: #FFFFFF;
+}
+
+.brand-logo-svg .logo-heart {
+  fill: #E5322D;
+}
+
+.brand-logo-svg .logo-doc {
+  fill: #FFFFFF;
 }
 
 /* Nav Menu Items (Uppercase, bold) */
