@@ -3,340 +3,151 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDFDost - Every Tool You Need to Work with PDFs in One Place</title>
-  <meta name="description" content="PDFDost is a 100% free, privacy-first online PDF editor and Android app. Merge, split, compress, convert, rotate, watermark, and lock PDFs directly in your browser.">
+  <title>iLovePDF | Online PDF tools for PDF lovers</title>
+  <meta name="description" content="Every tool you need to work with PDFs in one place. 100% FREE and easy to use! Merge, split, compress, convert, rotate, unlock and watermark PDFs.">
   <link rel="icon" type="image/png" href="PDFDost-icon.png">
 
-  <!-- Modern Google Fonts -->
+  <!-- Google Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-  <!-- Core Stylesheet -->
   <link rel="stylesheet" href="styles.css">
 
-  <!-- In-Browser PDF Processing Engine (pdf-lib) -->
+  <!-- pdf-lib for in-browser client-side execution -->
   <script src="https://unpkg.com/pdf-lib@1.17.9/dist/pdf-lib.min.js"></script>
-
-  <!-- Firebase App & Auth SDKs for Google OAuth (Optional CDN fallback) -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
 <body>
 
   <!-- ======================================================================
-       Site Header & Navigation (iLovePDF Style)
+       Header & Navbar (Identical to iLovePDF Screenshot)
        ====================================================================== -->
   <header class="site-header">
-    <div class="header-container">
-      <!-- Brand Logo -->
-      <a href="#" class="brand-wrapper" title="PDFDost Home">
-        <img src="PDFDost-icon.png" alt="PDFDost Logo" class="brand-icon">
-        <div class="brand-title">
-          <span>PDF</span><span class="brand-highlight">Dost</span>
-        </div>
-      </a>
+    <div class="header-inner">
+      <div class="header-left">
+        <!-- I ❤️ PDF Logo -->
+        <a href="#" class="brand-logo" title="PDFDost">
+          <span style="font-family: serif; font-weight: 900; font-size: 1.85rem;">I</span>
+          <span class="brand-heart">❤️</span>
+          <span style="font-weight: 900; letter-spacing: -0.5px;">PDF<span class="brand-dost">DOST</span></span>
+        </a>
 
-      <!-- Main Navigation Links -->
-      <nav aria-label="Main Navigation">
-        <ul class="nav-links">
-          <li class="nav-item">
-            <a href="javascript:void(0)" onclick="openToolWorkspace('merge-pdf')">Merge PDF</a>
-          </li>
-          <li class="nav-item">
-            <a href="javascript:void(0)" onclick="openToolWorkspace('split-pdf')">Split PDF</a>
-          </li>
-          <li class="nav-item">
-            <a href="javascript:void(0)" onclick="openToolWorkspace('compress-pdf')">Compress PDF</a>
-          </li>
-          <li class="nav-item">
-            <a href="javascript:void(0)" onclick="openToolWorkspace('images-to-pdf')">Convert PDF</a>
-          </li>
-          <li class="nav-item">
-            <a href="#tools-section">All PDF Tools</a>
-          </li>
-        </ul>
-      </nav>
+        <!-- Main Navigation Items -->
+        <nav>
+          <ul class="nav-menu">
+            <li><a href="javascript:void(0)" class="nav-link" onclick="openToolWorkspace('merge-pdf')">MERGE PDF</a></li>
+            <li><a href="javascript:void(0)" class="nav-link" onclick="openToolWorkspace('split-pdf')">SPLIT PDF</a></li>
+            <li><a href="javascript:void(0)" class="nav-link" onclick="openToolWorkspace('compress-pdf')">COMPRESS PDF</a></li>
+            <li>
+              <a href="javascript:void(0)" class="nav-link" onclick="openToolWorkspace('word-to-pdf')">
+                CONVERT PDF <span class="nav-dropdown-arrow">▼</span>
+              </a>
+            </li>
+            <li>
+              <a href="#main-tools" class="nav-link">
+                ALL PDF TOOLS <span class="nav-dropdown-arrow">▼</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-      <!-- Header Actions -->
-      <div class="header-actions">
-        <!-- Theme Toggle -->
-        <button id="theme-toggle-btn" class="icon-btn" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
-          <span id="theme-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-          </span>
-        </button>
-
-        <!-- Cloud & Firebase Config Settings Icon -->
-        <button class="icon-btn" onclick="openConfigModal()" title="Firebase & Google OAuth Settings" aria-label="Cloud Settings">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-        </button>
-
-        <!-- Google User Profile / Sign In Container -->
-        <div id="nav-auth-container">
-          <button class="btn btn-google" onclick="openAuthModal()">
-            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-            Sign in
-          </button>
-        </div>
-
-        <!-- Get Android App Button -->
-        <button class="btn btn-primary" onclick="openApkModal()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          Get Android App
+      <!-- Header Right -->
+      <div class="header-right">
+        <a href="javascript:void(0)" id="nav-login-btn" class="login-link" onclick="openAuthDialog()">Login</a>
+        <button class="signup-btn" onclick="openAuthDialog()">Sign up</button>
+        <button class="apps-grid-btn" onclick="openFirebaseSetup()" title="Firebase & Google OAuth Setup" aria-label="Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="5" r="2"></circle>
+            <circle cx="12" cy="5" r="2"></circle>
+            <circle cx="19" cy="5" r="2"></circle>
+            <circle cx="5" cy="12" r="2"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+            <circle cx="19" cy="12" r="2"></circle>
+            <circle cx="5" cy="19" r="2"></circle>
+            <circle cx="12" cy="19" r="2"></circle>
+            <circle cx="19" cy="19" r="2"></circle>
+          </svg>
         </button>
       </div>
     </div>
   </header>
 
   <!-- ======================================================================
-       Hero Section
+       Hero Section (Identical to Screenshot)
        ====================================================================== -->
-  <section class="hero-section">
-    <div class="hero-pill">
-      <span>✨ 100% Free Forever • Privacy-First • No Limits</span>
-    </div>
-    <h1 class="hero-title">
-      Every tool you need to work with PDFs in one place
-    </h1>
-    <p class="hero-subtitle">
-      Every tool you need to use PDFs, at your fingertips. All are 100% FREE and easy to use! Merge, split, compress, convert, rotate, protect, and watermark PDFs in seconds.
-    </p>
+  <main>
+    <section class="hero-wrapper">
+      <h1 class="hero-main-title">
+        Every tool you need to work with PDFs in one place
+      </h1>
+      <p class="hero-description">
+        Every tool you need to use PDFs, at your fingertips. All are 100% FREE and easy to use! Merge, split, compress, convert, rotate, unlock and watermark PDFs with just a few clicks.
+      </p>
 
-    <!-- Live Search Input -->
-    <div class="search-container">
-      <div class="search-input-wrapper">
-        <svg class="search-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input 
-          type="text" 
-          id="tool-search-input" 
-          class="search-input" 
-          placeholder="Search PDF tools (e.g. merge, split, compress, images, watermark)..."
-          autocomplete="off"
-        >
-        <span class="search-shortcut">Ctrl+K</span>
+      <!-- Category Filter Pills -->
+      <div class="filter-bar">
+        <button class="pill-item active" data-cat="all">All</button>
+        <button class="pill-item" data-cat="workflows">Workflows</button>
+        <button class="pill-item" data-cat="organize">Organize PDF</button>
+        <button class="pill-item" data-cat="optimize">Optimize PDF</button>
+        <button class="pill-item" data-cat="convert">Convert PDF</button>
+        <button class="pill-item" data-cat="edit">Edit PDF</button>
+        <button class="pill-item" data-cat="security">PDF Security</button>
+        <button class="pill-item" data-cat="intelligence">PDF Intelligence</button>
       </div>
-    </div>
+    </section>
 
-    <!-- Quick Category Filter Pills -->
-    <div class="filter-pills">
-      <button class="pill-btn active" data-category="all">All Tools</button>
-      <button class="pill-btn" data-category="organize">Organize PDF</button>
-      <button class="pill-btn" data-category="optimize">Optimize</button>
-      <button class="pill-btn" data-category="convert-to">Convert to PDF</button>
-      <button class="pill-btn" data-category="convert-from">Convert from PDF</button>
-      <button class="pill-btn" data-category="edit">Edit PDF</button>
-      <button class="pill-btn" data-category="security">Security</button>
-    </div>
-  </section>
+    <!-- ======================================================================
+         Tool Cards Grid (Exact 5 Columns across Desktop)
+         ====================================================================== -->
+    <section id="main-tools" class="main-container">
+      <div id="tools-grid-5col" class="tools-grid-5col">
+        <!-- Rendered dynamically by app.js with exact 32 cards -->
+      </div>
+    </section>
+  </main>
 
   <!-- ======================================================================
-       Tools Grid Section (iLovePDF Style)
+       Tool Workspace Modal
        ====================================================================== -->
-  <section id="tools-section" class="tools-section">
-    <div id="tools-grid" class="tools-grid">
-      <!-- Dynamically Rendered by app.js -->
-    </div>
-  </section>
-
-  <!-- ======================================================================
-       Mobile App Promotion Banner
-       ====================================================================== -->
-  <section class="app-banner-section">
-    <div class="app-banner-card">
-      <div class="banner-content">
-        <div class="banner-pill">
-          <span>📱 PDFDost for Android</span>
+  <div id="tool-modal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-top">
+        <div>
+          <h2 id="modal-title-text" class="modal-heading">Merge PDF</h2>
+          <p id="modal-sub-text" class="modal-sub">Combine PDFs in the order you want with the easiest PDF merger available.</p>
         </div>
-        <h2 class="banner-title">
-          Take full document power in your pocket. 100% offline.
-        </h2>
-        <p class="banner-desc">
-          Scan physical documents with holographic laser edge detection, 4-corner perspective correction, 7 pro color filters, and manage multi-page document sets with 30-day trash protection.
-        </p>
-        <div class="banner-buttons">
-          <a href="https://github.com/devvrushabh/PDFDost/releases/latest" class="banner-apk-btn" target="_blank" rel="noopener">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Download Android APK (v1.1.1)
-          </a>
-          <button class="btn btn-outline" onclick="openApkModal()">
-            View Features & QR Code
-          </button>
-        </div>
+        <button class="modal-close" onclick="closeToolWorkspace()">&times;</button>
       </div>
 
-      <div class="banner-features-grid">
-        <div class="feature-pill">
-          <span>📷 Laser Camera Scanner</span>
-        </div>
-        <div class="feature-pill">
-          <span>📐 4-Corner Perspective Crop</span>
-        </div>
-        <div class="feature-pill">
-          <span>🎨 Magic Color & B&W Filters</span>
-        </div>
-        <div class="feature-pill">
-          <span>🗑️ 30-Day Auto-Retention</span>
-        </div>
-        <div class="feature-pill">
-          <span>🔒 100% Offline & Private</span>
-        </div>
-        <div class="feature-pill">
-          <span>🚫 Zero Ads & Zero Tracking</span>
-        </div>
-      </div>
-    </div>
-  </section>
+      <div class="modal-content-area">
+        <input type="file" id="file-upload-input" style="display:none;" onchange="handleFileSelection(this.files)">
 
-  <!-- ======================================================================
-       Trust & Security Section
-       ====================================================================== -->
-  <section class="trust-section">
-    <div class="section-tag">Privacy & Security First</div>
-    <h2 class="section-title">The PDF software built around your privacy</h2>
-    <div class="trust-grid">
-      <div class="trust-card">
-        <div class="trust-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-        </div>
-        <h3 class="trust-title">100% Local In-Browser Processing</h3>
-        <p class="trust-desc">All conversions and editing take place inside your browser’s sandbox using WebAssembly and client-side JavaScript. Your files never touch external servers.</p>
-      </div>
-
-      <div class="trust-card">
-        <div class="trust-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-        </div>
-        <h3 class="trust-title">Optional Google Drive Cloud Backup</h3>
-        <p class="trust-desc">Connect your Google Account to back up documents and PDFs directly into your personal Google Drive folder under your own control.</p>
-      </div>
-
-      <div class="trust-card">
-        <div class="trust-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-        </div>
-        <h3 class="trust-title">No Subscription Paywalls</h3>
-        <p class="trust-desc">PDFDost is completely free forever. No watermark stamps, no 2-file limit timers, and no locked tools.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ======================================================================
-       Site Footer
-       ====================================================================== -->
-  <footer class="site-footer">
-    <div class="footer-container">
-      <div class="footer-brand">
-        <div class="brand-wrapper">
-          <img src="PDFDost-icon.png" alt="PDFDost Logo" class="brand-icon">
-          <div class="brand-title">
-            <span>PDF</span><span class="brand-highlight">Dost</span>
-          </div>
-        </div>
-        <p>
-          High quality, privacy-first PDF utility and document management tools for Web and Android. Crafted with dedication by <b>Vrushabh Dhote</b>.
-        </p>
-        <button class="btn btn-outline" style="padding: 8px 16px; font-size: 0.85rem;" onclick="openConfigModal()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-          Google & Firebase Setup
-        </button>
-      </div>
-
-      <div class="footer-col">
-        <h4>Popular Tools</h4>
-        <ul class="footer-links">
-          <li><a href="javascript:void(0)" onclick="openToolWorkspace('merge-pdf')">Merge PDF</a></li>
-          <li><a href="javascript:void(0)" onclick="openToolWorkspace('split-pdf')">Split PDF</a></li>
-          <li><a href="javascript:void(0)" onclick="openToolWorkspace('compress-pdf')">Compress PDF</a></li>
-          <li><a href="javascript:void(0)" onclick="openToolWorkspace('images-to-pdf')">Images to PDF</a></li>
-          <li><a href="javascript:void(0)" onclick="openToolWorkspace('word-to-pdf')">Word to PDF</a></li>
-        </ul>
-      </div>
-
-      <div class="footer-col">
-        <h4>Edit & Security</h4>
-        <ul class="footer-links">
-          <li><a href="javascript:void(0)" onclick="openToolWorkspace('watermark-pdf')">Watermark PDF</a></li>
-          <li><a href="javascript:void(0)" onclick="openToolWorkspace('rotate-pdf')">Rotate PDF</a></li>
-          <li><a href="javascript:void(0)" onclick="openToolWorkspace('protect-pdf')">Protect PDF</a></li>
-          <li><a href="javascript:void(0)" onclick="openToolWorkspace('unlock-pdf')">Unlock PDF</a></li>
-          <li><a href="javascript:void(0)" onclick="openToolWorkspace('page-numbers')">Page Numbers</a></li>
-        </ul>
-      </div>
-
-      <div class="footer-col">
-        <h4>PDFDost Ecosystem</h4>
-        <ul class="footer-links">
-          <li><a href="https://github.com/devvrushabh/PDFDost/releases/latest" target="_blank" rel="noopener">Download Android App</a></li>
-          <li><a href="https://devvrushabh.github.io/PDFDost/privacy.html" target="_blank" rel="noopener">Privacy Policy</a></li>
-          <li><a href="https://github.com/devvrushabh/PDFDost" target="_blank" rel="noopener">GitHub Repository</a></li>
-          <li><a href="https://github.com/devvrushabh" target="_blank" rel="noopener">Developer Profile</a></li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="footer-bottom">
-      <div>
-        © 2026 PDFDost. All rights reserved. 100% Free & Privacy-First.
-      </div>
-      <div>
-        Crafted with ❤️ by <b>Vrushabh Dhote</b>
-      </div>
-    </div>
-  </footer>
-
-  <!-- ======================================================================
-       Interactive Tool Workspace Modal
-       ====================================================================== -->
-  <div id="tool-modal" class="modal-overlay">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div class="modal-header-content">
-          <div id="workspace-tool-icon" class="modal-header-icon"></div>
-          <div>
-            <h2 id="workspace-tool-title" class="modal-title">Merge PDF</h2>
-            <p id="workspace-tool-subtitle" class="modal-subtitle">Combine multiple PDF files into one</p>
-          </div>
-        </div>
-        <button class="modal-close-btn" onclick="closeToolWorkspace()" aria-label="Close modal">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <!-- Hidden file input -->
-        <input type="file" id="file-input" style="display: none;">
-
-        <!-- Drag & Drop Zone -->
-        <div id="dropzone" class="dropzone">
-          <div class="dropzone-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-          </div>
-          <div class="dropzone-title">Select files or drop them here</div>
-          <div class="dropzone-subtitle">Choose files from your computer or drag and drop directly</div>
-          <button type="button" class="btn btn-primary" onclick="document.getElementById('file-input').click()">
-            Choose Files
-          </button>
+        <div class="upload-dropzone" onclick="document.getElementById('file-upload-input').click()">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#E5322D" stroke-width="1.8" style="margin-bottom: 8px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <div style="font-weight: 700; font-size: 1.15rem; margin-bottom: 4px;">Select PDF files</div>
+          <div style="font-size: 0.85rem; color: #64748B;">or drop PDFs here</div>
+          <button type="button" class="upload-btn-main">Select PDF file</button>
         </div>
 
-        <!-- Selected Files List -->
-        <div id="file-list" class="file-list"></div>
-
-        <!-- Dynamic Tool Options Panel -->
-        <div id="tool-options-panel" class="tool-options-panel"></div>
+        <div id="selected-files-list"></div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="closeToolWorkspace()">
+      <div class="modal-bottom">
+        <button type="button" style="background:transparent;border:1px solid #D5D5E2;padding:10px 18px;border-radius:6px;cursor:pointer;" onclick="closeToolWorkspace()">
           Cancel
         </button>
-        <div class="modal-actions-right">
-          <button type="button" id="workspace-drive-btn" class="btn btn-outline" style="display: none;" onclick="executeToolAction(true)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" id="modal-drive-btn" style="display:none;background:#FFFFFF;border:1px solid #D5D5E2;padding:10px 18px;border-radius:6px;font-weight:600;cursor:pointer;" onclick="executePDFAction(true)">
             Save to Google Drive
           </button>
-          <button type="button" id="workspace-action-btn" class="btn btn-primary" onclick="executeToolAction(false)">
-            Process & Download
+          <button type="button" id="modal-action-btn" class="signup-btn" style="padding:10px 24px;border-radius:6px;" onclick="executePDFAction(false)">
+            Download File
           </button>
         </div>
       </div>
@@ -344,51 +155,27 @@
   </div>
 
   <!-- ======================================================================
-       Google Sign In & Auth Modal
+       Google Sign In / Sign Up Modal
        ====================================================================== -->
-  <div id="auth-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 480px;">
-      <div class="modal-header">
-        <div class="modal-header-content">
-          <img src="PDFDost-icon.png" alt="PDFDost" style="width: 36px; height: 36px; border-radius: 10px;">
-          <div>
-            <h2 class="modal-title" style="font-size: 1.25rem;">Sign in to PDFDost</h2>
-            <p class="modal-subtitle">Connect Google Drive & Cloud Backup</p>
-          </div>
-        </div>
-        <button class="modal-close-btn" onclick="closeAuthModal()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
+  <div id="auth-modal" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-top">
+        <div style="font-weight: 800; font-size: 1.25rem;">Sign in to your account</div>
+        <button class="modal-close" onclick="closeAuthDialog()">&times;</button>
       </div>
-
-      <div class="modal-body" style="padding: 24px;">
-        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; text-align: center; margin-bottom: 20px;">
-          Sign in with your Google account to automatically back up your documents to Google Drive and sync with Firebase.
+      <div class="modal-content-area" style="text-align: center;">
+        <p style="font-size: 0.9rem; color: #64748B; margin-bottom: 16px;">
+          Connect with Google to back up all your converted PDFs to Google Drive and sync with Firebase.
         </p>
 
-        <!-- Google Sign-In Button -->
-        <button class="btn btn-google" style="width: 100%; height: 50px; justify-content: center; font-size: 1rem;" onclick="handleGoogleSignIn()">
-          <svg width="22" height="22" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        <button class="upload-btn-main" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background-color: #FFFFFF; color: #1E293B; border: 1.5px solid #CBD5E1; box-shadow: 0 2px 4px rgba(0,0,0,0.05);" onclick="signInWithGooglePrompt()">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
           Continue with Google
         </button>
 
-        <div style="display: flex; align-items: center; margin: 20px 0; gap: 10px;">
-          <hr style="flex: 1; border: 0; border-top: 1px solid var(--border-color);">
-          <span style="font-size: 0.75rem; color: var(--text-subtle); font-weight: 700;">OR SIGN IN WITH EMAIL</span>
-          <hr style="flex: 1; border: 0; border-top: 1px solid var(--border-color);">
-        </div>
-
-        <div class="option-group" style="margin-bottom: 14px;">
-          <input type="email" id="auth-email-input" class="option-input" placeholder="Enter your Google account email">
-        </div>
-
-        <button class="btn btn-primary" style="width: 100%; height: 46px;" onclick="fallbackGoogleSignIn()">
-          Sign In / Sign Up
-        </button>
-
-        <div style="text-align: center; margin-top: 18px;">
-          <a href="javascript:void(0)" onclick="closeAuthModal(); openConfigModal();" style="font-size: 0.85rem; color: var(--primary); font-weight: 600;">
-            ⚙️ Configure Firebase & Google OAuth Credentials
+        <div style="margin-top: 16px;">
+          <a href="javascript:void(0)" onclick="closeAuthDialog(); openFirebaseSetup();" style="font-size: 0.85rem; color: #E5322D; font-weight: 600;">
+            ⚙️ Configure Firebase & Google OAuth credentials
           </a>
         </div>
       </div>
@@ -396,143 +183,43 @@
   </div>
 
   <!-- ======================================================================
-       User Profile Modal
+       Firebase & Google OAuth Setup Modal
        ====================================================================== -->
-  <div id="profile-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 440px;">
-      <div class="modal-header">
-        <h2 class="modal-title" style="font-size: 1.25rem;">My Google Account</h2>
-        <button class="modal-close-btn" onclick="closeProfileModal()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
+  <div id="firebase-modal" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-top">
+        <div style="font-weight: 800; font-size: 1.25rem;">Firebase & Google OAuth Setup</div>
+        <button class="modal-close" onclick="closeFirebaseSetup()">&times;</button>
       </div>
-      <div class="modal-body" style="padding: 24px; text-align: center;">
-        <div style="width: 72px; height: 72px; border-radius: 50%; background: var(--primary-gradient); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; margin: 0 auto 16px; box-shadow: 0 8px 20px rgba(229,50,45,0.3);">
-          G
-        </div>
-        <h3 id="profile-name" style="font-size: 1.3rem; margin-bottom: 4px;">Google User</h3>
-        <p id="profile-email" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">user@gmail.com</p>
-
-        <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; text-align: left; margin-bottom: 20px;">
-          <div style="display: flex; align-items: center; gap: 8px; color: #10B981; font-weight: 700; font-size: 0.85rem; margin-bottom: 4px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            Connected to Google Drive
-          </div>
-          <p style="font-size: 0.8rem; color: var(--text-muted);">
-            Converted documents can be backed up directly to your personal Google Drive folder.
-          </p>
-        </div>
-
-        <button class="btn btn-outline" style="width: 100%; margin-bottom: 10px;" onclick="closeProfileModal(); openConfigModal();">
-          Configure Firebase & Cloud Settings
-        </button>
-
-        <button class="btn" style="width: 100%; color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.2);" onclick="signOut()">
-          Sign Out
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ======================================================================
-       Firebase & Google OAuth Configuration Modal
-       ====================================================================== -->
-  <div id="config-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 600px;">
-      <div class="modal-header">
-        <div class="modal-header-content">
-          <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #F59E0B; display: flex; align-items: center; justify-content: center;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-          </div>
-          <div>
-            <h2 class="modal-title" style="font-size: 1.25rem;">Firebase & Google OAuth Setup</h2>
-            <p class="modal-subtitle">Connect your Firebase Database & Google Drive</p>
-          </div>
-        </div>
-        <button class="modal-close-btn" onclick="closeConfigModal()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-      </div>
-
-      <div class="modal-body" style="padding: 24px;">
-        <div style="background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.2); border-radius: var(--radius-md); padding: 14px; font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px;">
-          <strong style="color: var(--text-main);">Quick Integration Guide:</strong><br>
-          1. Go to <a href="https://console.firebase.google.com" target="_blank" style="color: var(--primary); text-decoration: underline;">Firebase Console</a> & select your project.<br>
-          2. Enable <b>Google Sign-In</b> under <i>Authentication &gt; Sign-in method</i>.<br>
-          3. Add <code>pdfdost-app.netlify.app</code> under <i>Authorized domains</i>.<br>
-          4. Copy your Web App config credentials into the fields below:
-        </div>
-
-        <div class="option-group" style="margin-bottom: 12px;">
-          <label class="option-label">Firebase Web API Key</label>
-          <input type="text" id="cfg-api-key" class="option-input" placeholder="AIzaSy...">
-        </div>
-
-        <div class="option-group" style="margin-bottom: 12px;">
-          <label class="option-label">Firebase Project ID</label>
-          <input type="text" id="cfg-project-id" class="option-input" placeholder="pdfdost-app">
-        </div>
-
-        <div class="option-group" style="margin-bottom: 12px;">
-          <label class="option-label">Firebase Auth Domain</label>
-          <input type="text" id="cfg-auth-domain" class="option-input" placeholder="pdfdost-app.firebaseapp.com">
-        </div>
-
-        <div class="option-group" style="margin-bottom: 16px;">
-          <label class="option-label">Google OAuth Client ID (Optional for Drive API)</label>
-          <input type="text" id="cfg-client-id" class="option-input" placeholder="xxx.apps.googleusercontent.com">
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeConfigModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveFirebaseConfig()">Save Configuration</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ======================================================================
-       Android APK Details Modal
-       ====================================================================== -->
-  <div id="apk-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 520px;">
-      <div class="modal-header">
-        <div class="modal-header-content">
-          <img src="PDFDost-icon.png" alt="PDFDost" style="width: 38px; height: 38px; border-radius: 10px;">
-          <div>
-            <h2 class="modal-title" style="font-size: 1.25rem;">Download PDFDost for Android</h2>
-            <p class="modal-subtitle">Version 1.1.1 (Stable Release)</p>
-          </div>
-        </div>
-        <button class="modal-close-btn" onclick="closeApkModal()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-      </div>
-      <div class="modal-body" style="padding: 24px; text-align: center;">
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">
-          Experience fast, 100% offline document scanning with 4-corner perspective correction, B&W filters, and complete PDF conversion tools on your mobile device.
+      <div class="modal-content-area">
+        <p style="font-size: 0.85rem; color: #64748B; margin-bottom: 12px;">
+          Connect your Firebase Console credentials to enable Google Sign-In & Google Drive cloud backup:
         </p>
 
-        <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; margin-bottom: 24px; text-align: left;">
-          <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 8px;">Key App Features:</div>
-          <ul style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; padding-left: 20px;">
-            <li>Full Camera Scanner with laser sweep animation</li>
-            <li>Perspective Quad Corner distortion correction (2.5x Loupe)</li>
-            <li>Magic Color, Grayscale & B&W presets</li>
-            <li>Organized Document Sets & 30-Day Trash retention</li>
-            <li>Zero cloud uploads, 100% private and on-device</li>
-          </ul>
+        <div style="margin-bottom: 10px;">
+          <label style="display:block;font-size:0.8rem;font-weight:700;margin-bottom:4px;">Firebase Web API Key</label>
+          <input type="text" id="fb-api-key" style="width:100%;padding:8px 12px;border:1px solid #CBD5E1;border-radius:6px;" placeholder="AIzaSy...">
         </div>
-
-        <a href="https://github.com/devvrushabh/PDFDost/releases/latest" class="btn btn-primary" style="width: 100%; height: 50px; font-size: 1rem;" target="_blank" rel="noopener">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          Download PDFDost-v1.1.1.apk
-        </a>
+        <div style="margin-bottom: 10px;">
+          <label style="display:block;font-size:0.8rem;font-weight:700;margin-bottom:4px;">Firebase Project ID</label>
+          <input type="text" id="fb-project-id" style="width:100%;padding:8px 12px;border:1px solid #CBD5E1;border-radius:6px;" placeholder="pdfdost-app">
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="display:block;font-size:0.8rem;font-weight:700;margin-bottom:4px;">Firebase Auth Domain</label>
+          <input type="text" id="fb-auth-domain" style="width:100%;padding:8px 12px;border:1px solid #CBD5E1;border-radius:6px;" placeholder="pdfdost-app.firebaseapp.com">
+        </div>
+      </div>
+      <div class="modal-bottom">
+        <button type="button" style="background:transparent;border:1px solid #D5D5E2;padding:8px 16px;border-radius:6px;cursor:pointer;" onclick="closeFirebaseSetup()">
+          Cancel
+        </button>
+        <button type="button" class="signup-btn" onclick="saveFirebaseCredentials()">
+          Save Setup
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Application Logic -->
   <script src="app.js"></script>
 </body>
 </html>
