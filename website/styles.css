@@ -101,6 +101,21 @@ body {
   transform: translateY(-1px);
 }
 
+.brand-app-icon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  display: block;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.brand-logo:hover .brand-app-icon {
+  transform: scale(1.04);
+}
+
 .brand-heart-svg {
   width: 32px;
   height: 28px;
