@@ -86,41 +86,47 @@ body {
   gap: 36px;
 }
 
-/* Official iLovePDF Brand Vector Logo */
+/* Brand Logo: Logo Icon + PDFDost (Dost in Red) */
 .brand-logo {
   display: inline-flex;
   align-items: center;
+  gap: 10px;
   text-decoration: none;
   cursor: pointer;
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .brand-logo:hover {
-  opacity: 0.92;
-  transform: scale(1.01);
+  opacity: 0.95;
+  transform: translateY(-1px);
 }
 
-.brand-logo-svg {
-  height: 32px;
-  width: auto;
+.brand-heart-svg {
+  width: 32px;
+  height: 28px;
   display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 5px rgba(229, 50, 45, 0.25));
 }
 
-.brand-logo-svg .logo-text {
-  fill: #1A1A24;
-  transition: fill 0.2s ease;
+.brand-text {
+  font-family: var(--font-family);
+  font-size: 1.65rem;
+  font-weight: 900;
+  letter-spacing: -0.6px;
+  color: #1A1A24;
+  line-height: 1;
+  display: inline-flex;
+  align-items: baseline;
 }
 
-[data-theme="dark"] .brand-logo-svg .logo-text {
-  fill: #FFFFFF;
+[data-theme="dark"] .brand-text {
+  color: #FFFFFF;
 }
 
-.brand-logo-svg .logo-heart {
-  fill: #E5322D;
-}
-
-.brand-logo-svg .logo-doc {
-  fill: #FFFFFF;
+.brand-text-dost {
+  color: #E5322D;
+  font-weight: 900;
 }
 
 /* Nav Menu Items (Uppercase, bold) */
