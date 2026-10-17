@@ -401,21 +401,21 @@ body {
    1. HOME VIEW: Hero Section + Filter Pills + 32 Card Grid
    ========================================================================== */
 .hero-wrapper {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 48px 24px 32px;
+  padding: 56px 24px 36px;
   text-align: center;
   position: relative;
   z-index: 1;
 }
 
 .hero-main-title {
-  font-size: clamp(1.9rem, 3.2vw + 0.5rem, 2.75rem);
+  font-size: clamp(2.2rem, 3.4vw + 0.8rem, 3.15rem);
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.18;
   color: #333745;
   letter-spacing: -0.025em;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 [data-theme="dark"] .hero-main-title {
@@ -423,11 +423,11 @@ body {
 }
 
 .hero-description {
-  font-size: clamp(1.02rem, 1.15vw + 0.3rem, 1.18rem);
+  font-size: clamp(1.12rem, 1.3vw + 0.35rem, 1.32rem);
   color: #47474F;
-  max-width: 900px;
-  margin: 0 auto 34px;
-  line-height: 1.6;
+  max-width: 1040px;
+  margin: 0 auto 38px;
+  line-height: 1.55;
   font-weight: 400;
   letter-spacing: -0.005em;
 }
@@ -447,7 +447,7 @@ body {
   justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 40px;
+  margin-bottom: 42px;
 }
 
 .pill-item {
@@ -457,9 +457,9 @@ body {
   background-color: #FFFFFF;
   border: 1px solid #E1E1EA;
   color: #373844;
-  padding: 9px 22px;
+  padding: 10px 24px;
   border-radius: 9999px;
-  font-size: 0.92rem;
+  font-size: 0.98rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
