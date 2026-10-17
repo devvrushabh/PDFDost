@@ -427,27 +427,33 @@ body {
   font-weight: 400;
 }
 
-/* Filter Pills Bar (Identical to iLovePDF) */
+/* Filter Pills Bar (Exact match to screenshot) */
 .filter-bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 36px;
+  margin-bottom: 40px;
 }
 
 .pill-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background-color: #FFFFFF;
-  border: 1px solid #E5E5ED;
-  color: #374151;
-  padding: 8px 18px;
+  border: 1px solid #E1E1EA;
+  color: #373844;
+  padding: 9px 22px;
   border-radius: 9999px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.92rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
 }
 
 [data-theme="dark"] .pill-item {
@@ -457,20 +463,23 @@ body {
 }
 
 .pill-item:hover {
-  border-color: #CBD5E1;
+  border-color: #CBCBD6;
   background-color: #F8FAFC;
+  color: #1A1A24;
 }
 
 .pill-item.active {
-  background-color: #1E293B;
+  background-color: #282A36;
   color: #FFFFFF;
-  border-color: #1E293B;
+  border-color: #282A36;
+  box-shadow: 0 2px 6px rgba(40, 42, 54, 0.15);
 }
 
 [data-theme="dark"] .pill-item.active {
   background-color: #FFFFFF;
   color: #0F1015;
   border-color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
 }
 
 /* Main Container: 5 Column Grid */
@@ -1139,6 +1148,14 @@ body {
   }
   .hero-wrapper {
     padding: 36px 16px 24px;
+  }
+  .filter-bar {
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+  .pill-item {
+    padding: 7px 16px;
+    font-size: 0.85rem;
   }
   .tool-btn-cluster {
     flex-direction: column;
