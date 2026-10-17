@@ -83,7 +83,7 @@ class _DocumentFilterScreenState extends State<DocumentFilterScreen> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
+                          color: Colors.black.withValues(alpha: 0.4),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -114,7 +114,7 @@ class _DocumentFilterScreenState extends State<DocumentFilterScreen> {
                 decoration: BoxDecoration(
                   color: cardBg,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                 ),
                 child: Column(
                   children: [
@@ -129,7 +129,7 @@ class _DocumentFilterScreenState extends State<DocumentFilterScreen> {
                             data: SliderTheme.of(context).copyWith(
                               activeTrackColor: const Color(0xFFFA9282),
                               thumbColor: const Color(0xFFFA9282),
-                              overlayColor: const Color(0xFFFA9282).withOpacity(0.2),
+                              overlayColor: const Color(0xFFFA9282).withValues(alpha: 0.2),
                               trackHeight: 3,
                             ),
                             child: Slider(
@@ -158,7 +158,7 @@ class _DocumentFilterScreenState extends State<DocumentFilterScreen> {
                             data: SliderTheme.of(context).copyWith(
                               activeTrackColor: const Color(0xFFFA9282),
                               thumbColor: const Color(0xFFFA9282),
-                              overlayColor: const Color(0xFFFA9282).withOpacity(0.2),
+                              overlayColor: const Color(0xFFFA9282).withValues(alpha: 0.2),
                               trackHeight: 3,
                             ),
                             child: Slider(
@@ -203,13 +203,13 @@ class _DocumentFilterScreenState extends State<DocumentFilterScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 6),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFFFA9282).withOpacity(0.18)
+                            ? const Color(0xFFFA9282).withValues(alpha: 0.18)
                             : cardBg,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: isSelected
                               ? const Color(0xFFFA9282)
-                              : Colors.white.withOpacity(0.08),
+                              : Colors.white.withValues(alpha: 0.08),
                           width: isSelected ? 2.0 : 1.0,
                         ),
                       ),
@@ -259,7 +259,7 @@ class _DocumentFilterScreenState extends State<DocumentFilterScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
                 color: widget.isDark ? const Color(0xFF16171B) : const Color(0xFF262831),
-                border: Border(top: BorderSide(color: Colors.white.withOpacity(0.08))),
+                border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
               ),
               child: Row(
                 children: [

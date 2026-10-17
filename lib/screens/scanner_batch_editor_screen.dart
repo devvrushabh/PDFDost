@@ -208,7 +208,7 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
               Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
               ),
               const SizedBox(height: 16),
               const Text('Add More Pages', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
@@ -216,7 +216,7 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: const Color(0xFFFA9282).withOpacity(0.15), shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: const Color(0xFFFA9282).withValues(alpha: 0.15), shape: BoxShape.circle),
                   child: const Icon(Icons.camera_alt_rounded, color: Color(0xFFFA9282)),
                 ),
                 title: const Text('Take Photo with Camera', style: TextStyle(fontWeight: FontWeight.w600)),
@@ -242,7 +242,7 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: const Color(0xFF0288D1).withOpacity(0.15), shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: const Color(0xFF0288D1).withValues(alpha: 0.15), shape: BoxShape.circle),
                   child: const Icon(Icons.photo_library_rounded, color: Color(0xFF0288D1)),
                 ),
                 title: const Text('Import from Photo Gallery', style: TextStyle(fontWeight: FontWeight.w600)),
@@ -343,7 +343,7 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
                 child: Container(
                   width: 40,
                   height: 4,
-                  decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -364,9 +364,9 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
               // Option 1: Generate PDF immediately
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFA9282).withOpacity(0.12),
+                  color: const Color(0xFFFA9282).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFA9282).withOpacity(0.4)),
+                  border: Border.all(color: const Color(0xFFFA9282).withValues(alpha: 0.4)),
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -389,9 +389,9 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
               // Option 2: Save as Document Set in PDFDost Files
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0288D1).withOpacity(0.12),
+                  color: const Color(0xFF0288D1).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF0288D1).withOpacity(0.4)),
+                  border: Border.all(color: const Color(0xFF0288D1).withValues(alpha: 0.4)),
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -592,7 +592,7 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             margin: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
+              color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -641,7 +641,7 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.5),
+                              color: Colors.black.withValues(alpha: 0.5),
                               blurRadius: 22,
                               offset: const Offset(0, 10),
                             ),
@@ -719,7 +719,7 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.7),
+                                      color: Colors.black.withValues(alpha: 0.7),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
@@ -745,9 +745,9 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
                         width: 48,
                         height: 58,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.08),
+                          color: Colors.white.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                         ),
                         child: const Icon(Icons.add_rounded, color: Colors.white, size: 26),
                       ),
@@ -762,7 +762,7 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: widget.isDark ? const Color(0xFF16171B) : const Color(0xFF262831),
-                border: Border(top: BorderSide(color: Colors.white.withOpacity(0.08))),
+                border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -819,7 +819,7 @@ class _ScannerBatchEditorScreenState extends State<ScannerBatchEditorScreen> {
           Text(
             label,
             style: TextStyle(
-              color: color.withOpacity(0.9),
+              color: color.withValues(alpha: 0.9),
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),

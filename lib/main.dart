@@ -8,7 +8,6 @@ import 'screens/split_pdf_screen.dart';
 import 'screens/settings_tab.dart';
 import 'screens/tools_tab.dart';
 import 'screens/word_to_pdf_screen.dart';
-import 'screens/trash_screen.dart';
 import 'services/storage_engine.dart';
 import 'widgets/app_logo.dart';
 import 'widgets/login_modal.dart';

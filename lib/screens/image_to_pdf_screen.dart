@@ -40,7 +40,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
 
   late TextEditingController _docNameController;
   String _pageOrientation = 'Portrait'; // Portrait, Landscape, Auto
-  String _pageSize = 'A4'; // A4, Letter
+  final String _pageSize = 'A4'; // A4, Letter
   double _pageMargin = 16.0; // 0.0 (None), 8.0 (Compact), 16.0 (Standard)
   bool _addPageNumbers = false;
 
@@ -492,7 +492,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
                             boxShadow: _activeChip == 0
                                 ? [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.04),
+                                      color: Colors.black.withValues(alpha: 0.04),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
@@ -562,7 +562,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
                             boxShadow: _activeChip == 1
                                 ? [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.04),
+                                      color: Colors.black.withValues(alpha: 0.04),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
@@ -629,7 +629,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
             GestureDetector(
               onTap: _closeSpeedDial,
               child: Container(
-                color: Colors.black.withOpacity(0.4),
+                color: Colors.black.withValues(alpha: 0.4),
                 width: double.infinity,
                 height: double.infinity,
               ),
@@ -654,7 +654,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
                           color: cardBg,
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 6),
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6),
                           ],
                         ),
                         child: Text(
@@ -683,7 +683,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
                           color: cardBg,
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 6),
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6),
                           ],
                         ),
                         child: Text(
@@ -813,7 +813,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
               border: Border.all(color: borderColor),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -834,7 +834,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
                               child: Image.file(file, fit: BoxFit.cover),
                             )
                           : Container(
-                              color: Colors.grey.withOpacity(0.2),
+                              color: Colors.grey.withValues(alpha: 0.2),
                               child: const Icon(Icons.image_not_supported_rounded, color: Colors.grey),
                             ),
                     ),
@@ -976,7 +976,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
                     child: ChoiceChip(
                       label: Text(opt, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
                       selected: isSelected,
-                      selectedColor: const Color(0xFF2563EB).withOpacity(0.18),
+                      selectedColor: const Color(0xFF2563EB).withValues(alpha: 0.18),
                       onSelected: (val) => setState(() => _pageOrientation = opt),
                     ),
                   );
@@ -1000,7 +1000,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
                     child: ChoiceChip(
                       label: Text(opt['label'] as String, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
                       selected: isSelected,
-                      selectedColor: const Color(0xFF2563EB).withOpacity(0.18),
+                      selectedColor: const Color(0xFF2563EB).withValues(alpha: 0.18),
                       onSelected: (val) => setState(() => _pageMargin = opt['val'] as double),
                     ),
                   );
@@ -1012,7 +1012,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
               // Page Numbers Toggle
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                activeColor: const Color(0xFF2563EB),
+                activeThumbColor: const Color(0xFF2563EB),
                 title: Text('Add Page Numbers', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primaryTextColor)),
                 subtitle: Text('Print "Page X of Y" at the bottom of each page', style: TextStyle(fontSize: 11.5, color: secondaryTextColor)),
                 value: _addPageNumbers,
@@ -1037,7 +1037,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
         color: cardBg,
         border: Border(top: BorderSide(color: borderColor, width: 1)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, -2)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, -2)),
         ],
       ),
       child: SafeArea(
@@ -1107,7 +1107,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
             border: Border.all(color: borderColor),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -1119,7 +1119,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> with SingleTickerPr
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFF2563EB).withOpacity(0.12),
+                color: const Color(0xFF2563EB).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF2563EB), size: 24),

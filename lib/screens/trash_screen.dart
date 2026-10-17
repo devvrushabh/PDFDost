@@ -177,10 +177,10 @@ class _TrashScreenState extends State<TrashScreen> {
               margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.08),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: const Color(0xFFEF4444).withOpacity(0.25),
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.25),
                   width: 1,
                 ),
               ),
@@ -190,7 +190,7 @@ class _TrashScreenState extends State<TrashScreen> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444).withOpacity(0.18),
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.18),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -310,7 +310,7 @@ class _TrashScreenState extends State<TrashScreen> {
                             border: Border.all(color: borderColor),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
+                                color: Colors.black.withValues(alpha: 0.04),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -322,7 +322,7 @@ class _TrashScreenState extends State<TrashScreen> {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEF4444).withOpacity(0.12),
+                                color: const Color(0xFFEF4444).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: const Icon(
@@ -350,8 +350,8 @@ class _TrashScreenState extends State<TrashScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: daysLeft <= 3
-                                        ? const Color(0xFFEF4444).withOpacity(0.15)
-                                        : const Color(0xFFF59E0B).withOpacity(0.15),
+                                        ? const Color(0xFFEF4444).withValues(alpha: 0.15)
+                                        : const Color(0xFFF59E0B).withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(

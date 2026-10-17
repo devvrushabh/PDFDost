@@ -124,7 +124,7 @@ class _SettingsTabState extends State<SettingsTab> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.12),
+                color: const Color(0xFF10B981).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Row(
@@ -155,10 +155,10 @@ class _SettingsTabState extends State<SettingsTab> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFA9282).withOpacity(0.18),
+                    color: const Color(0xFFFA9282).withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(5),
                     border: Border.all(
-                      color: const Color(0xFFFA9282).withOpacity(0.35),
+                      color: const Color(0xFFFA9282).withValues(alpha: 0.35),
                       width: 1,
                     ),
                   ),
@@ -181,7 +181,7 @@ class _SettingsTabState extends State<SettingsTab> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -352,7 +352,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.12),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.code_rounded, color: Color(0xFF10B981), size: 20),
@@ -373,10 +373,10 @@ class _SettingsTabState extends State<SettingsTab> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFA9282).withOpacity(0.18),
+                        color: const Color(0xFFFA9282).withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: const Color(0xFFFA9282).withOpacity(0.45),
+                          color: const Color(0xFFFA9282).withValues(alpha: 0.45),
                           width: 1,
                         ),
                       ),
@@ -440,7 +440,7 @@ class _SettingsTabState extends State<SettingsTab> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
+                              color: Colors.black.withValues(alpha: 0.08),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -466,7 +466,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFA9282).withOpacity(0.18),
+                    color: const Color(0xFFFA9282).withValues(alpha: 0.18),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.volunteer_activism_rounded, color: Color(0xFFFA9282), size: 20),
@@ -480,7 +480,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFA9282).withOpacity(0.35),
+                        color: const Color(0xFFFA9282).withValues(alpha: 0.35),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -520,7 +520,7 @@ class _SettingsTabState extends State<SettingsTab> {
                 secondary: const Icon(Icons.storage_rounded, size: 24),
                 title: const Text('Ask before using mobile data', style: TextStyle(fontWeight: FontWeight.w600)),
                 value: _askMobileData,
-                activeColor: const Color(0xFFFA9282),
+                activeThumbColor: const Color(0xFFFA9282),
                 onChanged: (val) {
                   setState(() => _askMobileData = val);
                   StorageEngine.saveAskMobileData(val);
@@ -531,7 +531,7 @@ class _SettingsTabState extends State<SettingsTab> {
                 secondary: const Icon(Icons.dark_mode_outlined, size: 24),
                 title: const Text('Dark mode', style: TextStyle(fontWeight: FontWeight.w600)),
                 value: widget.isDark,
-                activeColor: const Color(0xFFFA9282),
+                activeThumbColor: const Color(0xFFFA9282),
                 onChanged: (val) => widget.onToggleTheme(),
               ),
               Divider(height: 1, color: dividerColor),
@@ -554,7 +554,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withOpacity(0.12),
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 18),
@@ -568,7 +568,7 @@ class _SettingsTabState extends State<SettingsTab> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444).withOpacity(0.15),
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -684,7 +684,7 @@ class _SettingsTabState extends State<SettingsTab> {
               AppLogo(fontSize: 22, isDark: widget.isDark),
               const SizedBox(height: 8),
               Text(
-                'Version 1.1.0',
+                'Version 1.1.1',
                 style: TextStyle(
                   color: headerTextColor,
                   fontSize: 12,

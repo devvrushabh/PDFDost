@@ -29,7 +29,7 @@ class AppLogo extends StatelessWidget {
             borderRadius: BorderRadius.circular(iconSize * 0.26),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFE5322D).withOpacity(0.25),
+                color: const Color(0xFFE5322D).withValues(alpha: 0.25),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -65,9 +65,9 @@ class AppLogo extends StatelessWidget {
                   letterSpacing: -0.5,
                 ),
               ),
-              TextSpan(
+              const TextSpan(
                 text: 'Dost',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
                   color: Color(0xFFE5322D),
@@ -97,7 +97,7 @@ class AppLogoBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.25),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),

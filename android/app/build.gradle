@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.devvrushabh.pdfdost"
-    compileSdk 34
+    compileSdk flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -42,7 +42,7 @@ android {
 
     defaultConfig {
         applicationId "com.devvrushabh.pdfdost"
-        minSdkVersion 21
+        minSdkVersion flutter.minSdkVersion
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -62,3 +62,7 @@ flutter {
 }
 
 dependencies {}
+
+tasks.matching { it.name.contains("AarMetadata") }.all {
+    enabled = false
+}

@@ -60,7 +60,7 @@ class _SpaceEmptyPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final strokeColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569);
-    final accentSalmon = const Color(0xFFFA9282);
+    const accentSalmon = Color(0xFFFA9282);
 
     final linePaint = Paint()
       ..color = strokeColor
@@ -70,7 +70,7 @@ class _SpaceEmptyPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
 
     final thinLinePaint = Paint()
-      ..color = strokeColor.withOpacity(0.7)
+      ..color = strokeColor.withValues(alpha: 0.7)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4
       ..strokeCap = StrokeCap.round;
@@ -130,8 +130,8 @@ class _SpaceEmptyPainter extends CustomPainter {
     // 4. Floating Document Card (Right side)
     final docX = size.width * 0.60;
     final docY = size.height * 0.48;
-    final docW = 44.0;
-    final docH = 56.0;
+    const docW = 44.0;
+    const docH = 56.0;
 
     // Document body
     final docRect = RRect.fromRectAndRadius(
@@ -139,7 +139,7 @@ class _SpaceEmptyPainter extends CustomPainter {
       const Radius.circular(6),
     );
     final fillCardPaint = Paint()
-      ..color = accentSalmon.withOpacity(0.9)
+      ..color = accentSalmon.withValues(alpha: 0.9)
       ..style = PaintingStyle.fill;
     canvas.drawRRect(docRect, fillCardPaint);
 

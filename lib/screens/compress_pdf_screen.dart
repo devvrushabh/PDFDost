@@ -187,7 +187,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.3),
+                        color: Colors.grey.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -241,7 +241,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withOpacity(0.12),
+                              color: const Color(0xFF10B981).withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             alignment: Alignment.center,
@@ -746,7 +746,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
           color: isSelected ? activeBg : inactiveBg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? const Color(0xFF10B981).withOpacity(0.5) : Colors.transparent,
+            color: isSelected ? const Color(0xFF10B981).withValues(alpha: 0.5) : Colors.transparent,
             width: 1.5,
           ),
         ),
@@ -947,7 +947,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withOpacity(0.12),
+                        color: const Color(0xFF10B981).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       alignment: Alignment.center,
@@ -966,7 +966,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE5322D).withOpacity(0.12),
+                        color: const Color(0xFFE5322D).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       alignment: Alignment.center,
@@ -1048,7 +1048,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
 
   Widget _buildLevelCard(String level, String label, IconData icon) {
     final isSelected = _selectedLevel == level;
-    final activeColor = const Color(0xFF10B981);
+    const activeColor = Color(0xFF10B981);
 
     return Expanded(
       child: GestureDetector(
@@ -1057,7 +1057,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
             color: isSelected
-                ? activeColor.withOpacity(0.12)
+                ? activeColor.withValues(alpha: 0.12)
                 : (widget.isDark ? const Color(0xFF141518) : const Color(0xFFF8FAFC)),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
@@ -1140,7 +1140,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> with SingleTicker
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withOpacity(0.12),
+                      color: const Color(0xFF10B981).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     alignment: Alignment.center,

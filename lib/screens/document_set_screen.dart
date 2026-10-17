@@ -372,7 +372,7 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
         name: fileName,
         path: file.path,
         pages: _set.pages.length,
-        size: '${formattedSize} KB',
+        size: '$formattedSize KB',
         date: 'Today',
         toolType: 'Doc Scanner',
       );
@@ -388,7 +388,7 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
           pdfPath: file.path,
           docName: fileName,
           pages: _set.pages.length,
-          sizeStr: '${formattedSize} KB',
+          sizeStr: '$formattedSize KB',
         );
       }
     } catch (e) {
@@ -477,7 +477,7 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
             height: isLarge ? 20 : 6,
             width: isLarge ? 80 : 32,
             decoration: BoxDecoration(
-              color: const Color(0xFF0288D1).withOpacity(0.3),
+              color: const Color(0xFF0288D1).withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -491,7 +491,7 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
           Container(
             height: isLarge ? 6 : 2,
             width: isLarge ? 180 : 40,
-            color: borderColor.withOpacity(0.6),
+            color: borderColor.withValues(alpha: 0.6),
           ),
           const Spacer(),
           Center(
@@ -500,7 +500,7 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
               decoration: BoxDecoration(
                 border: Border.all(color: const Color(0xFF0288D1), width: 1.2),
                 borderRadius: BorderRadius.circular(6),
-                color: const Color(0xFF0288D1).withOpacity(0.08),
+                color: const Color(0xFF0288D1).withValues(alpha: 0.08),
               ),
               child: Text(
                 'Page ${page.name}',
@@ -664,7 +664,7 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.image_not_supported_outlined, size: 60, color: textSecondary.withOpacity(0.5)),
+                      Icon(Icons.image_not_supported_outlined, size: 60, color: textSecondary.withValues(alpha: 0.5)),
                       const SizedBox(height: 14),
                       Text('No pages in this document set', style: TextStyle(color: textSecondary, fontSize: 16)),
                       const SizedBox(height: 10),
@@ -690,7 +690,7 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
                         border: Border.all(color: dividerColor),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(widget.isDark ? 0.2 : 0.05),
+                            color: Colors.black.withValues(alpha: widget.isDark ? 0.2 : 0.05),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -886,7 +886,7 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF0288D1).withOpacity(0.4),
+                    color: const Color(0xFF0288D1).withValues(alpha: 0.4),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -916,7 +916,7 @@ class _DocumentSetScreenState extends State<DocumentSetScreen> {
                   Container(
                     height: 28,
                     width: 1,
-                    color: Colors.white.withOpacity(0.35),
+                    color: Colors.white.withValues(alpha: 0.35),
                   ),
 
                   // Gallery button

@@ -299,7 +299,7 @@ class _FilesTabState extends State<FilesTab> {
                         boxShadow: isChosen
                             ? [
                                 BoxShadow(
-                                  color: color.withOpacity(0.5),
+                                  color: color.withValues(alpha: 0.5),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 )
@@ -446,7 +446,7 @@ class _FilesTabState extends State<FilesTab> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 18),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.3),
+                  color: Colors.grey.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -462,7 +462,7 @@ class _FilesTabState extends State<FilesTab> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0288D1).withOpacity(0.12),
+                    color: const Color(0xFF0288D1).withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.create_new_folder_rounded, color: Color(0xFF0288D1), size: 22),
@@ -481,7 +481,7 @@ class _FilesTabState extends State<FilesTab> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.12),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.photo_library_rounded, color: Color(0xFF10B981), size: 22),
@@ -500,7 +500,7 @@ class _FilesTabState extends State<FilesTab> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFA9282).withOpacity(0.15),
+                    color: const Color(0xFFFA9282).withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.camera_alt_rounded, color: Color(0xFFFA9282), size: 22),
@@ -521,7 +521,7 @@ class _FilesTabState extends State<FilesTab> {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB).withOpacity(0.12),
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF2563EB), size: 22),
@@ -1168,16 +1168,16 @@ class _FilesTabState extends State<FilesTab> {
           const SizedBox(height: 4),
           Container(height: 2, width: double.infinity, color: borderColor),
           const SizedBox(height: 3),
-          Container(height: 2, width: 32, color: borderColor.withOpacity(0.6)),
+          Container(height: 2, width: 32, color: borderColor.withValues(alpha: 0.6)),
           const Spacer(),
           Center(
             child: Container(
               width: 36,
               height: 24,
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFF0288D1).withOpacity(0.5), width: 0.8),
+                border: Border.all(color: const Color(0xFF0288D1).withValues(alpha: 0.5), width: 0.8),
                 borderRadius: BorderRadius.circular(3),
-                color: const Color(0xFF0288D1).withOpacity(0.06),
+                color: const Color(0xFF0288D1).withValues(alpha: 0.06),
               ),
               child: const Icon(Icons.art_track_rounded, size: 14, color: Color(0xFF0288D1)),
             ),
@@ -1363,7 +1363,7 @@ class _FilesTabState extends State<FilesTab> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -1395,7 +1395,7 @@ class _FilesTabState extends State<FilesTab> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                 decoration: BoxDecoration(
-                  color: isSelected ? activeColor : secondaryTextColor.withOpacity(0.3),
+                  color: isSelected ? activeColor : secondaryTextColor.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -1432,7 +1432,7 @@ class _FilesTabState extends State<FilesTab> {
                 decoration: BoxDecoration(
                   color: widget.isDark ? const Color(0xFF1E2838) : const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF0288D1).withOpacity(0.3)),
+                  border: Border.all(color: const Color(0xFF0288D1).withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -1519,7 +1519,7 @@ class _FilesTabState extends State<FilesTab> {
                             child: Container(
                               padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.25),
+                                color: Colors.grey.withValues(alpha: 0.25),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.close_rounded, size: 14),
@@ -1593,7 +1593,7 @@ class _FilesTabState extends State<FilesTab> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.folder_open_rounded, size: 64, color: textSecondary.withOpacity(0.4)),
+                          Icon(Icons.folder_open_rounded, size: 64, color: textSecondary.withValues(alpha: 0.4)),
                           const SizedBox(height: 12),
                           Text(
                             'No documents in $_selectedFilter',
@@ -1628,7 +1628,7 @@ class _FilesTabState extends State<FilesTab> {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               elevation: 2,
-                              shadowColor: const Color(0xFF0284C7).withOpacity(0.35),
+                              shadowColor: const Color(0xFF0284C7).withValues(alpha: 0.35),
                             ),
                             onPressed: _importImagesAndGroupSet,
                           ),
@@ -1654,7 +1654,7 @@ class _FilesTabState extends State<FilesTab> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(widget.isDark ? 0.2 : 0.04),
+                                color: Colors.black.withValues(alpha: widget.isDark ? 0.2 : 0.04),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -1683,7 +1683,7 @@ class _FilesTabState extends State<FilesTab> {
                                       padding: const EdgeInsets.only(right: 12),
                                       child: Icon(
                                         isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                                        color: isSelected ? const Color(0xFF0288D1) : textSecondary.withOpacity(0.5),
+                                        color: isSelected ? const Color(0xFF0288D1) : textSecondary.withValues(alpha: 0.5),
                                         size: 24,
                                       ),
                                     ),
@@ -1887,7 +1887,7 @@ class _FilesTabState extends State<FilesTab> {
             decoration: BoxDecoration(
               color: widget.isDark ? const Color(0xFF1E2838) : const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.3)),
+              border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -1994,7 +1994,7 @@ class _FilesTabState extends State<FilesTab> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -2009,7 +2009,7 @@ class _FilesTabState extends State<FilesTab> {
                           alignment: Alignment.center,
                           child: Icon(
                             isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                            color: isSelected ? const Color(0xFF2563EB) : secondaryTextColor.withOpacity(0.5),
+                            color: isSelected ? const Color(0xFF2563EB) : secondaryTextColor.withValues(alpha: 0.5),
                             size: 26,
                           ),
                         )
@@ -2017,7 +2017,7 @@ class _FilesTabState extends State<FilesTab> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE5322D).withOpacity(0.12),
+                            color: const Color(0xFFE5322D).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFFE5322D), size: 24),
@@ -2103,9 +2103,9 @@ class _FilesTabState extends State<FilesTab> {
           margin: const EdgeInsets.fromLTRB(16, 2, 16, 6),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFEF4444).withOpacity(0.08),
+            color: const Color(0xFFEF4444).withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
+            border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.2)),
           ),
           child: const Row(
             children: [
@@ -2128,7 +2128,7 @@ class _FilesTabState extends State<FilesTab> {
             decoration: BoxDecoration(
               color: widget.isDark ? const Color(0xFF2A1C20) : const Color(0xFFFEF2F2),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.3)),
+              border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -2226,7 +2226,7 @@ class _FilesTabState extends State<FilesTab> {
                           alignment: Alignment.center,
                           child: Icon(
                             isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                            color: isSelected ? const Color(0xFFEF4444) : secondaryTextColor.withOpacity(0.5),
+                            color: isSelected ? const Color(0xFFEF4444) : secondaryTextColor.withValues(alpha: 0.5),
                             size: 26,
                           ),
                         )
@@ -2234,7 +2234,7 @@ class _FilesTabState extends State<FilesTab> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444).withOpacity(0.12),
+                            color: const Color(0xFFEF4444).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 24),
@@ -2252,7 +2252,7 @@ class _FilesTabState extends State<FilesTab> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444).withOpacity(0.12),
+                            color: const Color(0xFFEF4444).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -2311,7 +2311,7 @@ class _FilesTabState extends State<FilesTab> {
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0288D1).withOpacity(0.4),
+            color: const Color(0xFF0288D1).withValues(alpha: 0.4),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -2341,7 +2341,7 @@ class _FilesTabState extends State<FilesTab> {
           Container(
             height: 28,
             width: 1,
-            color: Colors.white.withOpacity(0.35),
+            color: Colors.white.withValues(alpha: 0.35),
           ),
 
           // Plus button (Create folder / import images / make group)

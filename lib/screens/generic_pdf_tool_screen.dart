@@ -60,14 +60,14 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
   // 5. Page Numbers
   String _pageNumberPosition = 'Bottom Center'; // Bottom Center, Bottom Right, Top Right, Bottom Left
   String _pageNumberFormat = 'Page {n} of {total}'; // Page {n} of {total}, {n} / {total}, Page {n}, {n}
-  int _pageNumberStart = 1;
+  final int _pageNumberStart = 1;
 
   // 6. Watermark
   final TextEditingController _watermarkTextController =
       TextEditingController(text: 'CONFIDENTIAL');
   double _watermarkOpacity = 0.35;
   bool _watermarkIsDiagonal = true;
-  int _watermarkColorValue = 0xFFDC2626; // Red by default
+  final int _watermarkColorValue = 0xFFDC2626; // Red by default
 
   // 7. Rotate PDF
   int _rotateDegrees = 90; // 90, 180, 270
@@ -340,7 +340,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF4B4B).withOpacity(0.12),
+                          color: const Color(0xFFFF4B4B).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFFFF4B4B), size: 22),
@@ -528,7 +528,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
             final sizeStr = PdfEngine.formatBytes(await file.length());
             final item = HistoryItem(
               id: DateTime.now().millisecondsSinceEpoch.toString(),
-              name: '${currentDocName}.doc',
+              name: '$currentDocName.doc',
               path: file.path,
               pages: pdfItem.pageCount,
               size: sizeStr,
@@ -572,7 +572,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
             final sizeStr = PdfEngine.formatBytes(await file.length());
             final item = HistoryItem(
               id: DateTime.now().millisecondsSinceEpoch.toString(),
-              name: '${currentDocName}.csv',
+              name: '$currentDocName.csv',
               path: file.path,
               pages: pdfItem.pageCount,
               size: sizeStr,
@@ -909,7 +909,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFF3366).withOpacity(0.4),
+                      color: const Color(0xFFFF3366).withValues(alpha: 0.4),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -964,7 +964,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
     required IconData icon,
   }) {
     final isSelected = _activeChip == index;
-    final primaryColor = const Color(0xFFFF4B4B);
+    const primaryColor = Color(0xFFFF4B4B);
 
     return GestureDetector(
       onTap: () {
@@ -976,7 +976,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? primaryColor.withOpacity(0.12)
+              ? primaryColor.withValues(alpha: 0.12)
               : (widget.isDark ? const Color(0xFF1E2024) : Colors.white),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
@@ -1040,7 +1040,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1064,7 +1064,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.4),
+                  color: color.withValues(alpha: 0.4),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -1148,7 +1148,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF4B4B).withOpacity(0.12),
+                      color: const Color(0xFFFF4B4B).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Row(
@@ -1204,7 +1204,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1217,7 +1217,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
             width: 26,
             height: 26,
             decoration: BoxDecoration(
-              color: const Color(0xFFFF4B4B).withOpacity(0.12),
+              color: const Color(0xFFFF4B4B).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(6),
             ),
             alignment: Alignment.center,
@@ -1235,7 +1235,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFFF4B4B).withOpacity(0.12),
+              color: const Color(0xFFFF4B4B).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFFFF4B4B), size: 22),
@@ -1313,7 +1313,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1350,7 +1350,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
               title: const Text('Include Headers & Metadata', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               subtitle: const Text('Embeds title, conversion date, and page markers', style: TextStyle(fontSize: 11, color: Colors.grey)),
               value: _wordIncludeHeaders,
-              activeColor: const Color(0xFFFF4B4B),
+              activeThumbColor: const Color(0xFFFF4B4B),
               onChanged: (val) => setState(() => _wordIncludeHeaders = val),
             ),
             const SizedBox(height: 8),
@@ -1674,7 +1674,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFFFF4B4B).withOpacity(0.12)
+              ? const Color(0xFFFF4B4B).withValues(alpha: 0.12)
               : (widget.isDark ? const Color(0xFF282A30) : const Color(0xFFF8FAFC)),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
@@ -1782,7 +1782,7 @@ class _GenericPdfToolScreenState extends State<GenericPdfToolScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

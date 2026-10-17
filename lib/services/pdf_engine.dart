@@ -760,9 +760,9 @@ class PdfEngine {
           build: (pw.Context ctx) {
             return pw.Container(
               padding: const pw.EdgeInsets.all(28),
-              decoration: pw.BoxDecoration(
+              decoration: const pw.BoxDecoration(
                 color: PdfColors.grey100,
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(16)),
+                borderRadius: pw.BorderRadius.all(pw.Radius.circular(16)),
               ),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,

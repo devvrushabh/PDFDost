@@ -230,7 +230,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE5322D).withOpacity(0.12),
+                              color: const Color(0xFFE5322D).withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             alignment: Alignment.center,
@@ -528,7 +528,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFFE5322D).withOpacity(0.15),
+                color: const Color(0xFFE5322D).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.call_merge_rounded, color: Color(0xFFE5322D), size: 18),
@@ -612,7 +612,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
                                       width: 28,
                                       height: 28,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFE5322D).withOpacity(0.18),
+                                        color: const Color(0xFFE5322D).withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: const Icon(
@@ -684,7 +684,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
                                   width: 28,
                                   height: 28,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF38BDF8).withOpacity(0.18),
+                                    color: const Color(0xFF38BDF8).withValues(alpha: 0.18),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Icon(
@@ -723,7 +723,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
               Positioned.fill(
                 child: GestureDetector(
                   onTap: _closeSpeedDial,
-                  child: Container(color: Colors.black.withOpacity(0.35)),
+                  child: Container(color: Colors.black.withValues(alpha: 0.35)),
                 ),
               ),
 
@@ -765,7 +765,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFFA9282).withOpacity(0.4),
+                            color: const Color(0xFFFA9282).withValues(alpha: 0.4),
                             blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),
@@ -793,7 +793,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
             if (_isMerging)
               Positioned.fill(
                 child: Container(
-                  color: Colors.black.withOpacity(0.65),
+                  color: Colors.black.withValues(alpha: 0.65),
                   alignment: Alignment.center,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -802,7 +802,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
                         ),
@@ -858,7 +858,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.18),
+              color: Colors.black.withValues(alpha: 0.18),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -975,7 +975,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
                         width: 28,
                         height: 28,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE5322D).withOpacity(0.15),
+                          color: const Color(0xFFE5322D).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         alignment: Alignment.center,
@@ -996,7 +996,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE5322D).withOpacity(0.12),
+                        color: const Color(0xFFE5322D).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -1123,7 +1123,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> with SingleTickerProvid
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF38BDF8).withOpacity(0.15),
+                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.call_merge_rounded, color: Color(0xFF38BDF8), size: 24),

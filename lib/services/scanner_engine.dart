@@ -384,7 +384,7 @@ class ScannerEngine {
 
     // Draw Front Side
     drawBadge('• FRONT SIDE •', 90);
-    final fRect = Rect.fromLTWH(cardX, 130, cardW, cardH);
+    const fRect = Rect.fromLTWH(cardX, 130, cardW, cardH);
     canvas.drawRRect(
       RRect.fromRectAndRadius(fRect, const Radius.circular(16)),
       Paint()..color = const Color(0xFFF1F5F9),
@@ -406,7 +406,7 @@ class ScannerEngine {
 
     // Draw Back Side
     drawBadge('• BACK SIDE •', 850);
-    final bRect = Rect.fromLTWH(cardX, 890, cardW, cardH);
+    const bRect = Rect.fromLTWH(cardX, 890, cardW, cardH);
     canvas.drawRRect(
       RRect.fromRectAndRadius(bRect, const Radius.circular(16)),
       Paint()..color = const Color(0xFFF1F5F9),
@@ -519,10 +519,10 @@ class ScannerEngine {
     if (byteData == null) throw Exception('Failed to read image pixel data');
     final pixels = Uint8List.fromList(byteData.buffer.asUint8List());
 
-    final penA = (penColor.value >> 24) & 0xFF;
-    final penR = (penColor.value >> 16) & 0xFF;
-    final penG = (penColor.value >> 8) & 0xFF;
-    final penB = penColor.value & 0xFF;
+    final penA = (penColor.toARGB32() >> 24) & 0xFF;
+    final penR = (penColor.toARGB32() >> 16) & 0xFF;
+    final penG = (penColor.toARGB32() >> 8) & 0xFF;
+    final penB = penColor.toARGB32() & 0xFF;
 
     // Threshold cutoff (0-255)
     final lumCutoff = (threshold * 255).clamp(20, 250).toInt();

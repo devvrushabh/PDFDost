@@ -206,7 +206,7 @@ class _SignatureScannerScreenState extends State<SignatureScannerScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF0288D1).withOpacity(0.12),
+                color: const Color(0xFF0288D1).withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.draw_rounded, size: 72, color: Color(0xFF0288D1)),
@@ -220,7 +220,7 @@ class _SignatureScannerScreenState extends State<SignatureScannerScreen> {
             const SizedBox(height: 12),
             Text(
               'Sign on any white paper with a pen, then snap a photo. PDFDost automatically removes the paper background and extracts a crisp, transparent digital signature.',
-              style: TextStyle(fontSize: 14, color: currentText.withOpacity(0.65), height: 1.5),
+              style: TextStyle(fontSize: 14, color: currentText.withValues(alpha: 0.65), height: 1.5),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 36),
@@ -245,7 +245,7 @@ class _SignatureScannerScreenState extends State<SignatureScannerScreen> {
                   label: const Text('Gallery'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: currentText,
-                    side: BorderSide(color: currentText.withOpacity(0.2)),
+                    side: BorderSide(color: currentText.withValues(alpha: 0.2)),
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
@@ -269,9 +269,9 @@ class _SignatureScannerScreenState extends State<SignatureScannerScreen> {
             decoration: BoxDecoration(
               color: currentCard,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: currentText.withOpacity(0.1)),
+              border: Border.all(color: currentText.withValues(alpha: 0.1)),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4)),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 4)),
               ],
             ),
             child: ClipRRect(
@@ -323,7 +323,7 @@ class _SignatureScannerScreenState extends State<SignatureScannerScreen> {
               color: currentCard,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, -3)),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -3)),
               ],
             ),
             child: SingleChildScrollView(
@@ -337,7 +337,7 @@ class _SignatureScannerScreenState extends State<SignatureScannerScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: _penColors.map((item) {
                       final c = item['color'] as Color;
-                      final isSelected = _selectedPenColor.value == c.value;
+                      final isSelected = _selectedPenColor.toARGB32() == c.toARGB32();
                       return GestureDetector(
                         onTap: () {
                           HapticFeedback.selectionClick();
@@ -369,7 +369,7 @@ class _SignatureScannerScreenState extends State<SignatureScannerScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Background Cleansing', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: currentText)),
-                      Text('${(_threshold * 100).toInt()}%', style: TextStyle(fontSize: 12, color: currentText.withOpacity(0.6))),
+                      Text('${(_threshold * 100).toInt()}%', style: TextStyle(fontSize: 12, color: currentText.withValues(alpha: 0.6))),
                     ],
                   ),
                   Slider(
@@ -386,7 +386,7 @@ class _SignatureScannerScreenState extends State<SignatureScannerScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Ink Darkness', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: currentText)),
-                      Text('${(_contrast * 10).toInt() / 10}x', style: TextStyle(fontSize: 12, color: currentText.withOpacity(0.6))),
+                      Text('${(_contrast * 10).toInt() / 10}x', style: TextStyle(fontSize: 12, color: currentText.withValues(alpha: 0.6))),
                     ],
                   ),
                   Slider(

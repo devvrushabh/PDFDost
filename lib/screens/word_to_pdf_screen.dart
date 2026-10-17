@@ -478,7 +478,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                                       width: 28,
                                       height: 28,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF185ABD).withOpacity(0.18),
+                                        color: const Color(0xFF185ABD).withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: const Icon(
@@ -553,7 +553,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                                       width: 28,
                                       height: 28,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF10B981).withOpacity(0.18),
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: const Icon(
@@ -614,7 +614,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
               Positioned.fill(
                 child: GestureDetector(
                   onTap: _closeSpeedDial,
-                  child: Container(color: Colors.black.withOpacity(0.45)),
+                  child: Container(color: Colors.black.withValues(alpha: 0.45)),
                 ),
               ),
 
@@ -672,7 +672,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFFA9282).withOpacity(0.4),
+                            color: const Color(0xFFFA9282).withValues(alpha: 0.4),
                             blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),
@@ -700,7 +700,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
             if (_isConverting)
               Positioned.fill(
                 child: Container(
-                  color: Colors.black.withOpacity(0.55),
+                  color: Colors.black.withValues(alpha: 0.55),
                   alignment: Alignment.center,
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 40),
@@ -710,7 +710,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
                         ),
@@ -762,7 +762,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 12,
             offset: const Offset(0, -3),
           ),
@@ -821,7 +821,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.18),
+              color: Colors.black.withValues(alpha: 0.18),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -952,7 +952,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
               border: Border.all(color: borderColor),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -978,7 +978,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.75),
+                        color: Colors.black.withValues(alpha: 0.75),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -1142,7 +1142,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
                   ),
                   Switch(
                     value: _addPageNumbers,
-                    activeColor: const Color(0xFF185ABD),
+                    activeThumbColor: const Color(0xFF185ABD),
                     onChanged: (val) => setState(() => _addPageNumbers = val),
                   ),
                 ],
@@ -1241,7 +1241,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -1253,7 +1253,7 @@ class _WordToPdfScreenState extends State<WordToPdfScreen> with SingleTickerProv
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFFE5322D).withOpacity(0.14),
+                color: const Color(0xFFE5322D).withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFFE5322D), size: 24),

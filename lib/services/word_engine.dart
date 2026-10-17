@@ -1369,9 +1369,9 @@ class WordEngine {
             ? '${primaryName}_converted'
             : 'ConvertedDocs_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}');
 
-    final darkTextColor = PdfColor.fromInt(0xFF1E293B);
-    final heading1Color = PdfColor.fromInt(0xFF0F172A);
-    final heading2Color = PdfColor.fromInt(0xFF1E3A8A);
+    const darkTextColor = PdfColor.fromInt(0xFF1E293B);
+    const heading1Color = PdfColor.fromInt(0xFF0F172A);
+    const heading2Color = PdfColor.fromInt(0xFF1E3A8A);
 
     for (int docIdx = 0; docIdx < items.length; docIdx++) {
       final item = items[docIdx];

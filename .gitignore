@@ -14,6 +14,15 @@ build/
 *.lock
 android/local.properties
 android/.gradle/
+android/.kotlin/
+android/app/src/main/java/io/flutter/plugins/
 scratch/
 *.apk
 Doc Scanner/
+
+# IDE files
+.idea/
+*.iml
+.metadata
+devtools_options.yaml
+

@@ -28,20 +28,20 @@ class ToolBadgeIcon extends StatelessWidget {
         boxShadow: [
           // 1. Vibrant colored ambient glow
           BoxShadow(
-            color: config.glowColor.withOpacity(0.42),
+            color: config.glowColor.withValues(alpha: 0.42),
             blurRadius: size * 0.32,
             spreadRadius: 1,
             offset: const Offset(0, 4),
           ),
           // 2. Subtle drop shadow for 3D elevation
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
+            color: Colors.black.withValues(alpha: 0.25),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
         border: Border.all(
-          color: Colors.white.withOpacity(0.28),
+          color: Colors.white.withValues(alpha: 0.28),
           width: 1.2,
         ),
       ),
@@ -63,8 +63,8 @@ class ToolBadgeIcon extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.white.withOpacity(0.28),
-                    Colors.white.withOpacity(0.0),
+                    Colors.white.withValues(alpha: 0.28),
+                    Colors.white.withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -201,11 +201,11 @@ class ToolBadgeIcon extends StatelessWidget {
           width: 24,
           height: 26,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.92),
+            color: Colors.white.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.18),
+                color: Colors.black.withValues(alpha: 0.18),
                 blurRadius: 4,
                 offset: const Offset(0, 1),
               ),
@@ -249,11 +249,11 @@ class ToolBadgeIcon extends StatelessWidget {
             width: 19,
             height: 21,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.92),
+              color: Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(4),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -282,7 +282,7 @@ class ToolBadgeIcon extends StatelessWidget {
               border: Border.all(color: Colors.white, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
+                  color: Colors.black.withValues(alpha: 0.25),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -307,11 +307,11 @@ class ToolBadgeIcon extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(6),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -340,11 +340,11 @@ class ToolBadgeIcon extends StatelessWidget {
             width: 20,
             height: 21,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.92),
+              color: Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(4),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -370,7 +370,7 @@ class ToolBadgeIcon extends StatelessWidget {
               border: Border.all(color: Colors.white, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
+                  color: Colors.black.withValues(alpha: 0.25),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -396,11 +396,11 @@ class ToolBadgeIcon extends StatelessWidget {
       width: 25,
       height: 25,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.18),
+            color: Colors.black.withValues(alpha: 0.18),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),

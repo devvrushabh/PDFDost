@@ -360,7 +360,7 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
                             color: const Color(0xFF161820),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.12),
+                              color: Colors.white.withValues(alpha: 0.12),
                               width: 1.5,
                             ),
                           ),
@@ -396,10 +396,10 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
                             child: Container(
                               width: 2,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0288D1).withOpacity(0.8),
+                                color: const Color(0xFF0288D1).withValues(alpha: 0.8),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF0288D1).withOpacity(0.5),
+                                    color: const Color(0xFF0288D1).withValues(alpha: 0.5),
                                     blurRadius: 8,
                                   ),
                                 ],
@@ -429,7 +429,7 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFFFA9282).withOpacity(0.7),
+                                      color: const Color(0xFFFA9282).withValues(alpha: 0.7),
                                       blurRadius: 10,
                                       spreadRadius: 1.5,
                                     ),
@@ -446,9 +446,9 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.75),
+                              color: Colors.black.withValues(alpha: 0.75),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withOpacity(0.15)),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -509,9 +509,9 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.15)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                       ),
                       child: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 24),
                     ),
@@ -527,7 +527,7 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFFFA9282).withOpacity(0.8),
+                          color: const Color(0xFFFA9282).withValues(alpha: 0.8),
                           width: 4,
                         ),
                       ),
@@ -537,7 +537,7 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFA9282).withOpacity(0.4),
+                              color: const Color(0xFFFA9282).withValues(alpha: 0.4),
                               blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),
@@ -558,11 +558,11 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
                       height: 50,
                       decoration: BoxDecoration(
                         color: _scannedPages.isNotEmpty
-                            ? const Color(0xFFFA9282).withOpacity(0.25)
-                            : Colors.white.withOpacity(0.06),
+                            ? const Color(0xFFFA9282).withValues(alpha: 0.25)
+                            : Colors.white.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: _scannedPages.isNotEmpty ? const Color(0xFFFA9282) : Colors.white.withOpacity(0.1),
+                          color: _scannedPages.isNotEmpty ? const Color(0xFFFA9282) : Colors.white.withValues(alpha: 0.1),
                           width: 1.5,
                         ),
                       ),
@@ -625,10 +625,10 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFA9282) : Colors.white.withOpacity(0.06),
+          color: isSelected ? const Color(0xFFFA9282) : Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFA9282) : Colors.white.withOpacity(0.12),
+            color: isSelected ? const Color(0xFFFA9282) : Colors.white.withValues(alpha: 0.12),
           ),
         ),
         child: Center(
@@ -716,10 +716,10 @@ class _ScannerCameraScreenState extends State<ScannerCameraScreen> with SingleTi
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.65),
+        color: Colors.black.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF00E676).withOpacity(0.6),
+          color: const Color(0xFF00E676).withValues(alpha: 0.6),
           width: 1.5,
         ),
       ),
@@ -747,7 +747,7 @@ class ViewfinderGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.12)
+      ..color = Colors.white.withValues(alpha: 0.12)
       ..strokeWidth = 1.0;
 
     canvas.drawLine(Offset(size.width / 3, 0), Offset(size.width / 3, size.height), paint);

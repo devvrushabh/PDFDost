@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 class SelectedImageItem {
   final String path;

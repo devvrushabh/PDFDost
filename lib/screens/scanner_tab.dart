@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/scanner_engine.dart';
+import '../services/storage_engine.dart';
 import 'document_crop_screen.dart';
 import 'scanner_batch_editor_screen.dart';
 import 'signature_scanner_screen.dart';
@@ -300,7 +301,7 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFA9282).withOpacity(0.16),
+                          color: const Color(0xFFFA9282).withValues(alpha: 0.16),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(Icons.document_scanner_rounded, color: Color(0xFFFA9282), size: 20),
@@ -387,10 +388,10 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                             child: Container(
                               width: 2,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0288D1).withOpacity(0.8),
+                                color: const Color(0xFF0288D1).withValues(alpha: 0.8),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF0288D1).withOpacity(0.5),
+                                    color: const Color(0xFF0288D1).withValues(alpha: 0.5),
                                     blurRadius: 8,
                                   ),
                                 ],
@@ -420,7 +421,7 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFFFA9282).withOpacity(0.7),
+                                      color: const Color(0xFFFA9282).withValues(alpha: 0.7),
                                       blurRadius: 10,
                                       spreadRadius: 1.5,
                                     ),
@@ -440,7 +441,7 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                                 width: 68,
                                 height: 68,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFA9282).withOpacity(0.16),
+                                  color: const Color(0xFFFA9282).withValues(alpha: 0.16),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(Icons.document_scanner_rounded, color: Color(0xFFFA9282), size: 36),
@@ -481,9 +482,9 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withOpacity(0.15),
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: const Color(0xFF10B981).withOpacity(0.4)),
+                                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
                                 ),
                                 child: Text(
                                   '✓ ${_scannedPages.length} Page(s) Scanned',
@@ -503,11 +504,11 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                             decoration: BoxDecoration(
-                              color: (widget.isDark ? Colors.black : Colors.white).withOpacity(0.85),
+                              color: (widget.isDark ? Colors.black : Colors.white).withValues(alpha: 0.85),
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.12),
+                                  color: Colors.black.withValues(alpha: 0.12),
                                   blurRadius: 8,
                                 ),
                               ],
@@ -571,10 +572,10 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: widget.isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05),
+                        color: widget.isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: widget.isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.1),
+                          color: widget.isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.1),
                         ),
                       ),
                       child: Icon(
@@ -595,7 +596,7 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFFFA9282).withOpacity(0.7),
+                          color: const Color(0xFFFA9282).withValues(alpha: 0.7),
                           width: 4,
                         ),
                       ),
@@ -605,7 +606,7 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFA9282).withOpacity(0.4),
+                              color: const Color(0xFFFA9282).withValues(alpha: 0.4),
                               blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),
@@ -626,11 +627,11 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                       height: 50,
                       decoration: BoxDecoration(
                         color: _scannedPages.isNotEmpty
-                            ? const Color(0xFFFA9282).withOpacity(0.2)
-                            : (widget.isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05)),
+                            ? const Color(0xFFFA9282).withValues(alpha: 0.2)
+                            : (widget.isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05)),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: _scannedPages.isNotEmpty ? const Color(0xFFFA9282) : Colors.grey.withOpacity(0.3),
+                          color: _scannedPages.isNotEmpty ? const Color(0xFFFA9282) : Colors.grey.withValues(alpha: 0.3),
                           width: 1.5,
                         ),
                       ),
@@ -648,7 +649,7 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
                               ),
                             )
                           else
-                            Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.withOpacity(0.5), size: 18),
+                            Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.withValues(alpha: 0.5), size: 18),
 
                           if (_scannedPages.isNotEmpty)
                             Positioned(
@@ -692,7 +693,7 @@ class _ScannerTabState extends State<ScannerTab> with SingleTickerProviderStateM
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFA9282) : (widget.isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05)),
+          color: isSelected ? const Color(0xFFFA9282) : (widget.isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05)),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? const Color(0xFFFA9282) : Colors.transparent,
@@ -784,7 +785,7 @@ class TabViewfinderGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.grey.withOpacity(0.2)
+      ..color = Colors.grey.withValues(alpha: 0.2)
       ..strokeWidth = 1.0;
 
     canvas.drawLine(Offset(size.width / 3, 0), Offset(size.width / 3, size.height), paint);

@@ -110,7 +110,7 @@ class _DocumentCropScreenState extends State<DocumentCropScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
+                color: Colors.white.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Row(
@@ -254,14 +254,14 @@ class _DocumentCropScreenState extends State<DocumentCropScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
                 color: widget.isDark ? const Color(0xFF16171B) : const Color(0xFF262831),
-                border: Border(top: BorderSide(color: Colors.white.withOpacity(0.08), width: 1)),
+                border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08), width: 1)),
               ),
               child: Row(
                 children: [
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white70,
-                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     ),
@@ -273,7 +273,7 @@ class _DocumentCropScreenState extends State<DocumentCropScreen> {
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white70,
-                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     ),
@@ -350,7 +350,7 @@ class _DocumentCropScreenState extends State<DocumentCropScreen> {
           border: Border.all(color: const Color(0xFFFA9282), width: 3),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withValues(alpha: 0.6),
               blurRadius: 18,
               offset: const Offset(0, 8),
             ),
@@ -416,7 +416,7 @@ class QuadCropPainter extends CustomPainter {
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final maskPath = Path.combine(PathOperation.difference, fullPath, quadPath);
-    canvas.drawPath(maskPath, Paint()..color = Colors.black.withOpacity(0.55));
+    canvas.drawPath(maskPath, Paint()..color = Colors.black.withValues(alpha: 0.55));
 
     // 2. Draw connecting border lines
     final linePaint = Paint()
@@ -427,7 +427,7 @@ class QuadCropPainter extends CustomPainter {
 
     // 3. Draw grid lines inside quad (Rule of thirds document alignment)
     final gridPaint = Paint()
-      ..color = Colors.white.withOpacity(0.25)
+      ..color = Colors.white.withValues(alpha: 0.25)
       ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
 
@@ -458,7 +458,7 @@ class QuadCropPainter extends CustomPainter {
       canvas.drawCircle(
         p,
         handleRadius + 4,
-        Paint()..color = const Color(0xFFFA9282).withOpacity(0.35),
+        Paint()..color = const Color(0xFFFA9282).withValues(alpha: 0.35),
       );
 
       // Main handle circle

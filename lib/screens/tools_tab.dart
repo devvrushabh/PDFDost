@@ -846,7 +846,7 @@ class _ToolsTabState extends State<ToolsTab> {
                 SwitchListTile(
                   title: const Text('Diagonal 45° angle'),
                   value: isDiagonal,
-                  activeColor: const Color(0xFF9E556E),
+                  activeThumbColor: const Color(0xFF9E556E),
                   onChanged: (val) => setDialogState(() => isDiagonal = val),
                 ),
               ],
@@ -1061,12 +1061,12 @@ class _ToolsTabState extends State<ToolsTab> {
                   ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFFFA9282).withOpacity(0.4),
+                    color: const Color(0xFFFA9282).withValues(alpha: 0.4),
                     width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFA9282).withOpacity(0.15),
+                      color: const Color(0xFFFA9282).withValues(alpha: 0.15),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
@@ -1086,7 +1086,7 @@ class _ToolsTabState extends State<ToolsTab> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFFA9282).withOpacity(0.4),
+                            color: const Color(0xFFFA9282).withValues(alpha: 0.4),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           ),
@@ -1113,7 +1113,7 @@ class _ToolsTabState extends State<ToolsTab> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFA9282).withOpacity(0.2),
+                                  color: const Color(0xFFFA9282).withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Text(
@@ -1142,7 +1142,7 @@ class _ToolsTabState extends State<ToolsTab> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFA9282).withOpacity(0.15),
+                        color: const Color(0xFFFA9282).withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFFA9282), size: 14),
@@ -1178,7 +1178,7 @@ class _ToolsTabState extends State<ToolsTab> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(widget.isDark ? 0.22 : 0.06),
+                      color: Colors.black.withValues(alpha: widget.isDark ? 0.22 : 0.06),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -1214,7 +1214,7 @@ class _ToolsTabState extends State<ToolsTab> {
         // Processing Overlay
         if (_isProcessing)
           Container(
-            color: Colors.black.withOpacity(0.65),
+            color: Colors.black.withValues(alpha: 0.65),
             alignment: Alignment.center,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
