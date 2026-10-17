@@ -1368,6 +1368,11 @@ body {
 
 .footer-copyright {
   font-weight: 600;
+  color: #3572B0;
+}
+
+[data-theme="dark"] .footer-copyright {
+  color: #60A5FA;
 }
 
 /* ==========================================================================
