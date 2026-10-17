@@ -19,7 +19,8 @@
 </p>
 
 <p align="center">
-  <a href="https://devvrushabh.github.io/PDFDost/privacy.html"><b>🛡️ Live Privacy Policy (Indus Appstore & Play Store Compliant)</b></a> •
+  <a href="https://pdfdost-app.netlify.app"><b>🚀 Live Web App (Netlify)</b></a> •
+  <a href="https://devvrushabh.github.io/PDFDost/privacy.html"><b>🛡️ Live Privacy Policy</b></a> •
   <a href="https://devvrushabh.github.io/PDFDost/"><b>🌐 Official Website</b></a> •
   <a href="https://github.com/devvrushabh/PDFDost/releases/latest"><b>⬇️ Download Latest APK (v1.1.1)</b></a>
 </p>
@@ -155,6 +156,11 @@ The Tools screen contains a complete suite of specialized document conversion an
   - **Dark Mode**: Switch between sleek Dark Theme (`#141518`) and clean Light Theme (`#F8FAFC`).
   - **Data Usage Controls**: Toggle mobile data confirmation alerts.
   - **OCR Language Selection**: Choose optical character recognition language models.
+- **Google Account & Cloud Backup**:
+  - **Google Account Sign-In & Sign-Up**: Quick one-tap authentication and configurable account management.
+  - **Google Drive Storage**: Safely back up documents, Document Sets, scans, and PDFs to your personal Google Drive folder.
+  - **Firebase Database Credentials**: Configurable Firebase Database credentials store & metadata backup.
+  - **Auto-Sync & Manual Sync**: Toggle automatic background synchronization or trigger instant cloud backups anytime.
 - **Trash & Auto-Retention Hub**:
   - View all deleted documents and sets along with their countdown of remaining days (out of 30 days).
   - 1-click **Restore** returns items directly back to Home.

@@ -8,12 +8,14 @@ import 'screens/split_pdf_screen.dart';
 import 'screens/settings_tab.dart';
 import 'screens/tools_tab.dart';
 import 'screens/word_to_pdf_screen.dart';
+import 'services/cloud_auth_service.dart';
 import 'services/storage_engine.dart';
 import 'widgets/app_logo.dart';
 import 'widgets/login_modal.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await CloudAuthService.instance.init();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -379,22 +381,67 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             padding: const EdgeInsets.only(right: 14, left: 4),
             child: GestureDetector(
               onTap: () => LoginModalSheet.show(context),
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: widget.isDarkMode ? const Color(0xFF262831) : const Color(0xFFE2E8F0),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: widget.isDarkMode ? const Color(0xFF383A46) : const Color(0xFFCBD5E1),
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(
-                  Icons.person_rounded,
-                  size: 20,
-                  color: widget.isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                ),
+              child: AnimatedBuilder(
+                animation: CloudAuthService.instance.currentUserNotifier,
+                builder: (context, _) {
+                  final user = CloudAuthService.instance.currentUser;
+                  final isLogged = user != null;
+
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: isLogged
+                              ? const Color(0xFFFA9282)
+                              : (widget.isDarkMode ? const Color(0xFF262831) : const Color(0xFFE2E8F0)),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isLogged
+                                ? const Color(0xFFFFB0A3)
+                                : (widget.isDarkMode ? const Color(0xFF383A46) : const Color(0xFFCBD5E1)),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Center(
+                          child: isLogged
+                              ? Text(
+                                  user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : 'G',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.person_rounded,
+                                  size: 20,
+                                  color: widget.isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                ),
+                        ),
+                      ),
+                      if (isLogged)
+                        Positioned(
+                          right: -1,
+                          bottom: -1,
+                          child: Container(
+                            width: 11,
+                            height: 11,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: widget.isDarkMode ? const Color(0xFF16171B) : Colors.white,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
           ),

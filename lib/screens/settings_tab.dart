@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/models.dart';
+import '../services/cloud_auth_service.dart';
 import '../services/storage_engine.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/login_modal.dart';
@@ -297,42 +298,83 @@ class _SettingsTabState extends State<SettingsTab> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
       children: [
         // 1. Log in / Sign up Header Card (Screenshots 2 & 3)
-        GestureDetector(
-          onTap: () => LoginModalSheet.show(context),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: dividerColor),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: widget.isDark ? const Color(0xFF2D2E37) : const Color(0xFFE2E8F0),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.person_rounded,
-                    color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                    size: 32,
-                  ),
+        AnimatedBuilder(
+          animation: CloudAuthService.instance.currentUserNotifier,
+          builder: (context, _) {
+            final user = CloudAuthService.instance.currentUser;
+            final isLogged = user != null;
+
+            return GestureDetector(
+              onTap: () => LoginModalSheet.show(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: dividerColor),
                 ),
-                const SizedBox(width: 18),
-                const Text(
-                  'Log in or sign up',
-                  style: TextStyle(
-                    color: Color(0xFFFA9282), // Exact soft coral from screenshot
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: isLogged
+                            ? const Color(0xFFFA9282)
+                            : (widget.isDark ? const Color(0xFF2D2E37) : const Color(0xFFE2E8F0)),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: isLogged
+                            ? Text(
+                                user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : 'G',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : Icon(
+                                Icons.person_rounded,
+                                color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                size: 30,
+                              ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isLogged ? user.displayName : 'Log in or sign up',
+                            style: TextStyle(
+                              color: isLogged ? (widget.isDark ? Colors.white : const Color(0xFF0F172A)) : const Color(0xFFFA9282),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isLogged ? user.email : 'Google Drive & Cloud Sync',
+                            style: TextStyle(
+                              color: isLogged ? const Color(0xFF10B981) : (widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                              fontSize: 12,
+                              fontWeight: isLogged ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: widget.isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
         const SizedBox(height: 24),
 
